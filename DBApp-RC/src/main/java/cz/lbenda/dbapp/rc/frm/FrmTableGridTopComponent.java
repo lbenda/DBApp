@@ -9,7 +9,7 @@ import com.toedter.calendar.JDateChooserCellEditor;
 import cz.lbenda.dbapp.rc.AbstractHelper;
 import cz.lbenda.dbapp.rc.db.DbStructureReader;
 import cz.lbenda.dbapp.rc.db.DbStructureReader.Column;
-import cz.lbenda.dbapp.rc.db.DbStructureReader.TableDescription;
+import cz.lbenda.dbapp.rc.db.TableDescription;
 import cz.lbenda.dbapp.rc.frm.ChosenTable.ChosenTableListener;
 import cz.lbenda.dbapp.rc.frm.ChosenTable.RowUpdateListener;
 import org.netbeans.api.settings.ConvertAsProperties;

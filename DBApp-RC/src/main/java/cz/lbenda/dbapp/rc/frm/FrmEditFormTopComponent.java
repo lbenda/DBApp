@@ -8,6 +8,7 @@ package cz.lbenda.dbapp.rc.frm;
 import com.toedter.calendar.JDateChooser;
 import cz.lbenda.dbapp.rc.db.DbStructureReader;
 import cz.lbenda.dbapp.rc.db.DbStructureReader.Column;
+import cz.lbenda.dbapp.rc.db.TableDescription;
 import layout.SpringUtilities;
 import org.netbeans.api.settings.ConvertAsProperties;
 import org.openide.awt.ActionID;
@@ -206,7 +207,7 @@ public final class FrmEditFormTopComponent extends TopComponent implements Chose
           = new HashMap<DbStructureReader.Column, JComponent>();
 
   private Map<Column, Object> selectedRowValues;
-  private DbStructureReader.TableDescription td;
+  private TableDescription td;
 
   public void valuesToFields(Map<Column, Object> values) {
     for (DbStructureReader.Column column : td.getColumns()) {
@@ -227,12 +228,12 @@ public final class FrmEditFormTopComponent extends TopComponent implements Chose
   }
 
   @Override
-  public void tableChosen(DbStructureReader.TableDescription tableDescription) {
+  public void tableChosen(TableDescription tableDescription) {
     this.td = tableDescription;
     this.generateForm(tableDescription);
   }
 
-  private void generateForm(final DbStructureReader.TableDescription td) {
+  private void generateForm(final TableDescription td) {
     editFields.clear();
     this.pForm.removeAll();
     pForm.setLayout(new SpringLayout());

@@ -5,22 +5,22 @@
  */
 package cz.lbenda.dbapp.rc.frm;
 
+import cz.lbenda.dbapp.rc.SessionConfiguration;
 import cz.lbenda.dbapp.rc.db.DbStructureReader;
-import cz.lbenda.dbapp.rc.db.DbStructureReader.TableDescription;
-import cz.lbenda.dbapp.rc.db.JDBCConfiguration;
+import cz.lbenda.dbapp.rc.db.DbStructureReader.DbStructureReaderSessionChangeListener;
+import cz.lbenda.dbapp.rc.db.TableDescription;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreePath;
 import org.netbeans.api.settings.ConvertAsProperties;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.util.NbBundle.Messages;
 import org.openide.windows.TopComponent;
-
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeModel;
-import javax.swing.tree.TreePath;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 
 /**
  * Top component which displays something.
@@ -46,13 +46,14 @@ import java.awt.event.MouseListener;
   "CTL_FrmDbStructureTopComponent=Struktura",
   "HINT_FrmDbStructureTopComponent=Struktura databáze"
 })
-public final class FrmDbStructureTopComponent extends TopComponent {
+public final class FrmDbStructureTopComponent extends TopComponent implements DbStructureReaderSessionChangeListener {
 
   public FrmDbStructureTopComponent() {
     initComponents();
     setName(Bundle.CTL_FrmDbStructureTopComponent());
     setToolTipText(Bundle.HINT_FrmDbStructureTopComponent());
 
+    DbStructureReader.getInstance().addDbStructureReaderSessionChangeListener(this);
   }
 
   /**
@@ -87,39 +88,7 @@ public final class FrmDbStructureTopComponent extends TopComponent {
   // End of variables declaration//GEN-END:variables
   @Override
   public void componentOpened() {
-    DbStructureReader reader = DbStructureReader.getInstance();
-    reader.changeJDBCConfiguration(new JDBCConfiguration());
-
-    DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("Root Node");
-    TreeModel model = new DefaultTreeModel(rootNode);
-
-    String catalog = null, schema = null, tableType = null;
-    DefaultMutableTreeNode catalogNode = null;
-    DefaultMutableTreeNode schemaNode = null;
-    DefaultMutableTreeNode tableTypeNode = null;
-    for (TableDescription tableDescription : reader.getStructure()) {
-      if (!tableDescription.getCatalog().equals(catalog)) {
-        catalogNode = new DefaultMutableTreeNode(tableDescription.getCatalog());
-        catalog = tableDescription.getCatalog();
-        rootNode.add(catalogNode);
-        schema = null;
-      }
-      if (!tableDescription.getSchema().equals(schema)) {
-        schemaNode = new DefaultMutableTreeNode(tableDescription.getSchema());
-        schema = tableDescription.getSchema();
-        catalogNode.add(schemaNode);
-        tableType = null;
-      }
-      if (!tableDescription.getTableType().equals(tableType)) {
-        tableTypeNode = new DefaultMutableTreeNode(tableDescription.getTableType());
-        tableType = tableDescription.getTableType();
-        schemaNode.add(tableTypeNode);
-      }
-      tableTypeNode.add(new DefaultMutableTreeNode(tableDescription));
-    }
-
-    jTree1.setModel(model);
-    jTree1.setRootVisible(false);
+    showStructure(DbStructureReader.getInstance());
 
     MouseListener ml = new MouseAdapter() {
       @Override
@@ -139,8 +108,40 @@ public final class FrmDbStructureTopComponent extends TopComponent {
         }
     }};
     jTree1.addMouseListener(ml);
+  }
 
-    // TODO add custom code on component opening
+  private void showStructure(DbStructureReader reader) {
+    DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("Root Node");
+    TreeModel model = new DefaultTreeModel(rootNode);
+
+    String catalog = null, schema = null, tableType = null;
+    DefaultMutableTreeNode catalogNode = null;
+    DefaultMutableTreeNode schemaNode = null;
+    DefaultMutableTreeNode tableTypeNode = null;
+    if (reader.isPrepared()) {
+      for (TableDescription tableDescription : reader.getStructure()) {
+        if (!tableDescription.getCatalog().equals(catalog)) {
+          catalogNode = new DefaultMutableTreeNode(tableDescription.getCatalog());
+          catalog = tableDescription.getCatalog();
+          rootNode.add(catalogNode);
+          schema = null;
+        }
+        if (!tableDescription.getSchema().equals(schema)) {
+          schemaNode = new DefaultMutableTreeNode(tableDescription.getSchema());
+          schema = tableDescription.getSchema();
+          catalogNode.add(schemaNode);
+          tableType = null;
+        }
+        if (!tableDescription.getTableType().equals(tableType)) {
+          tableTypeNode = new DefaultMutableTreeNode(tableDescription.getTableType());
+          tableType = tableDescription.getTableType();
+          schemaNode.add(tableTypeNode);
+        }
+        tableTypeNode.add(new DefaultMutableTreeNode(tableDescription));
+      }
+    }
+    jTree1.setModel(model);
+    jTree1.setRootVisible(false);
   }
 
   @Override
@@ -162,5 +163,10 @@ public final class FrmDbStructureTopComponent extends TopComponent {
   void readProperties(java.util.Properties p) {
     String version = p.getProperty("version");
     // TODO read your settings according to their version
+  }
+
+  @Override
+  public void sessionConfigurationChanged(DbStructureReader reader, SessionConfiguration sc) {
+    this.showStructure(reader);
   }
 }

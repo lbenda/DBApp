@@ -7,7 +7,7 @@
 package cz.lbenda.dbapp.rc.frm;
 
 import cz.lbenda.dbapp.rc.db.DbStructureReader.Column;
-import cz.lbenda.dbapp.rc.db.DbStructureReader.TableDescription;
+import cz.lbenda.dbapp.rc.db.TableDescription;
 
 import java.util.HashSet;
 import java.util.Map;

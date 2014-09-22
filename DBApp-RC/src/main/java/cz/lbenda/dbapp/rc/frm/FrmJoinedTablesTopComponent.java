@@ -5,8 +5,8 @@
  */
 package cz.lbenda.dbapp.rc.frm;
 
-import cz.lbenda.dbapp.rc.db.DbStructureReader;
 import cz.lbenda.dbapp.rc.db.DbStructureReader.ForeignKey;
+import cz.lbenda.dbapp.rc.db.TableDescription;
 import org.netbeans.api.settings.ConvertAsProperties;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
@@ -93,7 +93,7 @@ public final class FrmJoinedTablesTopComponent extends TopComponent implements C
   }
 
   @Override
-  public void tableChosen(DbStructureReader.TableDescription tableDescription) {
+  public void tableChosen(TableDescription tableDescription) {
     jTabbedPane1.removeAll();
     for (ForeignKey key : tableDescription.getForeignKeys()) {
       if (key.getMasterTable().equals(tableDescription)) {

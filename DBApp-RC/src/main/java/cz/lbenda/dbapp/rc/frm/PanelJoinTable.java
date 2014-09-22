@@ -8,7 +8,7 @@ package cz.lbenda.dbapp.rc.frm;
 import cz.lbenda.dbapp.rc.db.DbStructureReader;
 import cz.lbenda.dbapp.rc.db.DbStructureReader.Column;
 import cz.lbenda.dbapp.rc.db.DbStructureReader.ForeignKey;
-import cz.lbenda.dbapp.rc.db.DbStructureReader.TableDescription;
+import cz.lbenda.dbapp.rc.db.TableDescription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

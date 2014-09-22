@@ -5,32 +5,20 @@
  */
 package cz.lbenda.dbapp.rc.db;
 
-import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.List;
+import org.jdom.Element;
 
-/**
- *
+/** Instance of this object hold information about connection to JDBC, and cane generate some default connection URL's
  * @author Lukas Benda <lbenda at lbenda.cz>
  */
 public class JDBCConfiguration {
 
-  private String username = "SA";
-  private String password;
-  private String driverClass = "org.hsqldb.jdbcDriver";
-  private String url = "jdbc:hsqldb:hsql://localhost:9001/apm";
-  private Connection connection;
-  private int connectionGet = 0;
-
-  public void setUsername(final String username) { this.username = username; }
-  public String getUsername() { return this.username; }
-
-  public void setPassword(final String password) { this.password = password; }
-  public String getPassword() { return this.password; }
-
-  public void setDriverClass(final String driverClass) { this.driverClass = driverClass; }
-  public String getDriverClass() { return this.driverClass; }
-
-  public void setUrl(final String url) { this.url = url; }
-  public String getUrl() { return this.url; }
+  private final List<String> importedLibreries = new ArrayList<>(5); public final List<String> getImportedLibreries() { return importedLibreries; }
+  private String username = ""; public void setUsername(final String username) { this.username = username; } public String getUsername() { return this.username; }
+  private String password = ""; public void setPassword(final String password) { this.password = password; } public String getPassword() { return this.password; }
+  private String driverClass = ""; public void setDriverClass(final String driverClass) { this.driverClass = driverClass; } public String getDriverClass() { return this.driverClass; }
+  private String url = ""; public void setUrl(final String url) { this.url = url; } public String getUrl() { return this.url; }
 
   public void setUrlMySQL(final String serverName, final Integer portNumber) {
     if (portNumber != null) {
@@ -44,39 +32,39 @@ public class JDBCConfiguration {
     this.url = String.format("jdbc:derby:%s;create=true", fileName);
   }
 
-  /*
-  public synchronized final Connection getConnection() throws SQLException {
-    connectionGet++;
-    if (connection == null) {
-      Properties connectionProps = new Properties();
-      connectionProps.put("user", this.username);
-      if (this.password != null) { connectionProps.put("password", this.password); }
-
-      if (driverClass != null) {
-        try {
-          Driver myDriver = (Driver) Class.forName(driverClass).newInstance();
-          DriverManager.registerDriver(myDriver);
-        } catch (ClassNotFoundException e) {
-          throw new RuntimeException(e);
-        } catch (InstantiationException ex) {
-          throw new RuntimeException(ex);
-        } catch (IllegalAccessException ex) {
-          throw new RuntimeException(ex);
-        }
+  public final void loadFromElement(Element element) {
+    setPassword(subElementText(element, "password", ""));
+    setUsername(subElementText(element, "user", "SA"));
+    setUrl(subElementText(element, "url", ""));
+    setDriverClass(subElementText(element, "driverClass", ""));
+    Element libraries = element.getChild("libraries");
+    if (libraries != null) {
+      for (Element librarie : (List<Element>) libraries.getChildren("librarie")) {
+        getImportedLibreries().add(librarie.getValue());
       }
-      this.connection = DriverManager.getConnection(url, connectionProps);
-      System.out.println("Connected to database");
     }
-    return connection;
   }
 
-  public synchronized final void closeConnection() throws SQLException {
-    connectionGet--;
-    if (connectionGet <= 0 && connection != null) {
-      connection.close();
-      connection = null;
-      connectionGet = 0;
-    }
+  private String subElementText(Element element, String name, String def) {
+    Element el = element.getChild(name);
+    if (el == null) { return def; }
+    return el.getText();
   }
-  */
+
+
+  public final Element storeToElement() {
+    Element jdbc = new Element("jdbc");
+    jdbc.addContent(new Element("driverClasss").setText(driverClass));
+    jdbc.addContent(new Element("user").setText(getUsername()));
+    jdbc.addContent(new Element("password").setText(getPassword()));
+    jdbc.addContent(new Element("url").setText(getUrl()));
+    Element libraries = new Element("libraries");
+    jdbc.addContent(libraries);
+    if (importedLibreries != null) {
+      for (String library : importedLibreries) {
+        libraries.addContent(new Element("librarie").setText(library));
+      }
+    }
+    return jdbc;
+  }
 }

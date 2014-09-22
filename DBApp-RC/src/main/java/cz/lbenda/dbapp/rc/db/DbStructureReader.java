@@ -6,26 +6,42 @@
 package cz.lbenda.dbapp.rc.db;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.sql.*;
+import cz.lbenda.dbapp.rc.SessionConfiguration;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Class for reading data structure from JDBC
  * @author Lukas Benda <lbenda at lbenda.cz>
  */
 public class DbStructureReader {
 
+  public interface DbStructureReaderSessionChangeListener {
+    void sessionConfigurationChanged(DbStructureReader reader, SessionConfiguration sc);
+  }
+
   private static final Logger LOG = LoggerFactory.getLogger(DbStructureReader.class);
 
-  private JDBCConfiguration jdbcConfiguration;
+  private SessionConfiguration sessionConfiguration;
   private List<TableDescription> tableDescriptions = new ArrayList<>();
   private final Map<String, Map<String, Map<String, TableDescription>>> tableDescriptionsMap
           = new HashMap<>();
+  private final List<DbStructureReaderSessionChangeListener> listeners = new ArrayList<>();
 
   private ComboPooledDataSource dataSource = null;
 
@@ -33,15 +49,31 @@ public class DbStructureReader {
 
   public static final DbStructureReader getInstance() { return instance; }
 
-  public void changeJDBCConfiguration(JDBCConfiguration jdbcConfiguration) {
-    this.jdbcConfiguration = jdbcConfiguration;
+
+  public final void setSessionConfiguration(SessionConfiguration sessionConfiguration) {
+    this.sessionConfiguration = sessionConfiguration;
+    createDataSource();
+    for (DbStructureReaderSessionChangeListener l : listeners) {
+      l.sessionConfigurationChanged(this, sessionConfiguration);
+    }
+  }
+  public final SessionConfiguration getSessionConfiguration() { return sessionConfiguration; }
+
+  /** Inform if the reader is prepared for read data - the session configuration exist */
+  public final boolean isPrepared() { return sessionConfiguration != null; }
+
+  /** This method load to the cache table of keys */
+  private final void loadTableOfKeys() {
+  }
+
+  private void createDataSource() {
     try {
       if (dataSource != null) { dataSource.close(); }
       dataSource = new ComboPooledDataSource();
-      dataSource.setDriverClass(jdbcConfiguration.getDriverClass());
-      dataSource.setJdbcUrl(jdbcConfiguration.getUrl());
-      dataSource.setUser(jdbcConfiguration.getUsername());
-      dataSource.setPassword(jdbcConfiguration.getPassword());
+      dataSource.setDriverClass(sessionConfiguration.getJdbcConfiguration().getDriverClass());
+      dataSource.setJdbcUrl(sessionConfiguration.getJdbcConfiguration().getUrl());
+      dataSource.setUser(sessionConfiguration.getJdbcConfiguration().getUsername());
+      dataSource.setPassword(sessionConfiguration.getJdbcConfiguration().getPassword());
       dataSource.setMinPoolSize(1);
       dataSource.setMaxPoolSize(2);
       dataSource.setMaxStatements(2);
@@ -55,8 +87,49 @@ public class DbStructureReader {
   private DbStructureReader() {};
 
   public final Connection getConnection() throws SQLException {
+    if (dataSource == null) { createDataSource(); }
+    for (String lib : sessionConfiguration.getLibrariesPaths()) {
+      try {
+        addFileToClassLoader(lib);
+      } catch (IOException e) {
+        LOG.error("Problem with read library " + lib, e);
+        throw new RuntimeException("Problem with read library " + lib, e);
+      }
+      /*
+      try {
+        URL u = new URL("jar:file:/" + lib);
+        JarURLConnection uc = (JarURLConnection) u.openConnection();
+        uc.
+      } catch (IOException e) {
+        LOG.error("Problem with read library " + lib, e);
+        throw new RuntimeException("Problem with read library " + lib, e);
+      }
+      */
+    }
     return dataSource.getConnection();
   }
+
+  public static void addFileToClassLoader(String s) throws IOException {
+    File f = new File(s);
+    addFileToClassLoader(f);
+  }
+
+  public static void addFileToClassLoader(File f) throws IOException {
+    addUrlToClassLoader(f.toURI().toURL());
+  }
+
+  public static void addUrlToClassLoader(URL u) throws IOException {
+    URLClassLoader sysloader = (URLClassLoader) ClassLoader.getSystemClassLoader();
+    Class sysclass = URLClassLoader.class;
+    try {
+      Method method = sysclass.getDeclaredMethod("addURL", URL.class);
+      method.setAccessible(true);
+      method.invoke(sysloader, new Object[]{u});
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw new IOException("Error, could not add URL to system classloader");
+    }//end try catch
+  }//end method
 
   /** Method read data from table to List, where every record is create as array of objects
    * @param td table which is readed
@@ -190,6 +263,7 @@ public class DbStructureReader {
             newValues.put(col, rs.getObject(1));
           }
           LOG.debug("New column was inserted");
+          td.sqlWasFired(TableDescriptionExtension.TableAction.INSERT);
         }
       } catch (SQLException e) {
         throw new RuntimeException(e);
@@ -235,6 +309,7 @@ public class DbStructureReader {
           }
           ps.execute();
           LOG.debug("Changes was saved");
+          td.sqlWasFired(TableDescriptionExtension.TableAction.UPDATE);
         }
       } catch (SQLException e) {
         throw new RuntimeException(e);
@@ -267,6 +342,7 @@ public class DbStructureReader {
         }
         ps.execute();
         LOG.debug("Record was deleted.");
+        td.sqlWasFired(TableDescriptionExtension.TableAction.DELETE);
       }
     } catch (SQLException e) {
       throw new RuntimeException(e);
@@ -353,104 +429,12 @@ public class DbStructureReader {
     }
   }
 
-  public static class TableDescription implements Comparable<TableDescription> {
-    private final String name; public final String getName() { return name; }
-    private final String schema; public final String getSchema() { return schema; }
-    private final String catalog; public final String getCatalog() { return catalog; }
-    private final String tableType; public final String getTableType() { return tableType; }
+  public void addDbStructureReaderSessionChangeListener(DbStructureReaderSessionChangeListener l) {
+    this.listeners.add(l);
+  }
 
-    private final List<ForeignKey> foreignKeys = new ArrayList<>(); public final List<ForeignKey> getForeignKeys() { return foreignKeys; }
-    private final List<Column> columns = new ArrayList<>(); public final List<Column> getColumns() { return columns; }
-
-    public TableDescription(String catalog, String schema, String tableType, String name) {
-      this.catalog = catalog;
-      this.schema = schema;
-      this.name = name;
-      this.tableType = tableType;
-    }
-
-    public final void addForeignKey(ForeignKey foreignKey) {
-      this.foreignKeys.add(foreignKey);
-    }
-
-    /** Return list of all columns, which is in primary key */
-    public final List<Column> getPKColumns() {
-      List<Column> result = new ArrayList<>();
-      for (Column col : columns) {
-        if (col.isPK()) { result.add(col); }
-      }
-      return result;
-    }
-
-    public final void addColumn(Column column) {
-      column.setPosition(this.columns.size());
-      this.columns.add(column);
-    }
-
-    public final Column getColumn(String columnName) {
-      for (Column result : columns) {
-        if (result.getName().equals(columnName)) { return result; }
-      }
-      return null;
-    }
-
-    public final String getColumnString(String colName, Map<Column, Object> rowValue) {
-      Column col = getColumn(colName);
-      if (col != null) { return col.getColumnString(rowValue); }
-      return null;
-    }
-
-    @Override
-    public final String toString() {
-      return name;
-    }
-
-    @Override
-    public final int compareTo(TableDescription other) {
-      if (other == null) { throw new NullPointerException(); }
-      if (!TableDescription.class.equals(other.getClass())) { throw new ClassCastException(); }
-      if (this.catalog.equals(other.catalog)) {
-        if (this.schema.equals(other.schema)) {
-          if (this.tableType.equals(other.tableType)) {
-            return this.name.compareTo(other.name);
-          }
-          return this.tableType.compareTo(other.tableType);
-        }
-        return this.schema.compareTo(other.schema);
-      }
-      return this.catalog.compareTo(other.catalog);
-    }
-
-    @Override
-    public int hashCode() {
-      int hash = 7;
-      hash = 41 * hash + (this.name != null ? this.name.hashCode() : 0);
-      hash = 41 * hash + (this.schema != null ? this.schema.hashCode() : 0);
-      hash = 41 * hash + (this.catalog != null ? this.catalog.hashCode() : 0);
-      hash = 41 * hash + (this.tableType != null ? this.tableType.hashCode() : 0);
-      return hash;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (obj == null) {
-        return false;
-      }
-      if (getClass() != obj.getClass()) {
-        return false;
-      }
-      final TableDescription other = (TableDescription) obj;
-      if ((this.name == null) ? (other.name != null) : !this.name.equals(other.name)) {
-        return false;
-      }
-      if ((this.schema == null) ? (other.schema != null) : !this.schema.equals(other.schema)) {
-        return false;
-      }
-      if ((this.catalog == null) ? (other.catalog != null) : !this.catalog.equals(other.catalog)) {
-        return false;
-      }
-      return this.tableType == null ? (other.tableType == null) : this.tableType.equals(other.tableType);
-    }
+  public void removeDbStructureReaderSessionChangeListener(DbStructureReaderSessionChangeListener l) {
+    this.listeners.remove(l);
   }
 
   public static class ForeignKey {
