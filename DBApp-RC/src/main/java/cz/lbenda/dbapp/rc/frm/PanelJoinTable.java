@@ -23,10 +23,10 @@ import java.util.Map;
  */
 public class PanelJoinTable extends javax.swing.JPanel implements ChosenTable.ChosenRowListener {
 
+  @SuppressWarnings("unused")
   private static final Logger LOG = LoggerFactory.getLogger(PanelJoinTable.class);
 
   private final TDTableModel model;
-  private final ForeignKey fk;
   private final boolean masterTable;
 
   /** Creates new form PanelJoinTable
@@ -37,7 +37,6 @@ public class PanelJoinTable extends javax.swing.JPanel implements ChosenTable.Ch
     initComponents();
     ChosenTable.getInstance().addRowListener(this);
     this.masterTable = masterTable;
-    this.fk = fk;
     model = new TDTableModel(masterTable ? fk.getMasterTable() : fk.getSlaveTable(), fk);
     jTable1.setModel(model);
   }
@@ -110,7 +109,7 @@ public class PanelJoinTable extends javax.swing.JPanel implements ChosenTable.Ch
       this.fk = fk;
       int i = 0;
       for (Column col : td.getColumns()) {
-        if (fk.getSlaveColumn().equals(col.getName())) { skipColumn = i; }
+        if (fk.getSlaveColumn().equals(col)) { skipColumn = i; }
         i++;
       }
     }

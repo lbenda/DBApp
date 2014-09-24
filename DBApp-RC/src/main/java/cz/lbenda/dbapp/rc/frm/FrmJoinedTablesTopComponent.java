@@ -33,9 +33,9 @@ import org.openide.windows.TopComponent;
         preferredID = "FrmJoinedTablesTopComponent"
 )
 @Messages({
-  "CTL_FrmJoinedTablesAction=FrmJoinedTables",
+  "CTL_FrmJoinedTablesAction=Spojené tabulky",
   "CTL_FrmJoinedTablesTopComponent=Spojené tabulky",
-  "HINT_FrmJoinedTablesTopComponent=This is a FrmJoinedTables window"
+  "HINT_FrmJoinedTablesTopComponent=Tabulky napojené na právě vybranou tabulku - cizím klíčem."
 })
 public final class FrmJoinedTablesTopComponent extends TopComponent implements ChosenTable.ChosenTableListener {
 

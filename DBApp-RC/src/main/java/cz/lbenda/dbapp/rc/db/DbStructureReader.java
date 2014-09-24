@@ -5,11 +5,12 @@
  */
 package cz.lbenda.dbapp.rc.db;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+// import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.mchange.v2.c3p0.DataSources;
 import cz.lbenda.dbapp.rc.SessionConfiguration;
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.sql.Connection;
@@ -25,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
 
 /** Class for reading data structure from JDBC
  * @author Lukas Benda <lbenda at lbenda.cz>
@@ -43,11 +46,11 @@ public class DbStructureReader {
           = new HashMap<>();
   private final List<DbStructureReaderSessionChangeListener> listeners = new ArrayList<>();
 
-  private ComboPooledDataSource dataSource = null;
+  private DataSource dataSource = null;
 
-  private static final DbStructureReader instance = new DbStructureReader();
+  private static DbStructureReader instance = new DbStructureReader();
 
-  public static final DbStructureReader getInstance() { return instance; }
+  public static DbStructureReader getInstance() { return instance; }
 
 
   public final void setSessionConfiguration(SessionConfiguration sessionConfiguration) {
@@ -57,79 +60,37 @@ public class DbStructureReader {
       l.sessionConfigurationChanged(this, sessionConfiguration);
     }
   }
+  @SuppressWarnings("unused")
   public final SessionConfiguration getSessionConfiguration() { return sessionConfiguration; }
+
+  /** Inheritance protection and protection before custome instance is created */
+  private DbStructureReader() {}
 
   /** Inform if the reader is prepared for read data - the session configuration exist */
   public final boolean isPrepared() { return sessionConfiguration != null; }
 
-  /** This method load to the cache table of keys */
-  private final void loadTableOfKeys() {
-  }
-
-  private void createDataSource() {
+  private void createDataSource() throws IllegalStateException {
+    if (!isPrepared()) {
+      throw new IllegalStateException("The DBStructureReader isn't yet prepared for create dataSource. Please check isPrepared() properties");
+    }
     try {
-      if (dataSource != null) { dataSource.close(); }
-      dataSource = new ComboPooledDataSource();
-      dataSource.setDriverClass(sessionConfiguration.getJdbcConfiguration().getDriverClass());
-      dataSource.setJdbcUrl(sessionConfiguration.getJdbcConfiguration().getUrl());
-      dataSource.setUser(sessionConfiguration.getJdbcConfiguration().getUsername());
-      dataSource.setPassword(sessionConfiguration.getJdbcConfiguration().getPassword());
-      dataSource.setMinPoolSize(1);
-      dataSource.setMaxPoolSize(2);
-      dataSource.setMaxStatements(2);
+      if (dataSource != null) { DataSources.destroy(dataSource); }
+      dataSource = DataSources.pooledDataSource(new DBAppDataSource(sessionConfiguration));
     } catch (Exception e) {
-      LOG.error("Connection can't be create", e);
-      throw new RuntimeException("Connection can't be create", e);
+      LOG.error("DataSource can't be create", e);
+      throw new RuntimeException("DataSource can't be create", e);
     }
   }
 
-  /** Inheritance protection */
-  private DbStructureReader() {};
-
-  public final Connection getConnection() throws SQLException {
+  public Connection getConnection() {
     if (dataSource == null) { createDataSource(); }
-    for (String lib : sessionConfiguration.getLibrariesPaths()) {
-      try {
-        addFileToClassLoader(lib);
-      } catch (IOException e) {
-        LOG.error("Problem with read library " + lib, e);
-        throw new RuntimeException("Problem with read library " + lib, e);
-      }
-      /*
-      try {
-        URL u = new URL("jar:file:/" + lib);
-        JarURLConnection uc = (JarURLConnection) u.openConnection();
-        uc.
-      } catch (IOException e) {
-        LOG.error("Problem with read library " + lib, e);
-        throw new RuntimeException("Problem with read library " + lib, e);
-      }
-      */
-    }
-    return dataSource.getConnection();
-  }
-
-  public static void addFileToClassLoader(String s) throws IOException {
-    File f = new File(s);
-    addFileToClassLoader(f);
-  }
-
-  public static void addFileToClassLoader(File f) throws IOException {
-    addUrlToClassLoader(f.toURI().toURL());
-  }
-
-  public static void addUrlToClassLoader(URL u) throws IOException {
-    URLClassLoader sysloader = (URLClassLoader) ClassLoader.getSystemClassLoader();
-    Class sysclass = URLClassLoader.class;
     try {
-      Method method = sysclass.getDeclaredMethod("addURL", URL.class);
-      method.setAccessible(true);
-      method.invoke(sysloader, new Object[]{u});
-    } catch (Throwable t) {
-      t.printStackTrace();
-      throw new IOException("Error, could not add URL to system classloader");
-    }//end try catch
-  }//end method
+      return dataSource.getConnection();
+    } catch (SQLException e) {
+      LOG.error("Filed to get connection", e);
+      throw new RuntimeException(e);
+    }
+  }
 
   /** Method read data from table to List, where every record is create as array of objects
    * @param td table which is readed
@@ -157,6 +118,7 @@ public class DbStructureReader {
     }
   }
 
+  @SuppressWarnings("unused")
   public final TableDescription getTableDescription(String tableName) {
     for (TableDescription td : getStructure()) {
       if (tableName.equals(td.getName())) { return td; }
@@ -333,8 +295,8 @@ public class DbStructureReader {
     }
     String sql = String.format("DELETE FROM \"%s\".\"%s\" WHERE %s", td.getSchema(), td.getName(), where);
     LOG.debug(sql);
-    try (Connection conn = getConnection();) {
-      try (PreparedStatement ps = conn.prepareCall(sql);) {
+    try (Connection conn = getConnection()) {
+      try (PreparedStatement ps = conn.prepareCall(sql)) {
         int i = 1;
         for (Column col : pks) {
           ps.setObject(i, rowValues.get(col));
@@ -433,6 +395,7 @@ public class DbStructureReader {
     this.listeners.add(l);
   }
 
+  @SuppressWarnings("unused")
   public void removeDbStructureReaderSessionChangeListener(DbStructureReaderSessionChangeListener l) {
     this.listeners.remove(l);
   }
@@ -453,13 +416,13 @@ public class DbStructureReader {
 
   public static class Column {
     public enum ColumnType {
-      STRING, INTEGER, DATE, DATE_TIME, OBJECT ;
+      STRING, INTEGER, DATE, DATE_TIME, OBJECT
     }
 
     private final String name; public final String getName() { return name; }
-    private final int size; public final int getSize() { return size; }
+    private final int size; @SuppressWarnings("unused") public final int getSize() { return size; }
     private final ColumnType dataType; public final ColumnType getDataType() { return dataType; }
-    private final boolean nullable; public final boolean isNullable() { return nullable; }
+    private final boolean nullable; @SuppressWarnings("unused") public final boolean isNullable() { return nullable; }
     private int position; public final int getPosition() { return position; } public final void setPosition(int position) { this.position = position; }
     private boolean pk; public final boolean isPK() { return pk; } public final void setPK(boolean pk) { this.pk = pk; }
     private boolean autoincrement; public final boolean isAutoincrement() { return autoincrement; }
@@ -485,6 +448,37 @@ public class DbStructureReader {
 
     public String getColumnString(Map<Column, Object> values) {
       return String.valueOf(values.get(this)); // TODO inteligent convertor
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof Column)) return false;
+
+      Column column = (Column) o;
+
+      if (autoincrement != column.autoincrement) return false;
+      if (generated != column.generated) return false;
+      if (nullable != column.nullable) return false;
+      if (pk != column.pk) return false;
+      if (position != column.position) return false;
+      if (size != column.size) return false;
+      if (dataType != column.dataType) return false;
+      return !(name != null ? !name.equals(column.name) : column.name != null);
+
+    }
+
+    @Override
+    public int hashCode() {
+      int result = name != null ? name.hashCode() : 0;
+      result = 31 * result + size;
+      result = 31 * result + (dataType != null ? dataType.hashCode() : 0);
+      result = 31 * result + (nullable ? 1 : 0);
+      result = 31 * result + position;
+      result = 31 * result + (pk ? 1 : 0);
+      result = 31 * result + (autoincrement ? 1 : 0);
+      result = 31 * result + (generated ? 1 : 0);
+      return result;
     }
 
     @Override

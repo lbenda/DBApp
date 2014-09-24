@@ -12,15 +12,21 @@ import cz.lbenda.dbapp.rc.db.DbStructureReader.Column;
 import cz.lbenda.dbapp.rc.db.TableDescription;
 import cz.lbenda.dbapp.rc.frm.ChosenTable.ChosenTableListener;
 import cz.lbenda.dbapp.rc.frm.ChosenTable.RowUpdateListener;
-import org.netbeans.api.settings.ConvertAsProperties;
-import org.openide.awt.ActionID;
-import org.openide.awt.ActionReference;
-import org.openide.util.NbBundle.Messages;
-import org.openide.windows.TopComponent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.swing.*;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Rectangle;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import javax.swing.DefaultCellEditor;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelEvent;
@@ -29,9 +35,13 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableColumn;
-import java.awt.*;
-import java.util.*;
-import java.util.List;
+import org.netbeans.api.settings.ConvertAsProperties;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionReference;
+import org.openide.util.NbBundle.Messages;
+import org.openide.windows.TopComponent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Top component which displays something.
@@ -53,11 +63,9 @@ import java.util.List;
         preferredID = "FrmTableGridTopComponent"
 )
 @Messages({
-  "CTL_FrmTableGridAction=FrmTableGrid",
-  // "CTL_FrmTableGridTopComponent",
-  // "HINT_FrmTableGridTopComponent"
+  "CTL_FrmTableGridAction=Tabulka",
   "CTL_FrmTableGridTopComponent=Tabulka",
-  "HINT_FrmTableGridTopComponent=This is a FrmTableGrid window"
+  "HINT_FrmTableGridTopComponent=Zobrazení dat vybrade DB tabulky"
 })
 public final class FrmTableGridTopComponent extends TopComponent implements ChosenTableListener {
 
@@ -485,20 +493,20 @@ public final class FrmTableGridTopComponent extends TopComponent implements Chos
     @Override
     public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
       Object[] row = rows.get(rowIndex);
+      Object oldValue = null;
       if (!newRows.contains(row)) { // The new rows haven't any old value
         Map<Integer, Object> rowMap = oldRows.get(rowIndex);
         if (rowMap == null) {
           rowMap = new HashMap<>(td.getColumns().size());
           oldRows.put(rowIndex, rowMap);
         }
-        if (!rowMap.containsKey(columnIndex)) { // Only first value is add to old value row (value from db)
+        if (!rowMap.containsKey(columnIndex)) { // Only first value of column is add to old value row (value from db)
           rowMap.put(columnIndex, row[columnIndex]);
         }
+        oldValue = oldRows.get(rowIndex).get(columnIndex);
       }
       this.rows.get(rowIndex)[columnIndex] = aValue;
-
-      Object oldValue = oldRows.get(rowIndex).get(columnIndex);
-      if (AbstractHelper.nullEquals(oldValue, aValue)) {
+      if (!newRows.contains(row) && AbstractHelper.nullEquals(oldValue, aValue)) {
         oldRows.get(rowIndex).remove(columnIndex);
         if (oldRows.get(rowIndex).isEmpty()) { oldRows.remove(rowIndex); }
       }

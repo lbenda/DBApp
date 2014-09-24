@@ -36,9 +36,9 @@ import org.openide.windows.TopComponent;
         preferredID = "FrmDbSessionChooserTopComponent"
 )
 @Messages({
-  "CTL_FrmDbSessionChooserAction=FrmDbSessionChooser",
-  "CTL_FrmDbSessionChooserTopComponent=FrmDbSessionChooser Window",
-  "HINT_FrmDbSessionChooserTopComponent=This is a FrmDbSessionChooser window"
+  "CTL_FrmDbSessionChooserAction=Výběr sezení",
+  "CTL_FrmDbSessionChooserTopComponent=Výběr sezení",
+  "HINT_FrmDbSessionChooserTopComponent=Výběr sezení - konfigurace přístupu k databízi"
 })
 public final class FrmDbSessionChooserTopComponent extends TopComponent {
 

@@ -54,7 +54,7 @@ public class JDBCConfiguration {
 
   public final Element storeToElement() {
     Element jdbc = new Element("jdbc");
-    jdbc.addContent(new Element("driverClasss").setText(driverClass));
+    jdbc.addContent(new Element("driverClass").setText(driverClass));
     jdbc.addContent(new Element("user").setText(getUsername()));
     jdbc.addContent(new Element("password").setText(getPassword()));
     jdbc.addContent(new Element("url").setText(getUrl()));
