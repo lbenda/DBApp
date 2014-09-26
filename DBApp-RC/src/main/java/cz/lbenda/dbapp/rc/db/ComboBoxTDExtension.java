@@ -15,22 +15,20 @@
  */
 package cz.lbenda.dbapp.rc.db;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import org.jdom.Element;
+import org.jdom2.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** When the table is show then on defined column is select box
  * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/16/14.
  */
-public class SelectBoxTDExtension implements TableDescriptionExtension {
+public class ComboBoxTDExtension implements TableDescriptionExtension {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SelectBoxTDExtension.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ComboBoxTDExtension.class);
 
   private final TableDescription td; public final TableDescription getTableDescription() { return td; }
   /** Name of column which is substitued by select box */
@@ -42,40 +40,56 @@ public class SelectBoxTDExtension implements TableDescriptionExtension {
   private String columnChoice; public final String getcColumnChoice () { return columnChoice; } public final void setColumnChoice(final String columnChoice) { this.columnChoice = columnChoice; }
   private String columnTooltip; public final String getColumnTooltip() { return columnTooltip; } public final void setColumnTooltip(final String columnTooltip) { this.columnTooltip = columnTooltip; }
 
-  private final List<Object> values = new ArrayList<>(); public final List<Object> getValues() { return values; }
-  private final List<String> choices = new ArrayList<>(); public final List<String> getChoices() { return choices; }
-  private final List<String> tooltips = new ArrayList<>(); public final List<String> getTooltips() { return tooltips; }
+  /** Flag which inform if combo box have already downloaded data */
+  private boolean initialized = false;
 
-  public SelectBoxTDExtension(TableDescription td, String columnName, String tableOfKeySQL) {
+  /** List of items which will be show in combo box */
+  private final List<ComboBoxItem> items = new ArrayList<>();
+  public synchronized final List<ComboBoxItem> getItems() {
+    if (!initialized) {
+      try {
+        loadSelectBoxData();
+      } catch (SQLException e) {
+        LOG.error("Loading data of combo box failed: " + this, e);
+        throw new RuntimeException("Loading data of combo box failed: " + this, e);
+      }
+    }
+    return items;
+  }
+
+  public ComboBoxTDExtension(TableDescription td, String columnName, String tableOfKeySQL) {
     this.td = td;
     this.columnName = columnName;
     this.tableOfKeySQL = tableOfKeySQL;
   }
 
   /** Return the extended column */
-  public DbStructureReader.Column getColumn() {
+  public Column getColumn() {
     return this.td.getColumn(this.columnName);
   }
 
+  @Override
+  public final List<Column> getColumns() {
+    return Collections.singletonList(getColumn());
+  }
+
   /** This method read data of selectbox
-   * @param connection connection to database from which is data read (the connection isn't closed).
    * @throws java.sql.SQLException exception when data from conneciton is readed
    */
-  public final void loadSelectBoxData(final Connection connection) throws SQLException {
+  public synchronized final void loadSelectBoxData() throws SQLException {
+    initialized = true;
     LOG.trace("load data to select box");
-    try (Statement stm = connection.createStatement()) {
-      try (ResultSet rs = stm.executeQuery(tableOfKeySQL)) {
-        values.clear(); choices.clear(); tooltips.clear();
-        while (rs.next()) {
-          final Object value = columnValue == null ? rs.getObject(1) : rs.getObject(columnValue);
-          final String choice = columnChoice == null ? rs.getString(2) : rs.getString(columnChoice);
-          final String tooltip = columnTooltip == null ? rs.getString(3) : rs.getString(columnTooltip);
-
-          values.add(value);
-          choices.add(choice);
-          tooltips.add(tooltip);
-        }
-      }
+    final List<Object[]> rows;
+    String sql = td.getSessionConfiguration().getTableOfKeysSQL().get(this.tableOfKeySQL);
+    if (columnValue == null || columnChoice == null || columnTooltip == null) {
+      LOG.info("The name of column isn't defined, so the position of column 1, 2 and 3 is used.");
+      rows = td.getSessionConfiguration().getReader().getSQLRows(sql, 1, 2, 3);
+    } else {
+      rows = td.getSessionConfiguration().getReader().getSQLRows(sql, columnValue, columnChoice, columnTooltip);
+    }
+    items.clear();
+    for (Object[] row : rows) {
+      items.add(new ComboBoxItem(row[0], (String) row[1], (String) row[2]));
     }
   }
 
@@ -85,8 +99,8 @@ public class SelectBoxTDExtension implements TableDescriptionExtension {
       case UPDATE :
       case DELETE :
       case INSERT :
-        try (Connection connection = DbStructureReader.getInstance().getConnection()) {
-          loadSelectBoxData(connection);
+        try {
+          loadSelectBoxData();
         } catch (SQLException e) {
           LOG.error(String.format("The selctbox extension '%s.%s.%s' wasn't reloaded.",
               td.getSchema(), td.getName(), this.columnName), e);
@@ -101,5 +115,30 @@ public class SelectBoxTDExtension implements TableDescriptionExtension {
         .setAttribute("column_value", columnValue).setAttribute("column_choice", columnChoice)
         .setAttribute("column_tooltip", columnTooltip);
     return res;
+  }
+
+  @Override
+  public String toString() {
+    return "ComboBox: " + columnName + ", " + tableOfKeySQL;
+  }
+
+  public static class ComboBoxItem {
+
+    public static final ComboBoxItem EMPTY = new ComboBoxItem(null, "", "");
+
+    private final Object value; public final Object getValue() { return value; }
+    private final String choice; public final String getChoice() { return choice; }
+    private final String tooltip; public final String getTooltip() { return tooltip; }
+
+    public ComboBoxItem(Object value, String choice, String tooltip) {
+      this.value = value;
+      this.choice = choice;
+      this.tooltip = tooltip;
+    }
+
+    @Override
+    public String toString() {
+      return choice;
+    }
   }
 }

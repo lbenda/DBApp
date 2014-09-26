@@ -15,30 +15,37 @@
  */
 package cz.lbenda.dbapp.rc;
 
+import cz.lbenda.dbapp.rc.db.DbStructureReader;
 import cz.lbenda.dbapp.rc.db.JDBCConfiguration;
-import cz.lbenda.dbapp.rc.db.SelectBoxTDExtension;
 import cz.lbenda.dbapp.rc.db.TableDescription;
 import cz.lbenda.dbapp.rc.db.TableDescriptionExtension;
 import cz.lbenda.dbapp.rc.frm.config.DBConfigurationOptionsPanelController;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.jdom.Document;
-import org.jdom.Element;
-import org.jdom.JDOMException;
-import org.jdom.input.SAXBuilder;
-import org.jdom.output.Format;
-import org.jdom.output.XMLOutputter;
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.JDOMException;
+import org.jdom2.input.SAXBuilder;
+import org.jdom2.output.Format;
+import org.jdom2.output.XMLOutputter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Object of this class define configuration of one session
  */
 public class SessionConfiguration {
+
+  public enum ExtendedConfigurationType {
+    NONE, DATABASE, FILE, ;
+  }
 
   private static final Logger LOG = LoggerFactory.getLogger(SessionConfiguration.class);
 
@@ -49,10 +56,10 @@ public class SessionConfiguration {
 
   /** This method reload configuration which is stored in ntbeans pref in module DBConfiguraitonPanl */
   public static void reloadConfiguration() {
-    configurations.clear();
-    configurationNotReadedYet = false;
+    SessionConfiguration.configurations.clear();
+    SessionConfiguration.configurationNotReadedYet = false;
     String config = DBConfigurationOptionsPanelController.getConfigurationStr();
-    if (config != null) { loadFromString(config); }
+    if (config != null) { SessionConfiguration.loadFromString(config); }
   }
 
   /** This method save configuration which is stored in netbeans pref in module DBConfigurationPanel */
@@ -117,12 +124,11 @@ public class SessionConfiguration {
     }
   }
 
-  @SuppressWarnings("unchecked")
   public static void loadFromDocument(final Document document) {
     configurations.clear();
     Element root = document.getRootElement();
     Element sessions = root.getChild("sessions");
-    for (Element session : (List<Element>) sessions.getChildren("session")) {
+    for (Element session : sessions.getChildren("session")) {
       LOG.trace("loadFromDocument - session");
       SessionConfiguration sc = new SessionConfiguration();
       configurations.add(sc);
@@ -160,14 +166,72 @@ public class SessionConfiguration {
   /** Map of table of keys. Every table of key have name as key and SQL which must have defined string. */
   private final Map<String, String> tableOfKeysSQL = new HashMap<>(); public final Map<String, String> getTableOfKeysSQL() { return tableOfKeysSQL; }
   /** Map which contains description rules for tables */
-  private final List<TableDescription> extendedTD = new ArrayList<>(); public final List<TableDescription> getExtendedTD() { return extendedTD; }
+  private final List<TableDescription> tableDescriptions = new ArrayList<>(); public final List<TableDescription> getTableDescriptions() { return tableDescriptions; }
   /** List with path to file with libraries for JDBC driver load */
   private final List<String> librariesPaths = new ArrayList<>(); public final List<String> getLibrariesPaths() { return librariesPaths; }
+  /** Type of extended configuration */
+  private ExtendedConfigurationType extendedConfigurationType = ExtendedConfigurationType.NONE; public final ExtendedConfigurationType getExtendedConfigurationType() { return extendedConfigurationType; }
+  /** Path to configuration where is the found extended */
+  private String extendedConfigurationPath; public final String getExtendedConfigurationPath() { return this.extendedConfigurationPath; }
+  /** Showed schemas */
+  private final Map<String, List<String>> shownSchemas = new HashMap<>();
+  /** Instance of DB reader for this session */
+  private DbStructureReader reader; public final DbStructureReader getReader() { return reader; }
+
+  /** Table description map */
+  private final Map<String, Map<String, Map<String, TableDescription>>> tableDescriptionsMap
+      = new HashMap<>();
+
+  public final void setExtendedConfigurationType(ExtendedConfigurationType extendedConfigurationType) {
+    this.extendedConfigurationType = extendedConfigurationType;
+  }
+
+  public final void setExtendedConfigurationPath(String extendedConfigurationPath) {
+    if (!AbstractHelper.nullEquals(extendedConfigurationPath, this.extendedConfigurationPath)) {
+      this.extendedConfigurationPath = extendedConfigurationPath;
+      loadExtendedConfiguration();
+    }
+  }
+
+  /** Check if table will be show to user
+   * @param td table description
+   * @return true if table is shown
+   */
+  public final boolean isShowTable(final TableDescription td) {
+    if (shownSchemas.isEmpty()) { return true; }
+    if (!shownSchemas.containsKey(td.getCatalog())) { return false; }
+    return shownSchemas.get(td.getCatalog()).contains(td.getSchema());
+  }
+
+  /** Inform if the catalog will be show.
+   * @param catalog catalog which is show
+   * @return catalog is show or not
+   */
+  public final boolean isShowCatalog(final String catalog) {
+    if (shownSchemas.isEmpty()) { return true; }
+    return shownSchemas.containsKey(catalog) && shownSchemas.size() > 1;
+  }
+
+  /** Inform if the catalog will be show.
+   * @param catalog catalog which is show
+   * @param schema schema which is show
+   * @return catalog is show or not
+   */
+  public final boolean isShowSchema(final String catalog, final String schema) {
+    if (shownSchemas.isEmpty()) { return true; }
+    if (!shownSchemas.containsKey(catalog)) { return false; }
+    return shownSchemas.get(catalog).contains(schema) && shownSchemas.get(catalog).size() > 1;
+  }
 
   public final Element storeToElement() {
     Element ses = new Element("session");
     ses.setAttribute("id", getId());
     if (jdbcConfiguration != null) { ses.addContent(jdbcConfiguration.storeToElement()); }
+    Element ed = new Element("extendedDescription");
+    ed.setAttribute("type", this.getExtendedConfigurationType().name());
+    ed.setText(this.getExtendedConfigurationPath());
+    ses.addContent(ed);
+    /*
     if (!tableOfKeysSQL.isEmpty()) {
       Element tok = new Element("tableOfKeySQLs");
       ses.addContent(tok);
@@ -175,6 +239,8 @@ public class SessionConfiguration {
         tok.addContent(new Element("tableOfKeySQL").setAttribute("id", entry.getKey()).setText(entry.getValue()));
       }
     }
+    */
+    /*
     if (!extendedTD.isEmpty()) {
       Element exts = new Element("tableDescriptionExtensions");
       ses.addContent(exts);
@@ -187,6 +253,7 @@ public class SessionConfiguration {
         }
       }
     }
+    */
     if (!librariesPaths.isEmpty()) {
       Element libs = new Element("libraries");
       for (String path : getLibrariesPaths()) {
@@ -208,61 +275,80 @@ public class SessionConfiguration {
   private void fromElement(final Element element) {
     setId(element.getAttributeValue("id"));
     jdbcConfigurationFromElement(element.getChild("jdbc"));
-    tableOfKeysSQLFromElement(element.getChild("tableOfKeySQLs"));
-    tableDescriptionExtensionsFromElement(element.getChild("tableDescriptionExtensions"));
+    // tableOfKeysSQLFromElement(element.getChild("tableOfKeySQLs"));
+    Element ed = element.getChild("extendedDescription");
+    if (ed != null) {
+      setExtendedConfigurationType(ExtendedConfigurationType.valueOf(ed.getAttributeValue("type")));
+      setExtendedConfigurationPath(ed.getText());
+    }
     Element e = element.getChild("libraries");
     this.librariesPaths.clear();
     if (e != null) {
-      for (Element lib : (List<Element>) e.getChildren("library")) {
+      for (Element lib : e.getChildren("library")) {
         this.librariesPaths.add(lib.getText());
       }
     }
+    loadExtendedConfiguration();
   }
 
-  @SuppressWarnings("unchecked")
+  private void loadExtendedConfiguration() {
+    switch (getExtendedConfigurationType()) {
+      case FILE: loadExtendedConfigurationFromFile(); break;
+      case DATABASE: // TODO implement
+    }
+  }
+
   private void tableOfKeysSQLFromElement(final Element element) {
     LOG.trace("load table of keys sql");
     if (element == null) { return; }
     tableOfKeysSQL.clear();
-    for (Element tableOfKey : (List<Element>) element.getChildren("tableOfKeySQL")) {
+    for (Element tableOfKey : element.getChildren("tableOfKeySQL")) {
       this.tableOfKeysSQL.put(tableOfKey.getAttributeValue("id"), tableOfKey.getText());
     }
   }
 
-  private TableDescription getOrCreateExtendedTableDescription(String catalog, String schema, String table) {
-    for (TableDescription td : extendedTD) {
+  public final TableDescription getOrCreateTableDescription(String catalog, String schema, String table) {
+    for (TableDescription td : getTableDescriptions()) {
       if (td.getCatalog().equals(catalog) && td.getSchema().equals(schema) && td.getName().equals(table)) {
         return td;
       }
     }
     TableDescription td = new TableDescription(catalog, schema, null, table);
-    this.extendedTD.add(td);
+    td.setSessionConfiguration(this);
+    getTableDescriptions().add(td);
+    Collections.sort(getTableDescriptions());
+
+    Map<String, Map<String, TableDescription>> catgMap = tableDescriptionsMap.get(td.getCatalog());
+    if (catgMap == null) {
+      catgMap = new HashMap<>();
+      tableDescriptionsMap.put(td.getCatalog(), catgMap);
+    }
+    Map<String, TableDescription> schMap = catgMap.get(td.getSchema());
+    if (schMap == null) {
+      schMap = new HashMap<>();
+      catgMap.put(td.getSchema(), schMap);
+    }
+    schMap.put(td.getName(), td);
+
     return td;
   }
 
-  @SuppressWarnings("unchecked")
   private void tableDescriptionExtensionsFromElement(final Element element) {
-    LOG.trace("load table dsc. extension");
-    if (element == null) { return; }
-    for (Element tdExtension : (List<Element>) element.getChildren("tableDescriptionExtension")) {
-      String catalog = tdExtension.getAttributeValue("catalog");
-      String schema = tdExtension.getAttributeValue("schema");
-      String table = tdExtension.getAttributeValue("table");
-      TableDescription td = getOrCreateExtendedTableDescription(catalog, schema, table);
+    TableDescriptionExtension.XMLReaderWriterHelper.loadExtensions(this, element);
+  }
 
-      for (Element select : (List<Element>) element.getChildren("selectBox")) {
-        SelectBoxTDExtension sb = new SelectBoxTDExtension(td, select.getAttributeValue("column"),
-            select.getAttributeValue("tableOfKeySQL"));
-        sb.setColumnValue(select.getAttributeValue("column_value"));
-        sb.setColumnChoice(select.getAttributeValue("column_choice"));
-        sb.setColumnTooltip(select.getAttributeValue("column_tooltip"));
-        for (Element reloadOn : (List<Element>) select.getChildren("reloadOnd")) {
-          TableDescription td1 = getOrCreateExtendedTableDescription(reloadOn.getAttributeValue("catalog"),
-              reloadOn.getAttributeValue("schema"), reloadOn.getAttributeValue("table"));
-          td1.getReloadableExtension().add(sb);
-        }
-        td.getExtensions().add(sb);
+  /** Load schemas which will be showed */
+  private void loadSchemas(final Element element) {
+    shownSchemas.clear();
+    for (Element sch : element.getChildren("schema")) {
+      String catalog = sch.getAttributeValue("catalog");
+      String schema = sch.getAttributeValue("schema");
+      List<String> list = shownSchemas.get(catalog);
+      if (list == null) {
+        list = new ArrayList<>();
+        shownSchemas.put(catalog, list);
       }
+      list.add(schema);
     }
   }
 
@@ -275,6 +361,35 @@ public class SessionConfiguration {
       }
       this.id = id;
     }
+  }
+
+  private void loadExtendedConfigurationFromFile() {
+    SAXBuilder builder = new SAXBuilder();
+    try {
+      File file = new File(extendedConfigurationPath);
+      Document document = builder.build(new FileReader(file));
+      Element root = document.getRootElement();
+      loadSchemas(root.getChild("schemas"));
+      tableOfKeysSQLFromElement(root.getChild("tableOfKeySQLs"));
+      tableDescriptionExtensionsFromElement(root.getChild("tableDescriptionExtensions"));
+    } catch (JDOMException e) {
+      LOG.error("The file isn't parsable: " + extendedConfigurationPath, e);
+      throw new RuntimeException("The file isn't parsable: " + extendedConfigurationPath, e);
+    } catch (IOException e) {
+      LOG.error("The file can't be opend as StringReader: " + extendedConfigurationPath, e);
+      throw new RuntimeException("The file cant be opend as StringReader: " + extendedConfigurationPath, e);
+    }
+  }
+
+  public final TableDescription getTableDescription(String catalog, String schema, String table) {
+    return tableDescriptionsMap.get(catalog).get(schema).get(table);
+  }
+
+  public void reloadStructure() {
+    loadExtendedConfiguration();
+    reader = new DbStructureReader();
+    reader.setSessionConfiguration(this);
+    reader.generateStructure();
   }
 
   @Override

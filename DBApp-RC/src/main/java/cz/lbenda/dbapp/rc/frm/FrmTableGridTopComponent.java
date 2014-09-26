@@ -1,14 +1,23 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright 2014 Lukas Benda <lbenda at lbenda.cz>.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package cz.lbenda.dbapp.rc.frm;
 
 import com.toedter.calendar.JDateChooserCellEditor;
 import cz.lbenda.dbapp.rc.AbstractHelper;
-import cz.lbenda.dbapp.rc.db.DbStructureReader;
-import cz.lbenda.dbapp.rc.db.DbStructureReader.Column;
+import cz.lbenda.dbapp.rc.db.Column;
 import cz.lbenda.dbapp.rc.db.TableDescription;
 import cz.lbenda.dbapp.rc.frm.ChosenTable.ChosenTableListener;
 import cz.lbenda.dbapp.rc.frm.ChosenTable.RowUpdateListener;
@@ -201,6 +210,7 @@ public final class FrmTableGridTopComponent extends TopComponent implements Chos
     public void tableChanged(final TableModelEvent e) {
       if (TableModelEvent.INSERT == e.getType()) {
         SwingUtilities.invokeLater(new Runnable() {
+          @Override
           public void run() {
             jTable1.setRowSelectionInterval(e.getFirstRow(), e.getLastRow());
             for (Column col : td.getColumns()) {
@@ -309,7 +319,7 @@ public final class FrmTableGridTopComponent extends TopComponent implements Chos
 
     private RSTableModel(TableDescription td) {
       this.td = td;
-      rows.addAll(DbStructureReader.getInstance().readTableDate(td, -1, 0));
+      rows.addAll(td.getSessionConfiguration().getReader().readTableDate(td, -1, 0));
     }
 
     @Override
@@ -337,7 +347,7 @@ public final class FrmTableGridTopComponent extends TopComponent implements Chos
             if (!skip) { break; }
             else { i++; }
           }
-          Object row [] = rows.get(i);
+          Object row[] = rows.get(i);
           for (Column col : td.getColumns()) { row[col.getPosition()] = newValues.get(col); }
           this.fireTableRowsUpdated(i, i);
         }
@@ -372,21 +382,21 @@ public final class FrmTableGridTopComponent extends TopComponent implements Chos
         for (Map.Entry<Integer, Object> entry : rowM.getValue().entrySet()) {
           oldRow.put(td.getColumns().get(entry.getKey()), entry.getValue());
         }
-        DbStructureReader.getInstance().updateRow(td, oldRow, newRow);
+        td.getSessionConfiguration().getReader().updateRow(td, oldRow, newRow);
       }
       oldRows.clear();
 
       for (Object[] row : newRows) {
         Map<Column, Object> newRow = new HashMap<>();
         for (Column col : td.getColumns()) { newRow.put(col, row[col.getPosition()]); }
-        DbStructureReader.getInstance().insertRow(td, newRow);
+        td.getSessionConfiguration().getReader().insertRow(td, newRow);
       }
       newRows.clear();
 
       for (Object[] row : deletedRows.values()) {
         Map<Column, Object> delRow = new HashMap<>();
         for (Column col : td.getColumns()) { delRow.put(col, row[col.getPosition()]); }
-        DbStructureReader.getInstance().deleteRow(td, delRow);
+        td.getSessionConfiguration().getReader().deleteRow(td, delRow);
       }
       deletedRows.clear();
 
@@ -398,18 +408,18 @@ public final class FrmTableGridTopComponent extends TopComponent implements Chos
      * as nothing was deleted.
      */
     public void removeSelected() {
-      List<Integer> alreadyDeletdRows = new ArrayList(deletedRows.keySet());
+      List<Integer> alreadyDeletdRows = new ArrayList<>(deletedRows.keySet());
       Collections.sort(alreadyDeletdRows);
 
       for (int selectedRow : jTable1.getSelectedRows()) {
         final int add;
         if (!alreadyDeletdRows.isEmpty()) {
           if (alreadyDeletdRows.contains(Integer.valueOf(selectedRow))) {
-            add = alreadyDeletdRows.indexOf(Integer.valueOf(selectedRow)) + 1;
+            add = alreadyDeletdRows.indexOf(selectedRow) + 1;
           } else {
-            alreadyDeletdRows.add(Integer.valueOf(selectedRow));
+            alreadyDeletdRows.add(selectedRow);
             Collections.sort(alreadyDeletdRows);
-            add = alreadyDeletdRows.indexOf(Integer.valueOf(selectedRow));
+            add = alreadyDeletdRows.indexOf(selectedRow);
             alreadyDeletdRows.remove(Integer.valueOf(selectedRow));
           }
         } else { add = 0; }

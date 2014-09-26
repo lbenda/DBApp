@@ -1,12 +1,21 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright 2014 Lukas Benda <lbenda at lbenda.cz>.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package cz.lbenda.dbapp.rc.frm;
 
 import cz.lbenda.dbapp.rc.SessionConfiguration;
-import cz.lbenda.dbapp.rc.db.DbStructureReader;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.DefaultListModel;
@@ -15,6 +24,9 @@ import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.util.NbBundle.Messages;
 import org.openide.windows.TopComponent;
+import org.openide.windows.WindowManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Top component which displays something.
@@ -40,7 +52,9 @@ import org.openide.windows.TopComponent;
   "CTL_FrmDbSessionChooserTopComponent=Výběr sezení",
   "HINT_FrmDbSessionChooserTopComponent=Výběr sezení - konfigurace přístupu k databízi"
 })
-public final class FrmDbSessionChooserTopComponent extends TopComponent {
+public final class FrmDbSessionChooserTopComponent extends TopComponent implements ChosenTable.ConfigurationUpdateListener {
+
+  private static final Logger LOG = LoggerFactory.getLogger(FrmDbSessionChooserTopComponent.class);
 
   public FrmDbSessionChooserTopComponent() {
     initComponents();
@@ -51,11 +65,22 @@ public final class FrmDbSessionChooserTopComponent extends TopComponent {
       @Override
       public void mousePressed(MouseEvent e) {
         if (e.getClickCount() == 2) {
-          SessionConfiguration sc = SessionConfiguration.getConfiguration(String.valueOf(listSessions.getSelectedValue()));
-          DbStructureReader.getInstance().setSessionConfiguration(sc);
+          chooseSession();
         }
       }
     });
+  }
+
+  /** Method which choose session which is selected as session which is used */
+  private void chooseSession() {
+    SessionConfiguration sc = SessionConfiguration.getConfiguration(String.valueOf(listSessions.getSelectedValue()));
+    sc.reloadStructure();
+    ChosenTable.getInstance().changeSessionConfiguration(sc);
+    TopComponent tc = WindowManager.getDefault().findTopComponent(FrmDbStructureTopComponent.class.getSimpleName());
+    if (tc != null) {
+      tc.requestActive();
+      tc.requestFocus();
+    }
   }
 
   /**
@@ -66,7 +91,7 @@ public final class FrmDbSessionChooserTopComponent extends TopComponent {
   private void initComponents() {
 
     jScrollPane1 = new javax.swing.JScrollPane();
-    listSessions = new javax.swing.JList();
+    listSessions = new javax.swing.JList<>();
 
     jScrollPane1.setViewportView(listSessions);
 
@@ -84,13 +109,17 @@ public final class FrmDbSessionChooserTopComponent extends TopComponent {
 
   // Variables declaration - do not modify//GEN-BEGIN:variables
   private javax.swing.JScrollPane jScrollPane1;
-  private javax.swing.JList listSessions;
+  private javax.swing.JList<String> listSessions;
+
+  private DefaultListModel<String> dlm;
+
   // End of variables declaration//GEN-END:variables
   @Override
   public void componentOpened() {
-    DefaultListModel dlm = new DefaultListModel();
-    for (String name : SessionConfiguration.getConfigurationIDs()) { dlm.addElement(name); }
+    ChosenTable.getInstance().addConfigurationUpdateListener(this);
+    dlm = new DefaultListModel<>();
     listSessions.setModel(dlm);
+    configurationChanged();
   }
 
   @Override
@@ -101,12 +130,18 @@ public final class FrmDbSessionChooserTopComponent extends TopComponent {
   void writeProperties(java.util.Properties p) {
     // better to version settings since initial version as advocated at
     // http://wiki.apidesign.org/wiki/PropertyFiles
-    p.setProperty("version", "1.0");
+    // p.setProperty("version", "1.0");
     // TODO store your settings
   }
 
   void readProperties(java.util.Properties p) {
-    String version = p.getProperty("version");
+    // String version = p.getProperty("version");
     // TODO read your settings according to their version
+  }
+
+  @Override
+  public void configurationChanged() {
+    dlm.clear();
+    for (String name : SessionConfiguration.getConfigurationIDs()) { dlm.addElement(name); }
   }
 }

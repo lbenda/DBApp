@@ -1,14 +1,23 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright 2014 Lukas Benda <lbenda at lbenda.cz>.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package cz.lbenda.dbapp.rc.frm;
 
-import cz.lbenda.dbapp.rc.db.DbStructureReader.Column;
+import cz.lbenda.dbapp.rc.SessionConfiguration;
+import cz.lbenda.dbapp.rc.db.Column;
 import cz.lbenda.dbapp.rc.db.TableDescription;
-
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -30,13 +39,23 @@ public final class ChosenTable {
     void rowUpdated(TableDescription td, Map<Column, Object> oldValues, Map<Column, Object> newValues);
   }
 
+  public interface ConfigurationUpdateListener {
+    void configurationChanged();
+  }
+
+  public interface SessionChangeListener {
+    void sessionConfigurationChanged(SessionConfiguration sc);
+  }
+
   private final static ChosenTable instance = new ChosenTable();
 
   private TableDescription tableDescription; public TableDescription getTableDescription() { return tableDescription; }
-    private Map<Column, Object>selectedRowValues; public Map<Column, Object> getSelectedRowValues() { return selectedRowValues; }
+  private Map<Column, Object>selectedRowValues; public Map<Column, Object> getSelectedRowValues() { return selectedRowValues; }
   public final Set<ChosenTableListener> tableListeners = new HashSet<>();
   public final Set<ChosenRowListener> rowListeners = new HashSet<>();
   public final Set<RowUpdateListener> rowUpdateListeners = new HashSet<>();
+  public final Set<ConfigurationUpdateListener> configurationUpdateListeners = new HashSet<>();
+  private final Set<SessionChangeListener> sessionChangeListeners = new HashSet<>();
 
   private ChosenTable() {}
 
@@ -65,10 +84,21 @@ public final class ChosenTable {
     }
   }
 
+  public void configurationUpdated() {
+    for (ConfigurationUpdateListener l : configurationUpdateListeners) {
+      l.configurationChanged();
+    }
+  }
+
+  public void changeSessionConfiguration(SessionConfiguration sc) {
+    for (SessionChangeListener l : sessionChangeListeners) {
+      l.sessionConfigurationChanged(sc);
+    }
+  }
+
   public void addTableListener(ChosenTableListener listener) {
     tableListeners.add(listener);
   }
-
   public void removeTableListener(ChosenTableListener listener) {
     tableListeners.remove(listener);
   }
@@ -76,7 +106,6 @@ public final class ChosenTable {
   public void addRowListener(ChosenRowListener listener) {
     rowListeners.add(listener);
   }
-
   public void removeRowListener(ChosenRowListener listener) {
     rowListeners.remove(listener);
   }
@@ -84,8 +113,13 @@ public final class ChosenTable {
   public void addRowUpdateListener(RowUpdateListener listener) {
     rowUpdateListeners.add(listener);
   }
-
   public void removeRowUpdateListener(RowUpdateListener listener) {
     rowUpdateListeners.remove(listener);
   }
+
+  public void addConfigurationUpdateListener(ConfigurationUpdateListener l) { configurationUpdateListeners.add(l); }
+  public void removeConfigurationUpdateListener(ConfigurationUpdateListener l) { configurationUpdateListeners.remove(l); }
+
+  public void addSessionChangeListener(SessionChangeListener l) { this.sessionChangeListeners.add(l); }
+  public void removeSessionChangeListener(SessionChangeListener l) { this.sessionChangeListeners.remove(l); }
 }

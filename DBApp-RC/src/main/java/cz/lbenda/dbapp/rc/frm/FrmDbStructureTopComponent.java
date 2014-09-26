@@ -1,17 +1,27 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright 2014 Lukas Benda <lbenda at lbenda.cz>.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package cz.lbenda.dbapp.rc.frm;
 
 import cz.lbenda.dbapp.rc.SessionConfiguration;
-import cz.lbenda.dbapp.rc.db.DbStructureReader;
-import cz.lbenda.dbapp.rc.db.DbStructureReader.DbStructureReaderSessionChangeListener;
 import cz.lbenda.dbapp.rc.db.TableDescription;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.HashMap;
+import java.util.Map;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
@@ -21,6 +31,8 @@ import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.util.NbBundle.Messages;
 import org.openide.windows.TopComponent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Top component which displays something.
@@ -46,14 +58,18 @@ import org.openide.windows.TopComponent;
   "CTL_FrmDbStructureTopComponent=Struktura",
   "HINT_FrmDbStructureTopComponent=Struktura databáze"
 })
-public final class FrmDbStructureTopComponent extends TopComponent implements DbStructureReaderSessionChangeListener {
+public final class FrmDbStructureTopComponent extends TopComponent implements ChosenTable.SessionChangeListener {
+
+  private static final Logger LOG = LoggerFactory.getLogger(FrmDbStructureTopComponent.class);
+
+  private SessionConfiguration sc = null;
 
   public FrmDbStructureTopComponent() {
     initComponents();
     setName(Bundle.CTL_FrmDbStructureTopComponent());
     setToolTipText(Bundle.HINT_FrmDbStructureTopComponent());
 
-    DbStructureReader.getInstance().addDbStructureReaderSessionChangeListener(this);
+    ChosenTable.getInstance().addSessionChangeListener(this);
   }
 
   /**
@@ -88,56 +104,74 @@ public final class FrmDbStructureTopComponent extends TopComponent implements Db
   // End of variables declaration//GEN-END:variables
   @Override
   public void componentOpened() {
-    showStructure(DbStructureReader.getInstance());
+    showStructure(sc);
 
     MouseListener ml = new MouseAdapter() {
       @Override
       public void mousePressed(MouseEvent e) {
         int selRow = jTree1.getRowForLocation(e.getX(), e.getY());
         TreePath selPath = jTree1.getPathForLocation(e.getX(), e.getY());
-        if(selRow != -1) {
-            if(e.getClickCount() == 1) {
-                // mySingleClick(selRow, selPath);
-            }
-            else if(e.getClickCount() == 2) {
+        if (selPath != null) {
+          if(selRow != -1) {
+            if(e.getClickCount() == 2) {
               DefaultMutableTreeNode nod = (DefaultMutableTreeNode) selPath.getLastPathComponent();
               if (TableDescription.class.equals(nod.getUserObject().getClass())) {
                 selectTable((TableDescription) nod.getUserObject());
               }
             }
+          }
         }
     }};
     jTree1.addMouseListener(ml);
   }
 
-  private void showStructure(DbStructureReader reader) {
+  private void showStructure(SessionConfiguration sc) {
     DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("Root Node");
     TreeModel model = new DefaultTreeModel(rootNode);
+    if (sc != null) {
+      String catalog = null, schema = null, tableType = null;
+      Map<String, DefaultMutableTreeNode> catalogNodes = new HashMap<>();
+      Map<String, DefaultMutableTreeNode> schemaNodes = new HashMap<>();
+      Map<String, DefaultMutableTreeNode> tableTypesNodes = new HashMap<>();
 
-    String catalog = null, schema = null, tableType = null;
-    DefaultMutableTreeNode catalogNode = null;
-    DefaultMutableTreeNode schemaNode = null;
-    DefaultMutableTreeNode tableTypeNode = null;
-    if (reader.isPrepared()) {
-      for (TableDescription tableDescription : reader.getStructure()) {
-        if (!tableDescription.getCatalog().equals(catalog)) {
-          catalogNode = new DefaultMutableTreeNode(tableDescription.getCatalog());
-          catalog = tableDescription.getCatalog();
-          rootNode.add(catalogNode);
-          schema = null;
+      for (TableDescription tableDescription : sc.getTableDescriptions()) {
+        if (sc.isShowTable(tableDescription)) {
+          if (sc.isShowCatalog(tableDescription.getCatalog())) {
+            if (!catalogNodes.containsKey(tableDescription.getCatalog())) {
+              catalogNodes.put(tableDescription.getCatalog(),
+                  new DefaultMutableTreeNode(tableDescription.getCatalog()));
+              rootNode.add(catalogNodes.get(tableDescription.getCatalog()));
+            }
+          }
+          String sch = "\"" + tableDescription.getCatalog() + "\".\"" + tableDescription.getSchema() + "\"";
+          if (sc.isShowSchema(tableDescription.getCatalog(), tableDescription.getSchema())) {
+            if (!schemaNodes.containsKey(sch)) {
+              DefaultMutableTreeNode dmn = new DefaultMutableTreeNode(tableDescription.getSchema());
+              schemaNodes.put(sch, dmn);
+              if (sc.isShowCatalog(tableDescription.getCatalog())) {
+                rootNode.add(dmn);
+              } else {
+                catalogNodes.get(tableDescription.getCatalog()).add(dmn);
+              }
+            }
+          }
+          String tt = sch + ".\"" + tableDescription.getTableType() + "\"";
+          final DefaultMutableTreeNode tableTypeNode;
+          if (!tableTypesNodes.containsKey(tt)) {
+            tableTypeNode = new DefaultMutableTreeNode(tableDescription.getTableType());
+            tableTypesNodes.put(tt, tableTypeNode);
+            if (sc.isShowSchema(tableDescription.getCatalog(), tableDescription.getSchema())) {
+              schemaNodes.get(sch).add(tableTypeNode);
+            } else if (sc.isShowCatalog(tableDescription.getCatalog())) {
+              catalogNodes.get(tableDescription.getCatalog()).add(tableTypeNode);
+            } else {
+              rootNode.add(tableTypeNode);
+            }
+          } else {
+            tableTypeNode = tableTypesNodes.get(tt);
+          }
+          tableTypeNode.add(new DefaultMutableTreeNode(tableDescription));
         }
-        if (!tableDescription.getSchema().equals(schema)) {
-          schemaNode = new DefaultMutableTreeNode(tableDescription.getSchema());
-          schema = tableDescription.getSchema();
-          catalogNode.add(schemaNode);
-          tableType = null;
-        }
-        if (!tableDescription.getTableType().equals(tableType)) {
-          tableTypeNode = new DefaultMutableTreeNode(tableDescription.getTableType());
-          tableType = tableDescription.getTableType();
-          schemaNode.add(tableTypeNode);
-        }
-        tableTypeNode.add(new DefaultMutableTreeNode(tableDescription));
       }
     }
     jTree1.setModel(model);
@@ -166,7 +200,8 @@ public final class FrmDbStructureTopComponent extends TopComponent implements Db
   }
 
   @Override
-  public void sessionConfigurationChanged(DbStructureReader reader, SessionConfiguration sc) {
-    this.showStructure(reader);
+  public void sessionConfigurationChanged(SessionConfiguration sc) {
+    this.sc = sc;
+    this.showStructure(sc);
   }
 }

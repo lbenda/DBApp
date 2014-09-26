@@ -30,8 +30,9 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
   private final DBConfigurationPanel panel;
   private final LibraryListModel llm = new LibraryListModel();
 
-  /**
-   * Creates new form SingleConfigurationPanel
+  /** Creates new form SingleConfigurationPanel
+   * @param sc session configuration (which is shown)
+   * @param panel main panel
    */
   SingleConfigurationPanel(SessionConfiguration sc, DBConfigurationPanel panel) {
     initComponents();
@@ -46,13 +47,15 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
     this.tfUsername.setText(sc.getJdbcConfiguration().getUsername());
     this.pfPassword.setText(sc.getJdbcConfiguration().getPassword());
     this.tfUrl.setText(sc.getJdbcConfiguration().getUrl());
+    this.tfPath.setText(sc.getExtendedConfigurationPath());
+    this.cbExtendConfigType.setSelectedIndex(sc.getExtendedConfigurationType().ordinal());
 
-    LOG.debug("pre change listener");
     ChangeListener cl = new ChangeListener();
     tfUsername.getDocument().addDocumentListener(cl);
     pfPassword.getDocument().addDocumentListener(cl);
     tfUrl.getDocument().addDocumentListener(cl);
     tfDriverClass.getDocument().addDocumentListener(cl);
+    tfPath.getDocument().addDocumentListener(cl);
   }
 
   void store() {
@@ -60,6 +63,8 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
     sc.getJdbcConfiguration().setPassword(pfPassword.getText());
     sc.getJdbcConfiguration().setUsername(tfUsername.getText());
     sc.getJdbcConfiguration().setUrl(tfUrl.getText());
+    sc.setExtendedConfigurationType(SessionConfiguration.ExtendedConfigurationType.values()[cbExtendConfigType.getSelectedIndex()]);
+    sc.setExtendedConfigurationPath(tfPath.getText());
     SessionConfiguration.registerNewConfiguration(sc);
   }
 
@@ -102,6 +107,12 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
     pfPassword = new javax.swing.JPasswordField();
     bRemoveLibs = new javax.swing.JButton();
     tfDriverClass = new javax.swing.JTextField();
+    jPanel1 = new javax.swing.JPanel();
+    lExtendConfigType = new javax.swing.JLabel();
+    cbExtendConfigType = new javax.swing.JComboBox();
+    lPath = new javax.swing.JLabel();
+    tfPath = new javax.swing.JTextField();
+    bChoosePath = new javax.swing.JButton();
 
     jPanel2.setBorder(javax.swing.BorderFactory.createTitledBorder(org.openide.util.NbBundle.getMessage(SingleConfigurationPanel.class, "SingleConfigurationPanel.jPanel2.border.title"))); // NOI18N
 
@@ -155,8 +166,9 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
           .addComponent(tfUsername, javax.swing.GroupLayout.Alignment.TRAILING)
           .addComponent(tfUrl)
           .addGroup(jPanel2Layout.createSequentialGroup()
+            .addGap(0, 183, Short.MAX_VALUE)
             .addComponent(bAddLibraries, javax.swing.GroupLayout.PREFERRED_SIZE, 106, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
             .addComponent(bRemoveLibs, javax.swing.GroupLayout.PREFERRED_SIZE, 103, javax.swing.GroupLayout.PREFERRED_SIZE)
             .addContainerGap())
           .addComponent(pfPassword)
@@ -181,30 +193,77 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
           .addComponent(lPassword)
           .addComponent(pfPassword, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
           .addComponent(lLibraries)
           .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
             .addComponent(bAddLibraries)
             .addComponent(bRemoveLibs)))
         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)
-        .addGap(57, 57, 57))
+        .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 83, Short.MAX_VALUE))
+    );
+
+    jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder(org.openide.util.NbBundle.getMessage(SingleConfigurationPanel.class, "SingleConfigurationPanel.jPanel1.border.title"))); // NOI18N
+
+    org.openide.awt.Mnemonics.setLocalizedText(lExtendConfigType, org.openide.util.NbBundle.getMessage(SingleConfigurationPanel.class, "SingleConfigurationPanel.lExtendConfigType.text")); // NOI18N
+
+    cbExtendConfigType.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "None", "Database table", "File" }));
+
+    org.openide.awt.Mnemonics.setLocalizedText(lPath, org.openide.util.NbBundle.getMessage(SingleConfigurationPanel.class, "SingleConfigurationPanel.lPath.text")); // NOI18N
+
+    tfPath.setText(org.openide.util.NbBundle.getMessage(SingleConfigurationPanel.class, "SingleConfigurationPanel.tfPath.text")); // NOI18N
+
+    org.openide.awt.Mnemonics.setLocalizedText(bChoosePath, org.openide.util.NbBundle.getMessage(SingleConfigurationPanel.class, "SingleConfigurationPanel.bChoosePath.text")); // NOI18N
+    bChoosePath.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(java.awt.event.ActionEvent evt) {
+        bChoosePathActionPerformed(evt);
+      }
+    });
+
+    javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+    jPanel1.setLayout(jPanel1Layout);
+    jPanel1Layout.setHorizontalGroup(
+      jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+      .addGroup(jPanel1Layout.createSequentialGroup()
+        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+          .addComponent(lExtendConfigType)
+          .addComponent(lPath))
+        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+          .addComponent(cbExtendConfigType, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+          .addGroup(jPanel1Layout.createSequentialGroup()
+            .addComponent(tfPath)
+            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+            .addComponent(bChoosePath))))
+    );
+    jPanel1Layout.setVerticalGroup(
+      jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+      .addGroup(jPanel1Layout.createSequentialGroup()
+        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+          .addComponent(lExtendConfigType)
+          .addComponent(cbExtendConfigType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+          .addComponent(lPath)
+          .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+            .addComponent(tfPath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addComponent(bChoosePath)))
+        .addGap(0, 0, Short.MAX_VALUE))
     );
 
     javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
     this.setLayout(layout);
     layout.setHorizontalGroup(
       layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addGroup(layout.createSequentialGroup()
-        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-        .addGap(0, 105, Short.MAX_VALUE))
+      .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+      .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
     );
     layout.setVerticalGroup(
       layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
       .addGroup(layout.createSequentialGroup()
-        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, 229, javax.swing.GroupLayout.PREFERRED_SIZE)
-        .addGap(0, 71, Short.MAX_VALUE))
+        .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+        .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
     );
   }// </editor-fold>//GEN-END:initComponents
 
@@ -236,20 +295,44 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
     }
   }//GEN-LAST:event_bRemoveLibsActionPerformed
 
+  private void bChoosePathActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bChoosePathActionPerformed
+    if (cbExtendConfigType.getSelectedIndex() == 1) {
+      // TODO database extended configuration
+    } else if (cbExtendConfigType.getSelectedIndex() == 2) {
+      JFileChooser chooser = new JFileChooser();
+      chooser.setMultiSelectionEnabled(false);
+      FileNameExtensionFilter filter = new FileNameExtensionFilter("DBApp session configuration", "xml", "dsc");
+      chooser.setFileFilter(filter);
+      int returnValue = chooser.showOpenDialog(getParent());
+      if (returnValue == JFileChooser.APPROVE_OPTION) {
+        this.tfPath.setText(chooser.getSelectedFile().getAbsolutePath());
+        LOG.debug("The user choose files: " + chooser.getSelectedFile().getAbsolutePath());
+        callChanged();
+        llm.dataChanged();
+      }
+    }
+  }//GEN-LAST:event_bChoosePathActionPerformed
+
 
   // Variables declaration - do not modify//GEN-BEGIN:variables
   private javax.swing.JButton bAddLibraries;
+  private javax.swing.JButton bChoosePath;
   private javax.swing.JButton bRemoveLibs;
+  private javax.swing.JComboBox cbExtendConfigType;
+  private javax.swing.JPanel jPanel1;
   private javax.swing.JPanel jPanel2;
   private javax.swing.JScrollPane jScrollPane2;
   private javax.swing.JLabel lDriverClass;
+  private javax.swing.JLabel lExtendConfigType;
   private javax.swing.JLabel lLibraries;
   private javax.swing.JLabel lPassword;
+  private javax.swing.JLabel lPath;
   private javax.swing.JLabel lUrl;
   private javax.swing.JLabel lUserName;
   private javax.swing.JList listLibraries;
   private javax.swing.JPasswordField pfPassword;
   private javax.swing.JTextField tfDriverClass;
+  private javax.swing.JTextField tfPath;
   private javax.swing.JTextField tfUrl;
   private javax.swing.JTextField tfUsername;
   // End of variables declaration//GEN-END:variables

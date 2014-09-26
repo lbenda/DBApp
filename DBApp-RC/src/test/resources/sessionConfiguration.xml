@@ -1,32 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<DBApp>
-    <sessions>
-        <session id="localServer">
-            <jdbc>
-                <password/>
-                <user>SA</user>
-                <driverClass>org.hsqldb.jdbcDriver</driverClass>
-                <url>jdbc:hsqldb:hsql://localhost:9001/apm</url>
-                <libraries>
-                    <library>/opt/hsqldb/lib/hsqldb.jar</library>
-                </libraries>
-            </jdbc>
-            <tableOfKeySQLs>
-                <tableOfKeySQL id="appBusUnit">select "id", "name", "description" from "PUBLIC"."tokBusUnit"</tableOfKeySQL>
-                <tableOfKeySQL id="appInterf">select "id", "name", "description" from "PUBLIC"."tokAppInterf"</tableOfKeySQL>
-                <tableOfKeySQL id="ownership">select "id", "name", "description" from "PUBLIC"."tokOwnership"</tableOfKeySQL>
-                <tableOfKeySQL id="useType">select "id", "name", "description" from "PUBLIC"."tokUseType"</tableOfKeySQL>
-            </tableOfKeySQLs>
-            <tableDescriptionExtensions>
-                <tableDescriptionExtension table="Application" schema="PUBLIC" catalog="PUBLIC">
-                    <selectBox column="ownership" tableOfKeySQL="ownership" column_value="id" column_choice="name" column_tooltip="description">
-                        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
-                    </selectBox>
-                    <selectBox column="useType" tableOfKeySQL="useType" column_value="id" column_choice="name" column_tooltip="description">
-                        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
-                    </selectBox>
-                </tableDescriptionExtension>
-            </tableDescriptionExtensions>
-        </session>
-    </sessions>
-</DBApp>
+<configurationExtension>
+  <schemas>
+    <schema catalog="PUBLIC" schema="PUBLIC" />
+  </schemas>
+  <tableOfKeySQLs>
+    <tableOfKeySQL id="appBusUnit">select "id", "name", "description" from "PUBLIC"."tokBusUnit"</tableOfKeySQL>
+    <tableOfKeySQL id="appInterf">select "id", "name", "description" from "PUBLIC"."tokAppInterf"</tableOfKeySQL>
+    <tableOfKeySQL id="ownership">select "id", "name", "description" from "PUBLIC"."tokOwnership"</tableOfKeySQL>
+    <tableOfKeySQL id="useType">select "id", "name", "description" from "PUBLIC"."tokUseType"</tableOfKeySQL>
+  </tableOfKeySQLs>
+  <tableDescriptionExtensions>
+    <tableDescriptionExtension table="Application" schema="PUBLIC" catalog="PUBLIC">
+      <comboBox column="Ownership" tableOfKeySQL="ownership" column_value="id" column_choice="name" column_tooltip="description">
+        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
+      </comboBox>
+      <comboBox column="UseType" tableOfKeySQL="useType" column_value="id" column_choice="name" column_tooltip="description">
+        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
+      </comboBox>
+    </tableDescriptionExtension>
+  </tableDescriptionExtensions>
+</configurationExtension>

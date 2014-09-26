@@ -1,11 +1,22 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright 2014 Lukas Benda <lbenda at lbenda.cz>.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package cz.lbenda.dbapp.rc.frm.config;
 
 import cz.lbenda.dbapp.rc.SessionConfiguration;
+import cz.lbenda.dbapp.rc.frm.ChosenTable;
 import cz.lbenda.gui.EditablePanneTitle;
 import java.awt.Component;
 import javax.swing.event.ChangeEvent;
@@ -31,7 +42,6 @@ final class DBConfigurationPanel extends javax.swing.JPanel {
       }
     };
     tbConfigs.addChangeListener(listener);
-    // TODO listen to changes in form fields and call controller.changed()
   }
 
   /**
@@ -113,6 +123,7 @@ final class DBConfigurationPanel extends javax.swing.JPanel {
       }
     }
     SessionConfiguration.saveConfiguration();
+    ChosenTable.getInstance().configurationUpdated();
   }
 
   boolean valid() {

@@ -15,14 +15,18 @@
  */
 package cz.lbenda.dbapp.rc.db;
 
-import org.jdom.Element;
+import cz.lbenda.dbapp.rc.SessionConfiguration;
+import java.util.List;
+import org.jdom2.Element;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** General interface for all table description extension.
  * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/16/14.
  */
 public interface TableDescriptionExtension {
 
-  public enum TableAction {
+  enum TableAction {
     SELECT, UPDATE, DELETE, INSERT, ;
   }
 
@@ -37,4 +41,41 @@ public interface TableDescriptionExtension {
 
   /** Return element to which is this extension stored */
   Element storeToElement();
+
+  /** Columns which is extended by table extension
+   * @return columns which is extended. If extension isn't for column then is empty list returned
+   */
+  List<Column> getColumns();
+
+  abstract class XMLReaderWriterHelper {
+    private static final Logger LOG = LoggerFactory.getLogger(XMLReaderWriterHelper.class);
+
+    public static void loadExtensions(SessionConfiguration sc, final Element element) {
+      LOG.trace("load table dsc. extension");
+      if (element == null) { return; }
+      for (Element tdExtension : element.getChildren("tableDescriptionExtension")) {
+        String catalog = tdExtension.getAttributeValue("catalog");
+        String schema = tdExtension.getAttributeValue("schema");
+        String table = tdExtension.getAttributeValue("table");
+        TableDescription td = sc.getOrCreateTableDescription(catalog, schema, table);
+
+        for (Element select : tdExtension.getChildren("comboBox")) { loadComboBox(sc, td, select); }
+      }
+    }
+
+    private static void loadComboBox(SessionConfiguration sc, TableDescription td, Element element) {
+      LOG.trace("load combo box");
+      ComboBoxTDExtension sb = new ComboBoxTDExtension(td, element.getAttributeValue("column"),
+          element.getAttributeValue("tableOfKeySQL"));
+      sb.setColumnValue(element.getAttributeValue("column_value"));
+      sb.setColumnChoice(element.getAttributeValue("column_choice"));
+      sb.setColumnTooltip(element.getAttributeValue("column_tooltip"));
+      for (Element reloadOn : element.getChildren("reloadOn")) {
+        TableDescription td1 = sc.getOrCreateTableDescription(reloadOn.getAttributeValue("catalog"),
+            reloadOn.getAttributeValue("schema"), reloadOn.getAttributeValue("table"));
+        td1.getReloadableExtension().add(sb);
+      }
+      td.getExtensions().add(sb);
+    }
+  }
 }

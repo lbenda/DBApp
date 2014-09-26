@@ -1,21 +1,29 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright 2014 Lukas Benda <lbenda at lbenda.cz>.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package cz.lbenda.dbapp.rc.frm;
 
-import cz.lbenda.dbapp.rc.db.DbStructureReader;
-import cz.lbenda.dbapp.rc.db.DbStructureReader.Column;
+import cz.lbenda.dbapp.rc.db.Column;
 import cz.lbenda.dbapp.rc.db.DbStructureReader.ForeignKey;
 import cz.lbenda.dbapp.rc.db.TableDescription;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import javax.swing.table.AbstractTableModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -116,7 +124,7 @@ public class PanelJoinTable extends javax.swing.JPanel implements ChosenTable.Ch
 
     public void setMasterRowValues(final Map<Column, Object> selectedRowValues) {
       this.rows.clear();
-      this.rows.addAll(DbStructureReader.getInstance().getJoinedRows(fk, selectedRowValues, !masterTable));
+      this.rows.addAll(td.getSessionConfiguration().getReader().getJoinedRows(fk, selectedRowValues, !masterTable));
       this.fireTableDataChanged();
     }
 

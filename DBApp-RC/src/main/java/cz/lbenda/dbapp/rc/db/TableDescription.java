@@ -15,22 +15,29 @@
  */
 package cz.lbenda.dbapp.rc.db;
 
+import cz.lbenda.dbapp.rc.AbstractHelper;
+import cz.lbenda.dbapp.rc.SessionConfiguration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
-* Created by Lukas Benda <lbenda @ lbenda.cz> on 9/16/14.
-*/
+/** Main object which hold all information about database table structure
+ * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/16/14.
+ */
 public class TableDescription implements Comparable<TableDescription> {
+
+  private SessionConfiguration sessionConfiguration;  public final SessionConfiguration getSessionConfiguration() { return sessionConfiguration; } public final void setSessionConfiguration(SessionConfiguration sessionConfiguration) { this.sessionConfiguration = sessionConfiguration; }
+
   private final String name; public final String getName() { return name; }
   private final String schema; public final String getSchema() { return schema; }
   private final String catalog; public final String getCatalog() { return catalog; }
-  private final String tableType; public final String getTableType() { return tableType; }
+  private String tableType; public final String getTableType() { return tableType; } public final void setTableType(String tableType) { this.tableType = tableType; }
 
+  /** List of all foreign keys in table */
   private final List<DbStructureReader.ForeignKey> foreignKeys = new ArrayList<>(); public final List<DbStructureReader.ForeignKey> getForeignKeys() { return foreignKeys; }
-  private final List<DbStructureReader.Column> columns = new ArrayList<>(); public final List<DbStructureReader.Column> getColumns() { return columns; }
-  /** All extension which extend the GUI fetchure of table */
+  /** List of all columns in table */
+  private final List<Column> columns = new ArrayList<>(); public final List<Column> getColumns() { return columns; }
+  /** All extension which extend the GUI feature of table */
   private final List<TableDescriptionExtension> extensions = new ArrayList<>(); public final List<TableDescriptionExtension> getExtensions() { return this.extensions; }
   /** All extension which is inform about the table is change. Mainly it's extension of another table */
   private final List<TableDescriptionExtension> reloadableExtension = new ArrayList<>(); public final List<TableDescriptionExtension> getReloadableExtension() { return reloadableExtension; }
@@ -47,37 +54,53 @@ public class TableDescription implements Comparable<TableDescription> {
   }
 
   /** Return list of all columns, which is in primary key */
-  public final List<DbStructureReader.Column> getPKColumns() {
-    List<DbStructureReader.Column> result = new ArrayList<>();
-    for (DbStructureReader.Column col : columns) {
+  public final List<Column> getPKColumns() {
+    List<Column> result = new ArrayList<>();
+    for (Column col : columns) {
       if (col.isPK()) { result.add(col); }
     }
     return result;
   }
 
-  public final void addColumn(DbStructureReader.Column column) {
+  public final void addColumn(Column column) {
     column.setPosition(this.columns.size());
     this.columns.add(column);
   }
 
-  public final DbStructureReader.Column getColumn(String columnName) {
-    for (DbStructureReader.Column result : columns) {
+  public final Column getColumn(String columnName) {
+    for (Column result : columns) {
       if (result.getName().equals(columnName)) { return result; }
     }
     return null;
   }
 
-  public final String getColumnString(String colName, Map<DbStructureReader.Column, Object> rowValue) {
-    DbStructureReader.Column col = getColumn(colName);
+  /** Return string representation of value which is given in row
+   * @param colName Name of column which value is returned
+   * @param rowValue Value of row
+   */
+  public final String getColumnString(String colName, Map<Column, Object> rowValue) {
+    Column col = getColumn(colName);
     if (col != null) { return col.getColumnString(rowValue); }
     return null;
   }
 
-  /** This method registred when somebody execute any change SQL action on the table. */
+  /** This method registered when somebody execute any change SQL action on the table. */
   public final void sqlWasFired(TableDescriptionExtension.TableAction tableAction) {
     for (TableDescriptionExtension tde : this.reloadableExtension) {
       tde.tableWasChanged(this, tableAction);
     }
+  }
+
+  /** Return list of extensions which for one column
+   * @param column column which extensions is requested
+   * @return list of extensions (if extensions missing, then empty list is returned)
+   */
+  public final List<TableDescriptionExtension> getColumnExtensions(final Column column) {
+    List<TableDescriptionExtension> result = new ArrayList<>(2);
+    for (TableDescriptionExtension tde : getExtensions()) {
+      if (tde.getColumns().contains(column)) { result.add(tde); }
+    }
+    return result;
   }
 
   @Override
@@ -88,17 +111,8 @@ public class TableDescription implements Comparable<TableDescription> {
   @Override
   public final int compareTo(TableDescription other) {
     if (other == null) { throw new NullPointerException(); }
-    if (!TableDescription.class.equals(other.getClass())) { throw new ClassCastException(); }
-    if (this.catalog.equals(other.catalog)) {
-      if (this.schema.equals(other.schema)) {
-        if (this.tableType.equals(other.tableType)) {
-          return this.name.compareTo(other.name);
-        }
-        return this.tableType.compareTo(other.tableType);
-      }
-      return this.schema.compareTo(other.schema);
-    }
-    return this.catalog.compareTo(other.catalog);
+    return AbstractHelper.compareArrayNull(new String[] {catalog, schema, tableType, name},
+        new String[] {other.getCatalog(), other.getSchema(), other.getTableType(), other.getName()});
   }
 
   @Override
@@ -113,22 +127,12 @@ public class TableDescription implements Comparable<TableDescription> {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
+    if (obj == null) { return false; }
+    if (getClass() != obj.getClass()) { return false; }
     final TableDescription other = (TableDescription) obj;
-    if ((this.name == null) ? (other.name != null) : !this.name.equals(other.name)) {
-      return false;
-    }
-    if ((this.schema == null) ? (other.schema != null) : !this.schema.equals(other.schema)) {
-      return false;
-    }
-    if ((this.catalog == null) ? (other.catalog != null) : !this.catalog.equals(other.catalog)) {
-      return false;
-    }
+    if ((this.name == null) ? (other.name != null) : !this.name.equals(other.name)) { return false; }
+    if ((this.schema == null) ? (other.schema != null) : !this.schema.equals(other.schema)) { return false; }
+    if ((this.catalog == null) ? (other.catalog != null) : !this.catalog.equals(other.catalog)) { return false; }
     return this.tableType == null ? (other.tableType == null) : this.tableType.equals(other.tableType);
   }
 }

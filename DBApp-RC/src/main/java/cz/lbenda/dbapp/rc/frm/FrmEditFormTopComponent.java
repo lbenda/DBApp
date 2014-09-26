@@ -1,14 +1,27 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright 2014 Lukas Benda <lbenda at lbenda.cz>.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package cz.lbenda.dbapp.rc.frm;
 
-import com.toedter.calendar.JDateChooser;
-import cz.lbenda.dbapp.rc.db.DbStructureReader;
-import cz.lbenda.dbapp.rc.db.DbStructureReader.Column;
+import cz.lbenda.dbapp.rc.db.Column;
 import cz.lbenda.dbapp.rc.db.TableDescription;
+import java.util.HashMap;
+import java.util.Map;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.SpringLayout;
 import layout.SpringUtilities;
 import org.netbeans.api.settings.ConvertAsProperties;
 import org.openide.awt.ActionID;
@@ -17,11 +30,6 @@ import org.openide.util.NbBundle.Messages;
 import org.openide.windows.TopComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.swing.*;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 /** This component is used for show edit form (and editing) of chosen record
  * {@see ChosenTable#getSelectedRowValues} in chosen table {@see ChosenTable#getTableDescription}
@@ -49,7 +57,7 @@ import java.util.Map;
 })
 public final class FrmEditFormTopComponent extends TopComponent implements ChosenTable.ChosenRowListener, ChosenTable.ChosenTableListener {
 
-  private static Logger LOGGER = LoggerFactory.getLogger(FrmEditFormTopComponent.class);
+  private static Logger LOG = LoggerFactory.getLogger(FrmEditFormTopComponent.class);
 
   public FrmEditFormTopComponent() {
     initComponents();
@@ -138,28 +146,16 @@ public final class FrmEditFormTopComponent extends TopComponent implements Chose
   }// </editor-fold>//GEN-END:initComponents
 
   private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-    Map<DbStructureReader.Column, Object> newValues = new HashMap<>(td.getColumns().size());
-    for (Map.Entry<DbStructureReader.Column, JComponent> entry : this.editFields.entrySet()) {
-      Object value = null;
-      if (entry.getValue() instanceof JTextField) {
-        value = ((JTextField) entry.getValue()).getText();
-        if ("".equals(value)) { value = null; }
-      } else if (entry.getValue() instanceof JDateChooser) {
-        value = ((JDateChooser) entry.getValue()).getDate();
-      } else {
-        LOGGER.error(String.format("The component of class \"%s\" wasnt supported. Is used at \"%s\".\"%s\".\"%s\"",
-                entry.getValue(), td.getSchema(), td.getName(), entry.getKey().getName()));
-        throw new RuntimeException(String.format("The component of class \"%s\" wasnt supported. Is used at \"%s\".\"%s\".\"%s\"",
-                entry.getValue(), td.getSchema(), td.getName(), entry.getKey().getName()));
-      }
-      newValues.put(entry.getKey(), value);
+    Map<Column, Object> newValues = new HashMap<>(td.getColumns().size());
+    for (Map.Entry<Column, JComponent> entry : this.editFields.entrySet()) {
+      GUITDExtensionHelper.componentToValues(newValues, entry.getValue(), entry.getKey());
     }
     if (selectedRowValues != null && !selectedRowValues.isEmpty()) {
-      DbStructureReader.getInstance().updateRow(td, this.selectedRowValues, newValues);
+      td.getSessionConfiguration().getReader().updateRow(td, this.selectedRowValues, newValues);
       ChosenTable.getInstance().updateRowValues(td, selectedRowValues, newValues);
       ChosenTable.getInstance().setSelectedRowValues(newValues);
     } else {
-      DbStructureReader.getInstance().insertRow(td, newValues);
+      td.getSessionConfiguration().getReader().insertRow(td, newValues);
       ChosenTable.getInstance().updateRowValues(td, null, newValues);
       ChosenTable.getInstance().setSelectedRowValues(newValues);
     }
@@ -170,7 +166,7 @@ public final class FrmEditFormTopComponent extends TopComponent implements Chose
   }//GEN-LAST:event_jButton2ActionPerformed
 
   private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-    this.selectedRowValues = new HashMap<Column, Object>();
+    this.selectedRowValues = new HashMap<>();
     this.valuesToFields(selectedRowValues);
   }//GEN-LAST:event_jButton3ActionPerformed
 
@@ -180,10 +176,10 @@ public final class FrmEditFormTopComponent extends TopComponent implements Chose
   private javax.swing.JButton jButton3;
   private javax.swing.JPanel pForm;
   private javax.swing.JToolBar tBar;
+
   // End of variables declaration//GEN-END:variables
   @Override
   public void componentOpened() {
-
   }
 
   @Override
@@ -203,32 +199,25 @@ public final class FrmEditFormTopComponent extends TopComponent implements Chose
     // TODO read your settings according to their version
   }
 
-  private Map<DbStructureReader.Column, JComponent> editFields
-          = new HashMap<DbStructureReader.Column, JComponent>();
+  private Map<Column, JComponent> editFields = new HashMap<>();
 
   private Map<Column, Object> selectedRowValues;
   private TableDescription td;
 
-  public void valuesToFields(Map<Column, Object> values) {
-    for (DbStructureReader.Column column : td.getColumns()) {
-      JComponent comp = editFields.get(column);
-      Object value = values.get(column);
-      if (comp instanceof JTextField) {
-        ((JTextField) comp).setText(value != null ? String.valueOf(value) : "");
-      } else if (comp instanceof JDateChooser) {
-        ((JDateChooser) comp).setDate((Date) value);
-      }
+  public final void valuesToFields(final Map<Column, Object> values) {
+    for (Column column : td.getColumns()) {
+      GUITDExtensionHelper.componentValue(values, editFields.get(column), column);
     }
   }
 
   @Override
-  public void rowChosen(Map<Column, Object> selectedRowValues) {
+  public final void rowChosen(final Map<Column, Object> selectedRowValues) {
     this.selectedRowValues = selectedRowValues;
     valuesToFields(selectedRowValues);
   }
 
   @Override
-  public void tableChosen(TableDescription tableDescription) {
+  public final void tableChosen(final TableDescription tableDescription) {
     this.td = tableDescription;
     this.generateForm(tableDescription);
   }
@@ -237,16 +226,8 @@ public final class FrmEditFormTopComponent extends TopComponent implements Chose
     editFields.clear();
     this.pForm.removeAll();
     pForm.setLayout(new SpringLayout());
-    for (DbStructureReader.Column column : td.getColumns()) {
-      final JComponent field;
-      switch (column.getDataType()) {
-        case DATE :
-          field = new JDateChooser(); break;
-        case STRING :
-        default :
-          field = new JTextField(); break;
-      }
-
+    for (Column column : td.getColumns()) {
+      final JComponent field = GUITDExtensionHelper.editComponent(column);
       editFields.put(column, field);
       JLabel l = new JLabel(String.format("%s: ", column.getName()), JLabel.TRAILING);
       pForm.add(l);
