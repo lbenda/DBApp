@@ -37,7 +37,6 @@ public class DbStructureReader {
   private static final Logger LOG = LoggerFactory.getLogger(DbStructureReader.class);
 
   private SessionConfiguration sessionConfiguration;
-  private List<TableDescription> tableDescriptions = new ArrayList<>();
 
   private DataSource dataSource = null;
 

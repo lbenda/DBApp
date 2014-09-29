@@ -22,6 +22,8 @@ import javax.swing.CellEditor;
 import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -108,6 +110,7 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
       LOG.trace("Celle editor for column: " + col.getName() + " is " + ce.getClass());
       // ((ETable) ov.getOutline()).setCellEditor(null);
     }
+    ov.getOutline().getSelectionModel().addListSelectionListener(listSelectionListener);
   }
 
   TableModelListener tableModelListener = new TableModelListener() {
@@ -131,6 +134,14 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
           }
         });
       }
+    }
+  };
+
+  ListSelectionListener listSelectionListener = new ListSelectionListener() {
+    @Override
+    public void valueChanged(ListSelectionEvent e) {
+      ChosenTable.getInstance().setSelectedRowValues(new RowNode.Row(td,
+          td.getRows().get(ov.getOutline().getSelectedRow())));
     }
   };
 

@@ -25,8 +25,13 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
@@ -398,6 +403,9 @@ public class SessionConfiguration {
   }
 
   public void reloadStructure() {
+    this.tableDescriptionsMap.clear();
+    this.tableDescriptions.clear();
+
     loadExtendedConfiguration();
     reader = new DbStructureReader();
     reader.setSessionConfiguration(this);

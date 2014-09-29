@@ -8,6 +8,14 @@
     <tableOfKeySQL id="appInterf">select "id", "name", "description" from "PUBLIC"."tokAppInterf"</tableOfKeySQL>
     <tableOfKeySQL id="ownership">select "id", "name", "description" from "PUBLIC"."tokOwnership"</tableOfKeySQL>
     <tableOfKeySQL id="useType">select "id", "name", "description" from "PUBLIC"."tokUseType"</tableOfKeySQL>
+    <tableOfKeySQL id="appState">select "id", "name", "description" from "PUBLIC"."tokAppState"</tableOfKeySQL>
+    <tableOfKeySQL id="inPlatform">select "id", "name", "description" from "PUBLIC"."tokInPlat"</tableOfKeySQL>
+    <tableOfKeySQL id="adminGroup">select "id", "name", "description" from "PUBLIC"."tokAdminGroup"</tableOfKeySQL>
+    <tableOfKeySQL id="domLevel">select "id", "name", "description" from "PUBLIC"."tokDomainLevel"</tableOfKeySQL>
+    <tableOfKeySQL id="capLosses">select "id", "name", "description" from "PUBLIC"."tokCapLosses"</tableOfKeySQL>
+    <tableOfKeySQL id="capLegalID">select "id", "name", "description" from "PUBLIC"."TableOfKeys" where "tokType" = 'capLegalD' order by "order"</tableOfKeySQL>
+    <tableOfKeySQL id="location">select "id", "name", "description" from "PUBLIC"."TableOfKeys" where "tokType" = 'opLocation' order by "order"</tableOfKeySQL>
+    <tableOfKeySQL id="vendor">select "id", "name", "ic" from "PUBLIC"."Vendor"</tableOfKeySQL>
   </tableOfKeySQLs>
   <tableDescriptionExtensions>
     <tableDescriptionExtension table="Application" schema="PUBLIC" catalog="PUBLIC">
@@ -17,6 +25,57 @@
       <comboBox column="UseType" tableOfKeySQL="useType" column_value="id" column_choice="name" column_tooltip="description">
         <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
       </comboBox>
+      <comboBox column="Interface" tableOfKeySQL="appInterf" column_value="id" column_choice="name" column_tooltip="description">
+        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
+      </comboBox>
+      <comboBox column="Vendor" tableOfKeySQL="vendor" column_value="id" column_choice="name" column_tooltip="ic">
+        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="Vendor" />
+      </comboBox>
+      <comboBox column="State" tableOfKeySQL="appState" column_value="id" column_choice="name" column_tooltip="description">
+        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
+      </comboBox>
     </tableDescriptionExtension>
+    <tableDescriptionExtension table="J_J_AppAppInterf" schema="PUBLIC" catalog="PUBLIC">
+      <comboBox column="InPlatform" tableOfKeySQL="inPlatform" column_value="id" column_choice="name" column_tooltip="description">
+        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
+      </comboBox>
+    </tableDescriptionExtension>
+    <tableDescriptionExtension table="AppOperation" schema="PUBLIC" catalog="PUBLIC">
+      <comboBox column="Location" tableOfKeySQL="location" column_value="id" column_choice="name" column_tooltip="description">
+        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
+      </comboBox>
+      <comboBox column="AdminGroup" tableOfKeySQL="adminGroup" column_value="id" column_choice="name" column_tooltip="description">
+        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
+      </comboBox>
+    </tableDescriptionExtension>
+    <tableDescriptionExtension table="Capability" schema="PUBLIC" catalog="PUBLIC">
+      <comboBox column="Level" tableOfKeySQL="domLevel" column_value="id" column_choice="name" column_tooltip="description">
+        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
+      </comboBox>
+      <comboBox column="Aval_LossData_1m" tableOfKeySQL="capLosses" column_value="id" column_choice="name" column_tooltip="description">
+        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
+      </comboBox>
+      <comboBox column="Aval_LossData_15m" tableOfKeySQL="capLosses" column_value="id" column_choice="name" column_tooltip="description">
+        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
+      </comboBox>
+      <comboBox column="Aval_LossData_24h" tableOfKeySQL="capLosses" column_value="id" column_choice="name" column_tooltip="description">
+        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
+      </comboBox>
+      <comboBox column="Aval_Unavibility_1m" tableOfKeySQL="capLosses" column_value="id" column_choice="name" column_tooltip="description">
+        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
+      </comboBox>
+      <comboBox column="Aval_Unavability_8h" tableOfKeySQL="capLosses" column_value="id" column_choice="name" column_tooltip="description">
+        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
+      </comboBox>
+      <comboBox column="Aval_Unavability_72h" tableOfKeySQL="capLosses" column_value="id" column_choice="name" column_tooltip="description">
+        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
+      </comboBox>
+      <comboBox column="Auth_UntracableLoos" tableOfKeySQL="capLosses" column_value="id" column_choice="name" column_tooltip="description">
+        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
+      </comboBox>
+      <comboBox column="Protect_LegalData" tableOfKeySQL="capLegalID" column_value="id" column_choice="name" column_tooltip="description">
+        <reloadOn catalog="PUBLIC" schema="PUBLIC" table="TableOfKeys" />
+      </comboBox>
+    </tableDescriptionExtension>    
   </tableDescriptionExtensions>
 </configurationExtension>

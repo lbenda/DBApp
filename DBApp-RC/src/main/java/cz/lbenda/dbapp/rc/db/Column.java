@@ -26,7 +26,7 @@ import java.util.Map;
 public class Column {
 
   public enum ColumnType {
-    STRING(String.class), INTEGER(Integer.class), DATE(Date.class), DATE_TIME(Date.class), OBJECT(Object.class);
+    BOOLEAN(Boolean.class), STRING(String.class), INTEGER(Integer.class), DATE(Date.class), DATE_TIME(Date.class), OBJECT(Object.class);
     private final Class clazz;
     private ColumnType(Class clazz) { this.clazz = clazz; }
     public Class getDataType() { return clazz; }
@@ -57,6 +57,7 @@ public class Column {
       case Types.INTEGER : this.dataType = ColumnType.INTEGER; break;
       case Types.CHAR :
       case Types.VARCHAR : this.dataType = ColumnType.STRING; break;
+      case Types.BOOLEAN : this.dataType = ColumnType.BOOLEAN; break;
       default : this.dataType = ColumnType.OBJECT;
     }
   }

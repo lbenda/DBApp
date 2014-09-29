@@ -110,11 +110,15 @@ public final class FrmJoinedTablesTopComponent extends TopComponent implements C
       jTabbedPane1.removeAll();
       for (ForeignKey key : tableDescription.getForeignKeys()) {
         if (key.getMasterTable().equals(tableDescription)) {
-          jTabbedPane1.addTab(key.getSlaveTable().getName(), new PanelJoinTable(key, false));
+          if (key.getMasterColumn().getExtensions().isEmpty()) {
+            jTabbedPane1.addTab(key.getSlaveTable().getName(), new PanelJoinTable(key, false));
+          }
         } else {
-          jTabbedPane1.addTab(String.format("%s (%s)", key.getSlaveColumn().getName(),
-                  key.getMasterTable().getName()),
-              new PanelJoinTable(key, true));
+          if (key.getSlaveColumn().getExtensions().isEmpty()) {
+            jTabbedPane1.addTab(String.format("%s (%s)", key.getSlaveColumn().getName(),
+                    key.getMasterTable().getName()),
+                new PanelJoinTable(key, true));
+          }
         }
       }
     }
