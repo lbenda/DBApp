@@ -19,6 +19,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import cz.lbenda.dbapp.rc.AbstractHelper;
 import org.jdom2.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,6 +90,7 @@ public class ComboBoxTDExtension implements TableDescriptionExtension {
       rows = td.getSessionConfiguration().getReader().getSQLRows(sql, columnValue, columnChoice, columnTooltip);
     }
     items.clear();
+    items.add(ComboBoxItem.EMPTY);
     for (Object[] row : rows) {
       items.add(new ComboBoxItem(row[0], (String) row[1], (String) row[2]));
     }
@@ -115,6 +118,20 @@ public class ComboBoxTDExtension implements TableDescriptionExtension {
         .setAttribute("column_value", columnValue).setAttribute("column_choice", columnChoice)
         .setAttribute("column_tooltip", columnTooltip);
     return res;
+  }
+
+  public final ComboBoxItem itemForValue(Object value) {
+    for (ComboBoxItem item : getItems()) {
+      if (AbstractHelper.nullEquals(item.getValue(), value)) { return item; }
+    }
+    return null;
+  }
+
+  public final ComboBoxItem itemForChoice(String choice) {
+    for (ComboBoxItem item : getItems()) {
+      if (AbstractHelper.nullEquals(item.getChoice(), choice)) { return item; }
+    }
+    return null;
   }
 
   @Override

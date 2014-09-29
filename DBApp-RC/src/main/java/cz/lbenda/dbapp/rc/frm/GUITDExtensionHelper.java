@@ -21,12 +21,13 @@ import cz.lbenda.dbapp.rc.db.ComboBoxTDExtension;
 import cz.lbenda.dbapp.rc.db.TableDescriptionExtension;
 
 import javax.swing.*;
+import javax.swing.event.CellEditorListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
-import java.util.ArrayList;
-import java.util.Date;
+import javax.swing.table.TableCellEditor;
+import java.awt.*;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 /** Helper class which create GUI elements for helper
  * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/26/14.
@@ -78,13 +79,12 @@ public abstract  class GUITDExtensionHelper {
   }
 
   /** This method set to component value which is on row
-   * @param values values of row
+   * @param value values of row
    * @param comp component to which is data set
    * @param column column which is configured
    */
   @SuppressWarnings("unchecked")
-  public static void componentValue(final Map<Column, Object> values, final JComponent comp, final Column column) {
-    Object value = values.get(column);
+  public static void componentValue(Object value, final JComponent comp, final Column column) {
     switch (editTypeForColumn(column)) {
       case ComboBox:
         TOKComboBoxModel cbm = (TOKComboBoxModel) ((JComboBox<ComboBoxTDExtension.ComboBoxItem>) comp).getModel();
@@ -96,18 +96,71 @@ public abstract  class GUITDExtensionHelper {
     }
   }
 
+  /** This method set to component value which is on row
+   * @param values values of row
+   * @param comp component to which is data set
+   * @param column column which is configured
+   */
   @SuppressWarnings("unchecked")
-  public static void componentToValues(final Map<Column, Object> values, final JComponent comp, final Column column) {
+  public static void componentValue(final Map<Column, Object> values, final JComponent comp, final Column column) {
+    componentValue(values.get(column), comp, column);
+  }
+
+  public static Object valueInComponent(final JComponent comp, final Column column) {
     switch (editTypeForColumn(column)) {
       case ComboBox:
-        values.put(column, ((ComboBoxTDExtension.ComboBoxItem) ((JComboBox<ComboBoxTDExtension.ComboBoxItem>) comp)
-            .getSelectedItem()).getValue());
-        break;
-      case DateChooser: values.put(column, ((JDateChooser) comp).getDate()); break;
+        return ((ComboBoxTDExtension.ComboBoxItem) ((JComboBox<ComboBoxTDExtension.ComboBoxItem>) comp)
+            .getSelectedItem()).getValue();
+      case DateChooser: return ((JDateChooser) comp).getDate();
       case TextField:
-      default:
-        values.put(column, ((JTextField) comp).getText());
+      default: return ((JTextField) comp).getText();
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  public static void componentToValues(final Map<Column, Object> values, final JComponent comp, final Column column) {
+    values.put(column, valueInComponent(comp, column));
+  }
+
+  public static class TOKTableCellEditor implements TableCellEditor {
+    private final Column column;
+    private Set<CellEditorListener> listeners = new HashSet<>();
+    private JComponent comboBox;
+    public TOKTableCellEditor(Column column) {
+      this.column = column;
+    }
+    @Override
+    public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+      comboBox = GUITDExtensionHelper.editComponent(this.column);
+      GUITDExtensionHelper.componentValue(value, comboBox, this.column);
+      return comboBox;
+    }
+
+    @Override
+    public Object getCellEditorValue() {
+      return GUITDExtensionHelper.valueInComponent(comboBox, this.column);
+    }
+
+    @Override
+    public boolean isCellEditable(EventObject anEvent) { return true; }
+
+    @Override
+    public boolean shouldSelectCell(EventObject anEvent) { return true; }
+
+    @Override
+    public boolean stopCellEditing() {
+      return false;
+    }
+
+    @Override
+    public void cancelCellEditing() {
+
+    }
+
+    @Override
+    public void addCellEditorListener(CellEditorListener l) { listeners.add(l); }
+    @Override
+    public void removeCellEditorListener(CellEditorListener l) { listeners.remove(l); }
   }
 
   private static class TOKComboBoxModel implements ComboBoxModel<ComboBoxTDExtension.ComboBoxItem> {
@@ -141,6 +194,7 @@ public abstract  class GUITDExtensionHelper {
         }
       }
     }
+
 
     @Override
     public final Object getSelectedItem() { return selectedItem; }

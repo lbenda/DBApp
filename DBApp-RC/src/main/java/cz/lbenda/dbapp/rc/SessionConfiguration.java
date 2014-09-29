@@ -25,11 +25,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
@@ -223,6 +220,21 @@ public class SessionConfiguration {
     return shownSchemas.get(catalog).contains(schema) && shownSchemas.get(catalog).size() > 1;
   }
 
+  /** List of shown table type (sorted)
+   * @param catalog
+   * @param schema
+   * @return
+   */
+  public final List<TableDescription.TableType> shownTableType(final String catalog, final String schema) {
+    Set<TableDescription.TableType> set = new HashSet<>(2);
+    for (TableDescription td : this.tableDescriptionsMap.get(catalog).get(schema).values()) {
+      if (isShowTable(td)) { set.add(td.getTableType()); }
+    }
+    List<TableDescription.TableType> result = new ArrayList<>(set);
+    Collections.sort(result);
+    return result;
+  }
+
   public final Element storeToElement() {
     Element ses = new Element("session");
     ses.setAttribute("id", getId());
@@ -390,6 +402,37 @@ public class SessionConfiguration {
     reader = new DbStructureReader();
     reader.setSessionConfiguration(this);
     reader.generateStructure();
+  }
+
+  /** Return all catalogs in table */
+  public Set<String> getCatalogs() {
+    return tableDescriptionsMap.keySet();
+  }
+
+  /** return all schemas of given catalog name */
+  public Set<String> getSchemas(String catalog) {
+    if (tableDescriptionsMap.get(catalog) == null) { return Collections.emptySet(); }
+    return tableDescriptionsMap.get(catalog).keySet();
+  }
+
+  /** Return all table types in given catalog and schema */
+  public Set<TableDescription.TableType> getTableTypes(String catalog, String schema) {
+    Set<TableDescription.TableType> result = new HashSet<>();
+    for (TableDescription td : tableDescriptionsMap.get(catalog).get(schema).values()) {
+      result.add(td.getTableType());
+    }
+    return result;
+  }
+
+  /** Return all tables of table type */
+  public List<TableDescription> getTableDescriptions(String catalog, String schema, TableDescription.TableType tableType) {
+    List<TableDescription> result = new ArrayList<>();
+    for (TableDescription td : tableDescriptionsMap.get(catalog).get(schema).values()) {
+      if (AbstractHelper.nullEquals(tableType, td.getTableType())) {
+        result.add(td);
+      }
+    }
+    return result;
   }
 
   @Override

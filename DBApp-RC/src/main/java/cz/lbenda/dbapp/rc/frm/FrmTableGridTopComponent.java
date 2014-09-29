@@ -19,11 +19,12 @@ import com.toedter.calendar.JDateChooserCellEditor;
 import cz.lbenda.dbapp.rc.AbstractHelper;
 import cz.lbenda.dbapp.rc.db.Column;
 import cz.lbenda.dbapp.rc.db.TableDescription;
-import cz.lbenda.dbapp.rc.frm.ChosenTable.ChosenTableListener;
 import cz.lbenda.dbapp.rc.frm.ChosenTable.RowUpdateListener;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Rectangle;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -44,10 +45,10 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableColumn;
-import org.netbeans.api.settings.ConvertAsProperties;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.util.NbBundle.Messages;
+import org.openide.util.lookup.Lookups;
 import org.openide.windows.TopComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,37 +56,58 @@ import org.slf4j.LoggerFactory;
 /**
  * Top component which displays something.
  */
-@ConvertAsProperties(
-        dtd = "-//cz.lbenda.applicationdb.rc.frm//FrmTableGrid//EN",
-        autostore = false
-)
 @TopComponent.Description(
         preferredID = "FrmTableGridTopComponent",
         //iconBase="SET/PATH/TO/ICON/HERE",
         persistenceType = TopComponent.PERSISTENCE_ALWAYS
 )
-@TopComponent.Registration(mode = "editor", openAtStartup = true)
+@TopComponent.Registration(mode = "editor", openAtStartup = false)
 @ActionID(category = "Window", id = "cz.lbenda.applicationdb.rc.frm.FrmTableGridTopComponent")
 @ActionReference(path = "Menu/Window" /*, position = 333 */)
-@TopComponent.OpenActionRegistration(
-        displayName = "#CTL_FrmTableGridAction",
-        preferredID = "FrmTableGridTopComponent"
-)
 @Messages({
   "CTL_FrmTableGridAction=Tabulka",
   "CTL_FrmTableGridTopComponent=Tabulka",
   "HINT_FrmTableGridTopComponent=Zobrazení dat vybrade DB tabulky"
 })
-public final class FrmTableGridTopComponent extends TopComponent implements ChosenTableListener {
+public final class FrmTableGridTopComponent extends TopComponent {
 
   private static final Logger LOG = LoggerFactory.getLogger(FrmTableGridTopComponent.class);
 
-  private static RSTableModel tableModel;
+  private RSTableModel tableModel;
+  /** Table description of table which is shown by this component */
+  private final TableDescription td;
 
-  public FrmTableGridTopComponent() {
+  public FrmTableGridTopComponent(final TableDescription td) {
+    this.td = td;
     initComponents();
     setName(Bundle.CTL_FrmTableGridTopComponent());
+    setHtmlDisplayName(generateTitle());
     setToolTipText(Bundle.HINT_FrmTableGridTopComponent());
+    associateLookup(Lookups.singleton(td));
+    this.addFocusListener(new FocusListener() {
+      @Override
+      public void focusGained(FocusEvent e) {
+        ChosenTable.getInstance().setTableDescription(td);
+      }
+      @Override
+      public void focusLost(FocusEvent e) {}
+    });
+  }
+
+  @Override
+  public void componentActivated() {
+    super.componentActivated();
+    ChosenTable.getInstance().setTableDescription(td);
+  }
+
+  private String generateTitle() {
+    StringBuilder title = new StringBuilder("<html><head></head><body><small><small>");
+    title.append(td.getSessionConfiguration().getId());
+    title.append("</small></small> ");
+    if (td.getSessionConfiguration().isShowCatalog(td.getCatalog())) { title.append(td.getCatalog()).append("."); }
+    if (td.getSessionConfiguration().isShowSchema(td.getSchema(), td.getCatalog())) { title.append(td.getSchema()).append("."); }
+    title.append("<b>").append(td.getName()).append("</b></body></html>");
+    return title.toString();
   }
 
   /**
@@ -94,7 +116,6 @@ public final class FrmTableGridTopComponent extends TopComponent implements Chos
    */
   // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
   private void initComponents() {
-
     jScrollPane1 = new javax.swing.JScrollPane();
     jTable1 = new javax.swing.JTable();
     jToolBar1 = new javax.swing.JToolBar();
@@ -230,7 +251,7 @@ public final class FrmTableGridTopComponent extends TopComponent implements Chos
 
   @Override
   public void componentOpened() {
-    ChosenTable.getInstance().addTableListener(this);
+    // ChosenTable.getInstance().addTableListener(this);
 
     jTable1.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
       @Override
@@ -238,6 +259,7 @@ public final class FrmTableGridTopComponent extends TopComponent implements Chos
         rowSelected();
       }
     });
+    this.tableChosen();
   }
 
   /** Method which is called when new row i selected */
@@ -248,7 +270,7 @@ public final class FrmTableGridTopComponent extends TopComponent implements Chos
       for (int i = 0; i < tableModel.getColumnCount(); i++) {
         values.put(this.td.getColumns().get(i), tableModel.getValueAt(selRow, i));
       }
-      ChosenTable.getInstance().setSelectedRowValues(values);
+      // ChosenTable.getInstance().setSelectedRowValues(td, values);
     }
   }
 
@@ -269,14 +291,12 @@ public final class FrmTableGridTopComponent extends TopComponent implements Chos
     // TODO read your settings according to their version
   }
 
-  private TableDescription td;
-
-  @Override
-  public void tableChosen(TableDescription tableDescription) {
-    this.td = tableDescription;
+  //  @Override
+  public void tableChosen() {
+    // this.td = tableDescription;
     this.bSave.setEnabled(false);
     if (tableModel != null) { ChosenTable.getInstance().removeRowUpdateListener(tableModel); }
-    tableModel = new RSTableModel(tableDescription);
+    tableModel = new RSTableModel(td);
     jTable1.setModel(tableModel);
     ChosenTable.getInstance().addRowUpdateListener(tableModel);
     jTable1.setDefaultRenderer(Object.class, new CustomRenderer(td));
@@ -523,7 +543,7 @@ public final class FrmTableGridTopComponent extends TopComponent implements Chos
       saveEnabled();
     }
 
-    /** Method which set save buton as enabled, or disabled, if there is something to save */
+    /** Method which set save button as enabled, or disabled, if there is something to save */
     private void saveEnabled() {
       bSave.setEnabled(!oldRows.isEmpty() || !newRows.isEmpty() || !deletedRows.isEmpty());
     }
@@ -542,6 +562,7 @@ public final class FrmTableGridTopComponent extends TopComponent implements Chos
       this.td = td;
     }
 
+    @Override
     public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
       Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
       Column col = td.getColumns().get(column);

@@ -286,7 +286,7 @@ public class DbStructureReader {
         while (tabs.next()) {
           TableDescription td = this.sessionConfiguration.getOrCreateTableDescription(tabs.getString("TABLE_CAT"),
               tabs.getString("TABLE_SCHEM"), tabs.getString("TABLE_NAME"));
-          td.setTableType(tabs.getString("TABLE_TYPE"));
+          td.setTableType(TableDescription.TableType.fromJDBC(tabs.getString("TABLE_TYPE")));
         }
         generateStructureColumns(dmd);
         generatePKColumns(dmd);

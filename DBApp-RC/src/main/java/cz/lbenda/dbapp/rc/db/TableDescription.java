@@ -17,7 +17,12 @@ package cz.lbenda.dbapp.rc.db;
 
 import cz.lbenda.dbapp.rc.AbstractHelper;
 import cz.lbenda.dbapp.rc.SessionConfiguration;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,12 +31,19 @@ import java.util.Map;
  */
 public class TableDescription implements Comparable<TableDescription> {
 
+  public enum TableType {
+    TABLE, VIEW, SYSTEM_TABLE ;
+    public static TableType fromJDBC(String tt) {
+      return TableType.valueOf(tt.replace(" ", "_"));
+    }
+  }
+
   private SessionConfiguration sessionConfiguration;  public final SessionConfiguration getSessionConfiguration() { return sessionConfiguration; } public final void setSessionConfiguration(SessionConfiguration sessionConfiguration) { this.sessionConfiguration = sessionConfiguration; }
 
   private final String name; public final String getName() { return name; }
   private final String schema; public final String getSchema() { return schema; }
   private final String catalog; public final String getCatalog() { return catalog; }
-  private String tableType; public final String getTableType() { return tableType; } public final void setTableType(String tableType) { this.tableType = tableType; }
+  private TableType tableType; public final TableType getTableType() { return tableType; } public final void setTableType(TableType tableType) { this.tableType = tableType; }
 
   /** List of all foreign keys in table */
   private final List<DbStructureReader.ForeignKey> foreignKeys = new ArrayList<>(); public final List<DbStructureReader.ForeignKey> getForeignKeys() { return foreignKeys; }
@@ -42,11 +54,13 @@ public class TableDescription implements Comparable<TableDescription> {
   /** All extension which is inform about the table is change. Mainly it's extension of another table */
   private final List<TableDescriptionExtension> reloadableExtension = new ArrayList<>(); public final List<TableDescriptionExtension> getReloadableExtension() { return reloadableExtension; }
 
+  private PropertyChangeSupport pch = new PropertyChangeSupport(this);
+
   public TableDescription(String catalog, String schema, String tableType, String name) {
     this.catalog = catalog;
     this.schema = schema;
     this.name = name;
-    this.tableType = tableType;
+    if (tableType != null) { this.tableType = TableType.valueOf(tableType); }
   }
 
   public final void addForeignKey(DbStructureReader.ForeignKey foreignKey) {
@@ -103,6 +117,9 @@ public class TableDescription implements Comparable<TableDescription> {
     return result;
   }
 
+  public final void addPropertyChangeListener(PropertyChangeListener l) { pch.addPropertyChangeListener(l); }
+  public final void removePropertyChangeListener(PropertyChangeListener l) { pch.removePropertyChangeListener(l); }
+
   @Override
   public final String toString() {
     return name;
@@ -111,8 +128,102 @@ public class TableDescription implements Comparable<TableDescription> {
   @Override
   public final int compareTo(TableDescription other) {
     if (other == null) { throw new NullPointerException(); }
-    return AbstractHelper.compareArrayNull(new String[] {catalog, schema, tableType, name},
-        new String[] {other.getCatalog(), other.getSchema(), other.getTableType(), other.getName()});
+    return AbstractHelper.compareArrayNull(new Comparable[] {catalog, schema, tableType, name},
+        new Comparable[] {other.getCatalog(), other.getSchema(), other.getTableType(), other.getName()});
+  }
+
+  private List<Object[]> rows = null;
+  private List<Object[]> loadedRows = null;
+  private Map<Object[], Object[]> newToOldRows = new HashMap<>();
+  private List<Object[]> newRows = new ArrayList<>();
+  private List<Object[]> removedRows = new ArrayList<>();
+
+  public List<Object[]> getRows() {
+    if (rows == null) {
+      if (loadedRows != null) {
+        rows = new ArrayList<>(loadedRows.size() + newRows.size());
+        for (Object[] row : loadedRows) { rows.add(row.clone()); }
+      } else {
+        rows = sessionConfiguration.getReader().readTableDate(this, -1, -1);
+        loadedRows = new ArrayList<>(rows.size());
+        for (Object[] row : rows) { loadedRows.add(row.clone()); }
+      }
+      for (int i = 0; i < loadedRows.size(); i++) { newToOldRows.put(rows.get(i), loadedRows.get(i)); }
+      rows.addAll(newRows);
+    }
+    return rows;
+  }
+
+  public Object[] createRow() {
+    Object[] row = new Object[columns.size()];
+    if (rows != null) { rows.add(row); }
+    newRows.add(row);
+    this.pch.firePropertyChange(null, null, null);
+    return row;
+  }
+
+  /** remove rows on given position */
+  public void removeRows(int[] poz) {
+    List<Integer> l = new ArrayList<>();
+    for (int po : poz) { l.add(po); }
+    Collections.sort(l);
+    for (int i = 0 ; i < l.size(); i++) {
+      removedRows.add(getRows().get(l.get(i).intValue() - i));
+      this.getRows().remove(l.get(i).intValue() - i);
+    }
+    this.pch.firePropertyChange(null, null, null);
+  }
+
+  public void cancelChanges() {
+    this.removedRows.clear();
+    this.newRows.clear();
+    this.rows = null;
+    this.pch.firePropertyChange(null, null, null);
+  }
+
+  public void reloadRows() {
+    this.rows = null;
+    this.loadedRows = null;
+    this.newRows.clear();
+    removedRows.clear();
+    this.pch.firePropertyChange(null, null, null);
+  }
+
+  public void saveChanges() {
+    for (Object[] row : removedRows) {
+      if (newToOldRows.containsKey(row)) { loadedRows.remove(newToOldRows.get(row)); }
+    }
+
+    for (int i = 0; i < loadedRows.size(); i++) {
+      Object[] o = loadedRows.get(i);
+      Object[] n = rows.get(i);
+
+      if (!Arrays.equals(o, n)) {
+        Map<Column, Object> oldRow = new HashMap<>();
+        Map<Column, Object> newRow = new HashMap<>();
+        for (Column col : getColumns()) {
+          newRow.put(col, n[col.getPosition()]);
+          oldRow.put(col, o[col.getPosition()]);
+        }
+        getSessionConfiguration().getReader().updateRow(this, oldRow, newRow);
+      }
+    }
+    rows = null;
+    loadedRows = null;
+
+    for (Object[] row : newRows) {
+      Map<Column, Object> newRow = new HashMap<>();
+      for (Column col : getColumns()) { newRow.put(col, row[col.getPosition()]); }
+      getSessionConfiguration().getReader().insertRow(this, newRow);
+    }
+    newRows.clear();
+
+    for (Object[] row : removedRows) {
+      Map<Column, Object> delRow = new HashMap<>();
+      for (Column col : getColumns()) { delRow.put(col, row[col.getPosition()]); }
+      getSessionConfiguration().getReader().deleteRow(this, delRow);
+    }
+    removedRows.clear();
   }
 
   @Override

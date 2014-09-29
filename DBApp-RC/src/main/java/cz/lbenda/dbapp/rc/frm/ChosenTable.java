@@ -18,6 +18,8 @@ package cz.lbenda.dbapp.rc.frm;
 import cz.lbenda.dbapp.rc.SessionConfiguration;
 import cz.lbenda.dbapp.rc.db.Column;
 import cz.lbenda.dbapp.rc.db.TableDescription;
+
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -32,7 +34,7 @@ public final class ChosenTable {
   }
 
   public interface ChosenRowListener {
-    void rowChosen(Map<Column, Object> selectedRowValues);
+    void rowChosen(TableDescription td, Map<Column, Object> selectedRowValues);
   }
 
   public interface RowUpdateListener {
@@ -49,8 +51,6 @@ public final class ChosenTable {
 
   private final static ChosenTable instance = new ChosenTable();
 
-  private TableDescription tableDescription; public TableDescription getTableDescription() { return tableDescription; }
-  private Map<Column, Object>selectedRowValues; public Map<Column, Object> getSelectedRowValues() { return selectedRowValues; }
   public final Set<ChosenTableListener> tableListeners = new HashSet<>();
   public final Set<ChosenRowListener> rowListeners = new HashSet<>();
   public final Set<RowUpdateListener> rowUpdateListeners = new HashSet<>();
@@ -64,16 +64,18 @@ public final class ChosenTable {
   }
 
   public void setTableDescription(TableDescription tableDescription) {
-    this.tableDescription = tableDescription;
     for (ChosenTableListener listener : tableListeners) {
       listener.tableChosen(tableDescription);
     }
   }
 
-  public void setSelectedRowValues(Map<Column, Object>selectedRowValues) {
-    this.selectedRowValues = selectedRowValues;
+  public void setSelectedRowValues(RowNode.Row row) {
+    Map<Column, Object> selectedRowValues = new HashMap<>();
+    for (Column col : row.getTableDescription().getColumns()) {
+      selectedRowValues.put(col, row.getRowValues()[col.getPosition()]);
+    }
     for (ChosenRowListener listener : rowListeners) {
-      listener.rowChosen(selectedRowValues);
+      listener.rowChosen(row.getTableDescription(), selectedRowValues);
     }
   }
 

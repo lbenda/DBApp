@@ -53,7 +53,6 @@ public final class FrmJoinedTablesTopComponent extends TopComponent implements C
     initComponents();
     setName(Bundle.CTL_FrmJoinedTablesTopComponent());
     setToolTipText(Bundle.HINT_FrmJoinedTablesTopComponent());
-
   }
 
   /**
@@ -102,15 +101,21 @@ public final class FrmJoinedTablesTopComponent extends TopComponent implements C
     // TODO read your settings according to their version
   }
 
+  private TableDescription td;
+
   @Override
   public void tableChosen(TableDescription tableDescription) {
-    jTabbedPane1.removeAll();
-    for (ForeignKey key : tableDescription.getForeignKeys()) {
-      if (key.getMasterTable().equals(tableDescription)) {
-        jTabbedPane1.addTab(key.getSlaveTable().getName(), new PanelJoinTable(key, false));
-      } else {
-        jTabbedPane1.addTab(String.format("%s (%s)", key.getSlaveColumn().getName(), key.getMasterTable().getName()),
-                new PanelJoinTable(key, true));
+    if (td != tableDescription) {
+      td = tableDescription;
+      jTabbedPane1.removeAll();
+      for (ForeignKey key : tableDescription.getForeignKeys()) {
+        if (key.getMasterTable().equals(tableDescription)) {
+          jTabbedPane1.addTab(key.getSlaveTable().getName(), new PanelJoinTable(key, false));
+        } else {
+          jTabbedPane1.addTab(String.format("%s (%s)", key.getSlaveColumn().getName(),
+                  key.getMasterTable().getName()),
+              new PanelJoinTable(key, true));
+        }
       }
     }
   }

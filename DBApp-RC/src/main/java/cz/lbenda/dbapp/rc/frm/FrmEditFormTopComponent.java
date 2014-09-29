@@ -153,16 +153,16 @@ public final class FrmEditFormTopComponent extends TopComponent implements Chose
     if (selectedRowValues != null && !selectedRowValues.isEmpty()) {
       td.getSessionConfiguration().getReader().updateRow(td, this.selectedRowValues, newValues);
       ChosenTable.getInstance().updateRowValues(td, selectedRowValues, newValues);
-      ChosenTable.getInstance().setSelectedRowValues(newValues);
+      // ChosenTable.getInstance().setSelectedRowValues(td, newValues); // FIXME
     } else {
       td.getSessionConfiguration().getReader().insertRow(td, newValues);
       ChosenTable.getInstance().updateRowValues(td, null, newValues);
-      ChosenTable.getInstance().setSelectedRowValues(newValues);
+      // ChosenTable.getInstance().setSelectedRowValues(td, newValues); // FIXME
     }
   }//GEN-LAST:event_jButton1ActionPerformed
 
   private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-    this.rowChosen(ChosenTable.getInstance().getSelectedRowValues());
+    // this.rowChosen(td, ChosenTable.getInstance().getSelectedRowValues()); // FIXME
   }//GEN-LAST:event_jButton2ActionPerformed
 
   private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
@@ -211,15 +211,21 @@ public final class FrmEditFormTopComponent extends TopComponent implements Chose
   }
 
   @Override
-  public final void rowChosen(final Map<Column, Object> selectedRowValues) {
+  public final void rowChosen(final TableDescription td, final Map<Column, Object> selectedRowValues) {
     this.selectedRowValues = selectedRowValues;
+    if (this.td != td) {
+      generateForm(td);
+      this.td = td;
+    }
     valuesToFields(selectedRowValues);
   }
 
   @Override
   public final void tableChosen(final TableDescription tableDescription) {
-    this.td = tableDescription;
-    this.generateForm(tableDescription);
+    if (this.td != tableDescription) {
+      this.td = tableDescription;
+      this.generateForm(tableDescription);
+    }
   }
 
   private void generateForm(final TableDescription td) {

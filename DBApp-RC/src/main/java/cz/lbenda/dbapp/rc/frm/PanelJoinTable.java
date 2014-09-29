@@ -101,7 +101,7 @@ public class PanelJoinTable extends javax.swing.JPanel implements ChosenTable.Ch
   // End of variables declaration//GEN-END:variables
 
   @Override
-  public final void rowChosen(final Map<Column, Object> selectedRowValues) {
+  public final void rowChosen(TableDescription td, final Map<Column, Object> selectedRowValues) {
     model.setMasterRowValues(selectedRowValues);
   }
 

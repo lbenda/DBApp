@@ -16,6 +16,7 @@
 package cz.lbenda.dbapp.rc.db;
 
 import java.sql.Types;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +25,12 @@ import java.util.Map;
  */
 public class Column {
 
-  public enum ColumnType { STRING, INTEGER, DATE, DATE_TIME, OBJECT }
+  public enum ColumnType {
+    STRING(String.class), INTEGER(Integer.class), DATE(Date.class), DATE_TIME(Date.class), OBJECT(Object.class);
+    private final Class clazz;
+    private ColumnType(Class clazz) { this.clazz = clazz; }
+    public Class getDataType() { return clazz; }
+  }
 
   private final TableDescription tableDescription; public final TableDescription getTableDescription() { return tableDescription; }
   private final String name; public final String getName() { return name; }

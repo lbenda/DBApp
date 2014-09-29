@@ -17,20 +17,19 @@ package cz.lbenda.dbapp.rc.frm;
 
 import cz.lbenda.dbapp.rc.SessionConfiguration;
 import cz.lbenda.dbapp.rc.db.TableDescription;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.util.HashMap;
-import java.util.Map;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeModel;
-import javax.swing.tree.TreePath;
+
+import java.awt.*;
+import java.util.*;
+
 import org.netbeans.api.settings.ConvertAsProperties;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
+import org.openide.explorer.ExplorerManager;
+import org.openide.explorer.ExplorerUtils;
+import org.openide.explorer.view.BeanTreeView;
 import org.openide.util.NbBundle.Messages;
 import org.openide.windows.TopComponent;
+import org.openide.windows.WindowManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,9 +57,10 @@ import org.slf4j.LoggerFactory;
   "CTL_FrmDbStructureTopComponent=Struktura",
   "HINT_FrmDbStructureTopComponent=Struktura databáze"
 })
-public final class FrmDbStructureTopComponent extends TopComponent implements ChosenTable.SessionChangeListener {
+public final class FrmDbStructureTopComponent extends TopComponent implements ExplorerManager.Provider, ChosenTable.ConfigurationUpdateListener {
 
   private static final Logger LOG = LoggerFactory.getLogger(FrmDbStructureTopComponent.class);
+  private static ExplorerManager em = new ExplorerManager();
 
   private SessionConfiguration sc = null;
 
@@ -68,8 +68,13 @@ public final class FrmDbStructureTopComponent extends TopComponent implements Ch
     initComponents();
     setName(Bundle.CTL_FrmDbStructureTopComponent());
     setToolTipText(Bundle.HINT_FrmDbStructureTopComponent());
-
-    ChosenTable.getInstance().addSessionChangeListener(this);
+    setLayout(new BorderLayout());
+    BeanTreeView btw = new BeanTreeView();
+    btw.setRootVisible(false);
+    add(btw, BorderLayout.CENTER);
+    refreshNode();
+    associateLookup(ExplorerUtils.createLookup(em, getActionMap()));
+    ChosenTable.getInstance().addConfigurationUpdateListener(this);
   }
 
   /**
@@ -78,104 +83,33 @@ public final class FrmDbStructureTopComponent extends TopComponent implements Ch
    */
   // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
   private void initComponents() {
-
-    jScrollPane1 = new javax.swing.JScrollPane();
-    jTree1 = new javax.swing.JTree();
-
-    javax.swing.tree.DefaultMutableTreeNode treeNode1 = new javax.swing.tree.DefaultMutableTreeNode("root");
-    jTree1.setModel(new javax.swing.tree.DefaultTreeModel(treeNode1));
-    jScrollPane1.setViewportView(jTree1);
-
     javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
     this.setLayout(layout);
     layout.setHorizontalGroup(
       layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
+      .addGap(0, 400, Short.MAX_VALUE)
     );
     layout.setVerticalGroup(
       layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 300, Short.MAX_VALUE)
+      .addGap(0, 300, Short.MAX_VALUE)
     );
+    refreshNode();
   }// </editor-fold>//GEN-END:initComponents
 
+  private void refreshNode() {
+    em.setRootContext(new StructureChildFactory.RootNode());
+  }
+
   // Variables declaration - do not modify//GEN-BEGIN:variables
-  private javax.swing.JScrollPane jScrollPane1;
-  private javax.swing.JTree jTree1;
   // End of variables declaration//GEN-END:variables
   @Override
   public void componentOpened() {
-    showStructure(sc);
-
-    MouseListener ml = new MouseAdapter() {
-      @Override
-      public void mousePressed(MouseEvent e) {
-        int selRow = jTree1.getRowForLocation(e.getX(), e.getY());
-        TreePath selPath = jTree1.getPathForLocation(e.getX(), e.getY());
-        if (selPath != null) {
-          if(selRow != -1) {
-            if(e.getClickCount() == 2) {
-              DefaultMutableTreeNode nod = (DefaultMutableTreeNode) selPath.getLastPathComponent();
-              if (TableDescription.class.equals(nod.getUserObject().getClass())) {
-                selectTable((TableDescription) nod.getUserObject());
-              }
-            }
-          }
-        }
-    }};
-    jTree1.addMouseListener(ml);
+    refreshNode();
   }
 
-  private void showStructure(SessionConfiguration sc) {
-    DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("Root Node");
-    TreeModel model = new DefaultTreeModel(rootNode);
-    if (sc != null) {
-      String catalog = null, schema = null, tableType = null;
-      Map<String, DefaultMutableTreeNode> catalogNodes = new HashMap<>();
-      Map<String, DefaultMutableTreeNode> schemaNodes = new HashMap<>();
-      Map<String, DefaultMutableTreeNode> tableTypesNodes = new HashMap<>();
-
-      for (TableDescription tableDescription : sc.getTableDescriptions()) {
-        if (sc.isShowTable(tableDescription)) {
-          if (sc.isShowCatalog(tableDescription.getCatalog())) {
-            if (!catalogNodes.containsKey(tableDescription.getCatalog())) {
-              catalogNodes.put(tableDescription.getCatalog(),
-                  new DefaultMutableTreeNode(tableDescription.getCatalog()));
-              rootNode.add(catalogNodes.get(tableDescription.getCatalog()));
-            }
-          }
-          String sch = "\"" + tableDescription.getCatalog() + "\".\"" + tableDescription.getSchema() + "\"";
-          if (sc.isShowSchema(tableDescription.getCatalog(), tableDescription.getSchema())) {
-            if (!schemaNodes.containsKey(sch)) {
-              DefaultMutableTreeNode dmn = new DefaultMutableTreeNode(tableDescription.getSchema());
-              schemaNodes.put(sch, dmn);
-              if (sc.isShowCatalog(tableDescription.getCatalog())) {
-                rootNode.add(dmn);
-              } else {
-                catalogNodes.get(tableDescription.getCatalog()).add(dmn);
-              }
-            }
-          }
-          String tt = sch + ".\"" + tableDescription.getTableType() + "\"";
-          final DefaultMutableTreeNode tableTypeNode;
-          if (!tableTypesNodes.containsKey(tt)) {
-            tableTypeNode = new DefaultMutableTreeNode(tableDescription.getTableType());
-            tableTypesNodes.put(tt, tableTypeNode);
-            if (sc.isShowSchema(tableDescription.getCatalog(), tableDescription.getSchema())) {
-              schemaNodes.get(sch).add(tableTypeNode);
-            } else if (sc.isShowCatalog(tableDescription.getCatalog())) {
-              catalogNodes.get(tableDescription.getCatalog()).add(tableTypeNode);
-            } else {
-              rootNode.add(tableTypeNode);
-            }
-          } else {
-            tableTypeNode = tableTypesNodes.get(tt);
-          }
-          tableTypeNode.add(new DefaultMutableTreeNode(tableDescription));
-        }
-      }
-    }
-    jTree1.setModel(model);
-    jTree1.setRootVisible(false);
+  @Override
+  public ExplorerManager getExplorerManager() {
+    return em;
   }
 
   @Override
@@ -183,9 +117,22 @@ public final class FrmDbStructureTopComponent extends TopComponent implements Ch
     // TODO add custom code on component closing
   }
 
+  /*
   public void selectTable(TableDescription td) {
+    TopComponent tc = findTheTableComponent(td);
     ChosenTable.getInstance().setTableDescription(td);
   }
+
+  private TopComponent findTheTableComponent(TableDescription td) {
+    Set<TopComponent> openTC = WindowManager.getDefault().getRegistry().getOpened();
+    for (TopComponent tc : openTC) {
+      if (tc.getLookup().lookup(TableDescription.class) == td) {
+        return tc;
+      }
+    }
+    return null;
+  }
+  */
 
   void writeProperties(java.util.Properties p) {
     // better to version settings since initial version as advocated at
@@ -200,8 +147,7 @@ public final class FrmDbStructureTopComponent extends TopComponent implements Ch
   }
 
   @Override
-  public void sessionConfigurationChanged(SessionConfiguration sc) {
-    this.sc = sc;
-    this.showStructure(sc);
+  public void configurationChanged() {
+    this.refreshNode();
   }
 }
