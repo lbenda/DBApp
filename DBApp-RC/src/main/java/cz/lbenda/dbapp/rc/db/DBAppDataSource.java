@@ -16,9 +16,10 @@
 package cz.lbenda.dbapp.rc.db;
 
 import cz.lbenda.dbapp.rc.SessionConfiguration;
+import org.apache.jackrabbit.test.LogPrintWriter;
+
 import java.io.File;
 import java.io.PrintWriter;
-import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -26,20 +27,25 @@ import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
-import org.apache.jackrabbit.test.LogPrintWriter;
-import org.slf4j.LoggerFactory;
 
-/**
+/** Implementation of data source
  * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/23/14.
  */
 public class DBAppDataSource implements DataSource {
 
-  private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(DBAppDataSource.class);
+  private final static org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(DBAppDataSource.class);
+
+  public interface DBAppDataSourceExceptionListener {
+    void onDBAppDataSourceException(Exception e);
+  }
 
   private final SessionConfiguration sessionConfiguration;
+  private final List<DBAppDataSourceExceptionListener> listeners = new ArrayList<>();
 
   public DBAppDataSource(SessionConfiguration sessionConfiguration) {
     this.sessionConfiguration = sessionConfiguration;
@@ -55,13 +61,17 @@ public class DBAppDataSource implements DataSource {
     return createConnection(username, password);
   }
 
+  private PrintWriter out;
+
   @Override
   public PrintWriter getLogWriter() throws SQLException {
-    return new LogPrintWriter(LOG);
+    if (out == null) { return new LogPrintWriter(LOG); }
+    return out;
   }
 
   @Override
   public void setLogWriter(PrintWriter out) throws SQLException {
+    this.out = out;
   }
 
   private int loginTimeout = 0;
@@ -78,13 +88,15 @@ public class DBAppDataSource implements DataSource {
 
   @Override
   public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-    LOG.debug("The getParentLogger isn't supported. SLF4J is used.");
+    try {
+      getLogWriter().print("The getParentLogger isn't supported. SLF4J is used.");
+    } catch (SQLException e) { /* never heppend */ }
     throw new SQLFeatureNotSupportedException("The getParentLogger isn't supported. SLF4J is used.");
   }
 
   @Override
   public <T> T unwrap(Class<T> iface) throws SQLException {
-    LOG.debug("This data source didn't implement wraping and unwraping");
+    getLogWriter().print("This data source didn't implement wraping and unwraping");
     throw new SQLException("This data source didn't implement wraping and unwraping");
   }
 
@@ -98,15 +110,18 @@ public class DBAppDataSource implements DataSource {
         sessionConfiguration.getJdbcConfiguration().getPassword());
   }
 
-  private Connection createConnection(String username, String password) throws SQLException, RuntimeException {
+  private Connection createConnection(String username, String password) throws SQLException {
     URL[] urls = new URL[sessionConfiguration.getLibrariesPaths().size()];
     int i = 0;
     for (String lib : sessionConfiguration.getLibrariesPaths()) {
-      LOG.trace("Path to jar: " + lib);
       try {
         urls[i] = (new File(lib)).toURI().toURL();
       } catch (MalformedURLException e) {
-        LOG.error("Problem with create URL from file: " + lib, e);
+        getLogWriter().print("Problem with create URL from file: " + lib);
+        e.printStackTrace(getLogWriter());
+        SQLException ex = new SQLException("Problem with create URL from file" + lib, e);
+        onException(ex);
+        throw ex;
       }
       i++;
     }
@@ -121,14 +136,35 @@ public class DBAppDataSource implements DataSource {
           || "".equals(sessionConfiguration.getJdbcConfiguration().getDriverClass())) {
         sessionConfiguration.getJdbcConfiguration().setDriverClass("org.hsqldb.jdbcDriver");
       }
-      LOG.trace("Read driver class: " + sessionConfiguration.getJdbcConfiguration().getDriverClass());
       Class driverCls = urlCl.loadClass(sessionConfiguration.getJdbcConfiguration().getDriverClass());
       Driver driver = (Driver) driverCls.newInstance();
       return driver.connect(sessionConfiguration.getJdbcConfiguration().getUrl(), connectionProps);
     } catch (ClassNotFoundException | SecurityException
             | InstantiationException | IllegalAccessException | IllegalArgumentException e) {
-      LOG.error("Filed to create connection", e);
-      ((InvocationTargetException) e).printStackTrace(new LogPrintWriter(LOG));
-      throw new RuntimeException("Filed to create connection", e);    }
+      getLogWriter().print("Filed to create connection");
+      e.printStackTrace(getLogWriter());
+      SQLException ex = new SQLException("Filed to create connection", e);
+      onException(ex);
+      throw ex;
+    } catch (SQLException e) {
+      getLogWriter().print("Filed to create connection");
+      e.printStackTrace(getLogWriter());
+      onException(e);
+      throw e;
+    }
+  }
+
+  public void onException(Exception e) {
+    for (DBAppDataSourceExceptionListener l : listeners) {
+      l.onDBAppDataSourceException(e);
+    }
+  }
+
+  public void addListener(DBAppDataSourceExceptionListener listener) {
+    this.listeners.add(listener);
+  }
+
+  public void removeListener(DBAppDataSourceExceptionListener listener) {
+    this.listeners.remove(listener);
   }
 }

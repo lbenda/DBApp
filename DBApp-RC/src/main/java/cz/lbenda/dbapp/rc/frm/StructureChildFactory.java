@@ -30,6 +30,8 @@ import org.openide.nodes.ChildFactory;
 import org.openide.nodes.Children;
 import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
+import org.openide.util.NbBundle.Messages;
+import org.openide.util.Utilities;
 import org.openide.util.actions.SystemAction;
 import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
@@ -41,6 +43,9 @@ import org.slf4j.LoggerFactory;
 /**
 * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/28/14.
 */
+@Messages({
+    "ERR_ConnectionNotEstablished=The connection isn't established: %s"
+})
 public class StructureChildFactory extends ChildFactory<Object> {
 
   private static final Logger LOG = LoggerFactory.getLogger(StructureChildFactory.class);
@@ -55,8 +60,14 @@ public class StructureChildFactory extends ChildFactory<Object> {
       toPopulate.add(new StrucHolder(sc, null, null, null));
     }
   }
-  private void createCatalogKeys(SessionConfiguration sc, List<Object> toPopulate) {
-    sc.reloadStructure();
+  private boolean createCatalogKeys(SessionConfiguration sc, List<Object> toPopulate) {
+    try {
+      sc.reloadStructure();
+    } catch (Exception e) {
+      LOG.error("Problem with reload structure", e);
+      toPopulate.add(new ErrorNode(String.format(Bundle.ERR_ConnectionNotEstablished(), e), this));
+      return true;
+    }
     for (String cat : sc.getCatalogs()) {
       if (sc.isShowCatalog(cat)) { toPopulate.add(new StrucHolder(sc, cat, null, null)); }
     }
@@ -65,6 +76,7 @@ public class StructureChildFactory extends ChildFactory<Object> {
         createSchemaKeys(sc, cat, toPopulate);
       }
     }
+    return true;
   }
   private void createSchemaKeys(SessionConfiguration sc, String catalog, List<Object> toPopulate) {
     for (String sch : sc.getSchemas(catalog)) {
@@ -92,7 +104,7 @@ public class StructureChildFactory extends ChildFactory<Object> {
   protected boolean createKeys(List<Object> toPopulate) {
     switch (strucHolder.getLevel()) {
       case 0 : createSCKeys(toPopulate); break;
-      case 1 : createCatalogKeys(strucHolder.getSessionConfiguration(), toPopulate); break;
+      case 1 : return createCatalogKeys(strucHolder.getSessionConfiguration(), toPopulate);
       case 2 : createSchemaKeys(strucHolder.getSessionConfiguration(), strucHolder.getCatalog(), toPopulate); break;
       case 3 : createTableTypeKeys(strucHolder.getSessionConfiguration(), strucHolder.getCatalog(), strucHolder.getSchema(), toPopulate); break;
       case 4 : createTDKeys(strucHolder.getSessionConfiguration(), strucHolder.getCatalog(), strucHolder.getSchema(), strucHolder.getTableType(), toPopulate); break;
@@ -110,7 +122,11 @@ public class StructureChildFactory extends ChildFactory<Object> {
           LOG.error("Failed node create", ex);
           Exceptions.printStackTrace(ex);
         }
-      } else { return new StructureNode(sh); }
+      } else {
+        return new StructureNode(sh);
+      }
+    } else if (key instanceof ErrorNode) {
+      return (ErrorNode) key;
     } else {
       try {
         return new TableDescriptionNode((TableDescription) key);
@@ -152,6 +168,22 @@ public class StructureChildFactory extends ChildFactory<Object> {
     }
   }
 
+  public static class ErrorNode extends AbstractNode {
+    public ErrorNode(String message, StructureChildFactory scf) {
+      this(message, scf, new InstanceContent());
+    }
+    public ErrorNode(String message, final StructureChildFactory scf, InstanceContent ic) {
+      super(Children.LEAF, new AbstractLookup(ic));
+      setDisplayName(message);
+      ic.add(new ReloadCookie() { @Override public void reload() { scf.refresh(true); }});
+    }
+    @Override
+    public Action[] getActions(boolean context) {
+      List<? extends Action> myActions = Utilities.actionsForPath("Actions/DBStructure");
+      return myActions.toArray(new Action[myActions.size()]);
+    }
+  }
+
   public static class StructureNode extends AbstractNode {
     public StructureNode(StrucHolder sh) {
       super(Children.create(new StructureChildFactory(sh), true));
@@ -170,7 +202,15 @@ public class StructureChildFactory extends ChildFactory<Object> {
     }
     public SessionConfigurationNode(final SessionConfiguration sc, final InstanceContent ic) throws IntrospectionException {
       super(sc, Children.create(new StructureChildFactory(new StrucHolder(sc, null, null, null)), true), new AbstractLookup(ic));
+      ic.add(new OpenCookie() {
+        @Override
+        public void open() { sc.reloadStructure(); }
+      });
       setDisplayName(sc.getId());
+    }
+    @Override
+    public Action getPreferredAction() {
+      return SystemAction.get(OpenAction.class);
     }
     @Override
     public Action[] getActions(boolean context) {

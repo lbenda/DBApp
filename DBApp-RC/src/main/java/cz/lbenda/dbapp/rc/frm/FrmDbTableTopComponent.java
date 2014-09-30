@@ -5,6 +5,10 @@
  */
 package cz.lbenda.dbapp.rc.frm;
 
+import cz.lbenda.dbapp.actions.DBTableCancelCookie;
+import cz.lbenda.dbapp.actions.DBTableReloadCookie;
+import cz.lbenda.dbapp.actions.DBTableRowAddCookie;
+import cz.lbenda.dbapp.actions.DBTableRowsRemoveCookie;
 import cz.lbenda.dbapp.rc.db.Column;
 import cz.lbenda.dbapp.rc.db.TableDescription;
 import java.awt.BorderLayout;
@@ -18,6 +22,7 @@ import java.beans.PropertyChangeListener;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import javax.swing.Action;
+import javax.swing.ActionMap;
 import javax.swing.CellEditor;
 import javax.swing.JLabel;
 import javax.swing.JTable;
@@ -33,16 +38,19 @@ import org.netbeans.swing.etable.ETableColumn;
 import org.netbeans.swing.etable.ETableColumnModel;
 import org.netbeans.swing.outline.DefaultOutlineCellRenderer;
 import org.openide.awt.HtmlRenderer;
+import org.openide.awt.UndoRedo;
 import org.openide.explorer.ExplorerManager;
 import org.openide.explorer.ExplorerUtils;
 import org.openide.explorer.view.OutlineView;
-import org.openide.filesystems.FileUtil;
 import org.openide.nodes.AbstractNode;
 import org.openide.nodes.ChildFactory;
 import org.openide.nodes.Children;
 import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
 import org.openide.util.NbBundle.Messages;
+import org.openide.util.Utilities;
+import org.openide.util.lookup.AbstractLookup;
+import org.openide.util.lookup.InstanceContent;
 import org.openide.windows.TopComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,20 +79,19 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
   private final OutlineView ov;
   private final RowChildFactory childFactory;
 
+  private InstanceContent ic = new InstanceContent();
+
+  private UndoRedo.Manager manager = new UndoRedo.Manager();
+
   public FrmDbTableTopComponent(TableDescription td) {
     this.td = td;
+    td.addUndoableEditListener(manager);
     initComponents();
-
-    Action rowAdd = FileUtil.getConfigObject("Actions/Edit/cz-lbenda-dbapp-actions-RowAddAction.instance", Action.class);
-
-    getActionMap().put("add", rowAdd);
-    for (Object keys : getActionMap().allKeys()) {
-      LOG.trace("Keys in action map: " + keys);
-    }
+    registerActionMap();
     // setName(Bundle.CTL_FrnDbTableTopComponent());
     // setToolTipText(Bundle.HINT_FrnDbTableTopComponent());
     setHtmlDisplayName(generateTitle());
-    jPanel1.setLayout(new BorderLayout());
+    setLayout(new BorderLayout());
     childFactory = new RowChildFactory(td);
     Children kids = Children.create(childFactory, true);
     Node rootNode = new AbstractNode(kids);
@@ -102,9 +109,18 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
     ov.setPropertyColumns(ar);
     ov.getOutline().setDefaultRenderer(Node.Property.class, new ColumnCellRenderer(td));
     // setCellEditors(ov);
-    jPanel1.add(ov, BorderLayout.CENTER);
+    add(ov, BorderLayout.CENTER);
     em.setRootContext(rootNode);
-    associateLookup(ExplorerUtils.createLookup(em, getActionMap()));
+
+    ic.add(addCookie);
+    ic.add(removeCookie);
+    ic.add(cancelCookie);
+    ic.add(reloadCookie);
+    ic.add(em);
+    ic.add(getActionMap());
+    associateLookup(new AbstractLookup(ic));
+
+    // associateLookup(ExplorerUtils.createLookup(em, getActionMap()));
     for (Column col : td.getColumns()) {
       CellEditor ce = ((ETable) ov.getOutline()).getCellEditor(1, col.getPosition() + 1);
       LOG.trace("Celle editor for column: " + col.getName() + " is " + ce.getClass());
@@ -140,10 +156,49 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
   ListSelectionListener listSelectionListener = new ListSelectionListener() {
     @Override
     public void valueChanged(ListSelectionEvent e) {
-      ChosenTable.getInstance().setSelectedRowValues(new RowNode.Row(td,
-          td.getRows().get(ov.getOutline().getSelectedRow())));
+      if (ov.getOutline().getSelectedRow() != -1) {
+        RowNode.Row row = new RowNode.Row(td, td.getRows().get(ov.getOutline().getSelectedRow()));
+        ChosenTable.getInstance().setSelectedRowValues(row);
+      }
     }
   };
+
+  DBTableRowAddCookie addCookie = new DBTableRowAddCookie() {
+    @Override
+    public void addRow() {
+      ov.getOutline().getModel().addTableModelListener(tableModelListener);
+      td.createRow();
+      ov.getOutline().unsetQuickFilter();
+      ic.add(td);
+    }
+  };
+
+  DBTableRowsRemoveCookie removeCookie = new DBTableRowsRemoveCookie() {
+    @Override
+    public void removeRows() {
+      td.removeRows(ov.getOutline().getSelectedRows());
+      ic.add(td);
+    }
+  };
+
+  DBTableCancelCookie cancelCookie = new DBTableCancelCookie() {
+    @Override
+    public void cancelChanges() {
+      td.cancelChanges();
+    }
+  };
+
+  DBTableReloadCookie reloadCookie = new DBTableReloadCookie() {
+    @Override
+    public void reloadTable() {
+      td.reloadRows();
+    }
+  };
+
+  @Override
+  public UndoRedo getUndoRedo() {
+    return manager;
+  }
 
   private String generateTitle() {
     StringBuilder title = new StringBuilder("<html><body><small><small>");
@@ -155,6 +210,16 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
     return title.toString();
   }
 
+  public void registerActionMap() {
+    ActionMap am = super.getActionMap();
+    List<? extends Action> myActions = Utilities.actionsForPath("Toolbars/DBTable");
+    LOG.trace("Count of actions: " + myActions.size());
+    for (Action a : myActions) {
+      a.setEnabled(true);
+      am.put("cz.lbenda.dbapp.actions.RowAddAction", a);
+    }
+  }
+
   /**
    * This method is called from within the constructor to initialize the form. WARNING: Do NOT
    * modify this code. The content of this method is always regenerated by the Form Editor.
@@ -162,130 +227,17 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
   // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
   private void initComponents() {
 
-    jToolBar1 = new javax.swing.JToolBar();
-    bSave = new javax.swing.JButton();
-    bAdd = new javax.swing.JButton();
-    bRemove = new javax.swing.JButton();
-    bCancel = new javax.swing.JButton();
-    bReload = new javax.swing.JButton();
-    jPanel1 = new javax.swing.JPanel();
-
-    jToolBar1.setRollover(true);
-
-    bSave.setIcon(new javax.swing.ImageIcon(getClass().getResource("/cz/lbenda/dbapp/rc/frm/document-save.png"))); // NOI18N
-    org.openide.awt.Mnemonics.setLocalizedText(bSave, org.openide.util.NbBundle.getMessage(FrmDbTableTopComponent.class, "FrmDbTableTopComponent.bSave.text")); // NOI18N
-    bSave.setToolTipText(org.openide.util.NbBundle.getMessage(FrmDbTableTopComponent.class, "FrmDbTableTopComponent.bSave.toolTipText")); // NOI18N
-    bSave.setFocusable(false);
-    bSave.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-    bSave.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-    bSave.addActionListener(new java.awt.event.ActionListener() {
-      public void actionPerformed(java.awt.event.ActionEvent evt) {
-        bSaveActionPerformed(evt);
-      }
-    });
-    jToolBar1.add(bSave);
-
-    bAdd.setIcon(new javax.swing.ImageIcon(getClass().getResource("/cz/lbenda/dbapp/rc/frm/edit-table-insert-row-under.png"))); // NOI18N
-    org.openide.awt.Mnemonics.setLocalizedText(bAdd, org.openide.util.NbBundle.getMessage(FrmDbTableTopComponent.class, "FrmDbTableTopComponent.bAdd.text")); // NOI18N
-    bAdd.setToolTipText(org.openide.util.NbBundle.getMessage(FrmDbTableTopComponent.class, "FrmDbTableTopComponent.bAdd.toolTipText")); // NOI18N
-    bAdd.setFocusable(false);
-    bAdd.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-    bAdd.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-    bAdd.addActionListener(new java.awt.event.ActionListener() {
-      public void actionPerformed(java.awt.event.ActionEvent evt) {
-        bAddActionPerformed(evt);
-      }
-    });
-    jToolBar1.add(bAdd);
-
-    bRemove.setIcon(new javax.swing.ImageIcon(getClass().getResource("/cz/lbenda/dbapp/rc/frm/edit-table-delete-row.png"))); // NOI18N
-    org.openide.awt.Mnemonics.setLocalizedText(bRemove, org.openide.util.NbBundle.getMessage(FrmDbTableTopComponent.class, "FrmDbTableTopComponent.bRemove.text")); // NOI18N
-    bRemove.setToolTipText(org.openide.util.NbBundle.getMessage(FrmDbTableTopComponent.class, "FrmDbTableTopComponent.bRemove.toolTipText")); // NOI18N
-    bRemove.setFocusable(false);
-    bRemove.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-    bRemove.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-    bRemove.addActionListener(new java.awt.event.ActionListener() {
-      public void actionPerformed(java.awt.event.ActionEvent evt) {
-        bRemoveActionPerformed(evt);
-      }
-    });
-    jToolBar1.add(bRemove);
-
-    bCancel.setIcon(new javax.swing.ImageIcon(getClass().getResource("/cz/lbenda/dbapp/rc/frm/dialog-cancel.png"))); // NOI18N
-    org.openide.awt.Mnemonics.setLocalizedText(bCancel, org.openide.util.NbBundle.getMessage(FrmDbTableTopComponent.class, "FrmDbTableTopComponent.bCancel.text")); // NOI18N
-    bCancel.setToolTipText(org.openide.util.NbBundle.getMessage(FrmDbTableTopComponent.class, "FrmDbTableTopComponent.bCancel.toolTipText")); // NOI18N
-    bCancel.setFocusable(false);
-    bCancel.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-    bCancel.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-    bCancel.addActionListener(new java.awt.event.ActionListener() {
-      public void actionPerformed(java.awt.event.ActionEvent evt) {
-        bCancelActionPerformed(evt);
-      }
-    });
-    jToolBar1.add(bCancel);
-
-    bReload.setIcon(new javax.swing.ImageIcon(getClass().getResource("/cz/lbenda/dbapp/rc/frm/task-recurring.png"))); // NOI18N
-    org.openide.awt.Mnemonics.setLocalizedText(bReload, org.openide.util.NbBundle.getMessage(FrmDbTableTopComponent.class, "FrmDbTableTopComponent.bReload.text")); // NOI18N
-    bReload.setToolTipText(org.openide.util.NbBundle.getMessage(FrmDbTableTopComponent.class, "FrmDbTableTopComponent.bReload.toolTipText")); // NOI18N
-    bReload.setFocusable(false);
-    bReload.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-    bReload.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-    bReload.addActionListener(new java.awt.event.ActionListener() {
-      public void actionPerformed(java.awt.event.ActionEvent evt) {
-        bReloadActionPerformed(evt);
-      }
-    });
-    jToolBar1.add(bReload);
-
-    javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-    jPanel1.setLayout(jPanel1Layout);
-    jPanel1Layout.setHorizontalGroup(
-      jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addGap(0, 400, Short.MAX_VALUE)
-    );
-    jPanel1Layout.setVerticalGroup(
-      jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addGap(0, 269, Short.MAX_VALUE)
-    );
-
     javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
     this.setLayout(layout);
     layout.setHorizontalGroup(
       layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addComponent(jToolBar1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-      .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+      .addGap(0, 400, Short.MAX_VALUE)
     );
     layout.setVerticalGroup(
       layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addGroup(layout.createSequentialGroup()
-        .addComponent(jToolBar1, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
-        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-        .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+      .addGap(0, 300, Short.MAX_VALUE)
     );
   }// </editor-fold>//GEN-END:initComponents
-
-  private void bAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bAddActionPerformed
-    ov.getOutline().getModel().addTableModelListener(tableModelListener);
-    td.createRow();
-    ov.getOutline().unsetQuickFilter();
-    // ov.getOutline().getModel().removeTableModelListener(tableModelListener);
-  }//GEN-LAST:event_bAddActionPerformed
-
-  private void bRemoveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bRemoveActionPerformed
-    td.removeRows(ov.getOutline().getSelectedRows());
-  }//GEN-LAST:event_bRemoveActionPerformed
-
-  private void bCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bCancelActionPerformed
-    td.cancelChanges();
-  }//GEN-LAST:event_bCancelActionPerformed
-
-  private void bSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bSaveActionPerformed
-    td.saveChanges();
-  }//GEN-LAST:event_bSaveActionPerformed
-
-  private void bReloadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bReloadActionPerformed
-    td.reloadRows();
-  }//GEN-LAST:event_bReloadActionPerformed
 
   @Override
   public void componentActivated() {
@@ -300,13 +252,6 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
   }
 
   // Variables declaration - do not modify//GEN-BEGIN:variables
-  private javax.swing.JButton bAdd;
-  private javax.swing.JButton bCancel;
-  private javax.swing.JButton bReload;
-  private javax.swing.JButton bRemove;
-  private javax.swing.JButton bSave;
-  private javax.swing.JPanel jPanel1;
-  private javax.swing.JToolBar jToolBar1;
   // End of variables declaration//GEN-END:variables
   @Override
   public void componentOpened() {
@@ -331,6 +276,13 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
         refresh(true);
       }
     };
+    private final transient PropertyChangeListener nodeChangeListener = new PropertyChangeListener() {
+      @Override
+      public void propertyChange(PropertyChangeEvent evt) {
+        ic.add(td);
+        td.rowFieldChanged(null, null, evt.getNewValue());
+      }
+    };
 
     public RowChildFactory(TableDescription td) {
       td.addPropertyChangeListener(pcl);
@@ -349,6 +301,7 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
       RowNode node = null;
       try {
         node = new RowNode(row);
+        node.addPropertyChangeListener(nodeChangeListener);
       } catch (IntrospectionException ex) {
         LOG.error("Faild to create node.", ex);
         Exceptions.printStackTrace(ex);

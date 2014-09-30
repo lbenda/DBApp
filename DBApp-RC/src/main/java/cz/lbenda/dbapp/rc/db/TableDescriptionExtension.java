@@ -51,7 +51,6 @@ public interface TableDescriptionExtension {
     private static final Logger LOG = LoggerFactory.getLogger(XMLReaderWriterHelper.class);
 
     public static void loadExtensions(SessionConfiguration sc, final Element element) {
-      LOG.trace("load table dsc. extension");
       if (element == null) { return; }
       for (Element tdExtension : element.getChildren("tableDescriptionExtension")) {
         String catalog = tdExtension.getAttributeValue("catalog");
@@ -64,7 +63,6 @@ public interface TableDescriptionExtension {
     }
 
     private static void loadComboBox(SessionConfiguration sc, TableDescription td, Element element) {
-      LOG.trace("load combo box");
       ComboBoxTDExtension sb = new ComboBoxTDExtension(td, element.getAttributeValue("column"),
           element.getAttributeValue("tableOfKeySQL"));
       sb.setColumnValue(element.getAttributeValue("column_value"));

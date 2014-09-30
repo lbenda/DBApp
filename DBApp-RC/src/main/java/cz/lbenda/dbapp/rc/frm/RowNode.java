@@ -15,6 +15,7 @@
  */
 package cz.lbenda.dbapp.rc.frm;
 
+import cz.lbenda.dbapp.rc.AbstractHelper;
 import cz.lbenda.dbapp.rc.db.Column;
 import cz.lbenda.dbapp.rc.db.ComboBoxTDExtension;
 import cz.lbenda.dbapp.rc.db.TableDescription;
@@ -22,6 +23,8 @@ import cz.lbenda.dbapp.rc.frm.gui.TOKPropertyEditor;
 import java.awt.Component;
 import java.awt.datatransfer.Transferable;
 import java.beans.IntrospectionException;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.beans.PropertyEditor;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -40,7 +43,7 @@ import org.openide.util.lookup.InstanceContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
+/** Representation of row in table
  * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/28/14.
  */
 public class RowNode extends AbstractNode {
@@ -75,7 +78,12 @@ public class RowNode extends AbstractNode {
 
   @Override
   public Node cloneNode() {
-    return null;
+    try {
+      return new RowNode(row);
+    } catch (IntrospectionException e) {
+      LOG.error("Problem with cloning node");
+      throw new RuntimeException("Problem with cloning node", e);
+    }
   }
 
   @Override
@@ -154,7 +162,7 @@ public class RowNode extends AbstractNode {
     return null;
   }
 
-  public static class ColumnProperty extends PropertySet {
+  public class ColumnProperty extends PropertySet {
     private final Column column;
     private final Row row;
     public ColumnProperty(Column column, Row row) {
@@ -184,14 +192,17 @@ public class RowNode extends AbstractNode {
     }
   }
 
-  public static class ColumnRowProperty extends Property<Object> {
+  public class ColumnRowProperty extends Property<Object> {
     private final Column column;
     private final Row row;
+    private final Object orignalValue;
+
     public ColumnRowProperty(Column column, Row row) {
       super(column.getDataType().getDataType());
       this.setName(column.getName());
       this.column = column;
       this.row = row;
+      orignalValue = row.getRowValues()[column.getPosition()];
     }
     @Override
     public boolean canRead() { return true; }
@@ -212,6 +223,15 @@ public class RowNode extends AbstractNode {
       if (item == null) { return null; }
       return cb.itemForValue(row.getRowValues()[column.getPosition()]).getChoice();
     }
+
+    public boolean supportsDefaultValue() { return true; }
+    public void restoreDefaultValue() throws IllegalAccessException, InvocationTargetException {
+      setValue(orignalValue);
+    }
+    public boolean isDefaultValue() {
+      return AbstractHelper.nullEquals(orignalValue, row.getRowValues()[column.getPosition()]);
+    }
+
 
     @Override
     public void setValue(Object val) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
@@ -236,6 +256,13 @@ public class RowNode extends AbstractNode {
         ComboBoxTDExtension.ComboBoxItem item = cb.itemForChoice((String) val);
         row.getRowValues()[column.getPosition()] = item == null ? null : item.getValue();
       }
+      LOG.trace("before fire");
+      try {
+        firePropertyChange(column.getName(), orignalValue, val);
+      } catch (Exception e) {
+        LOG.error("Error when property is fired.", e);
+      }
+      LOG.trace("after fire");
     }
 
     @Override

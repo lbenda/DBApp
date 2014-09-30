@@ -22,7 +22,8 @@ import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;import java.util.ArrayList;
+import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.sql.DataSource;
@@ -32,7 +33,7 @@ import org.slf4j.LoggerFactory;
 /** Class for reading data structure from JDBC
  * @author Lukas Benda <lbenda at lbenda.cz>
  */
-public class DbStructureReader {
+public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExceptionListener {
 
   private static final Logger LOG = LoggerFactory.getLogger(DbStructureReader.class);
 
@@ -47,8 +48,6 @@ public class DbStructureReader {
   @SuppressWarnings("unused")
   public final SessionConfiguration getSessionConfiguration() { return sessionConfiguration; }
 
-  public DbStructureReader() {}
-
   /** Inform if the reader is prepared for read data - the session configuration exist */
   public final boolean isPrepared() { return sessionConfiguration != null; }
 
@@ -58,17 +57,21 @@ public class DbStructureReader {
     }
     try {
       if (dataSource != null) { DataSources.destroy(dataSource); }
-      dataSource = DataSources.pooledDataSource(new DBAppDataSource(sessionConfiguration));
-    } catch (Exception e) {
+      dataSource = new DBAppDataSource(sessionConfiguration);
+      // dataSource = DataSources.pooledDataSource(dbAppDataSource);
+    } catch (SQLException e) {
       LOG.error("DataSource can't be create", e);
       throw new RuntimeException("DataSource can't be create", e);
     }
   }
 
-  public Connection getConnection() {
+  public Connection getConnection() throws RuntimeException {
     if (dataSource == null) { createDataSource(); }
     try {
-      return dataSource.getConnection();
+      LOG.debug("create connection");
+      Connection result = dataSource.getConnection();
+      if (result == null) { throw new RuntimeException("The connection isn't created"); }
+      return result;
     } catch (SQLException e) {
       LOG.error("Filed to get connection", e);
       throw new RuntimeException(e);
@@ -370,6 +373,10 @@ public class DbStructureReader {
         slaveTD.addForeignKey(fk);
       }
     }
+  }
+
+  @Override
+  public void onDBAppDataSourceException(Exception e) {
   }
 
   public static class ForeignKey {

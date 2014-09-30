@@ -17,8 +17,14 @@ package cz.lbenda.dbapp.rc.db;
 
 import cz.lbenda.dbapp.rc.AbstractHelper;
 import cz.lbenda.dbapp.rc.SessionConfiguration;
+import org.netbeans.spi.actions.AbstractSavable;
+import org.openide.loaders.DataObject;
+
+import javax.swing.event.UndoableEditListener;
+import javax.swing.undo.UndoableEditSupport;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,7 +35,7 @@ import java.util.Map;
 /** Main object which hold all information about database table structure
  * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/16/14.
  */
-public class TableDescription implements Comparable<TableDescription> {
+public class TableDescription extends AbstractSavable implements Comparable<TableDescription> {
 
   public enum TableType {
     TABLE, VIEW, SYSTEM_TABLE ;
@@ -55,12 +61,14 @@ public class TableDescription implements Comparable<TableDescription> {
   private final List<TableDescriptionExtension> reloadableExtension = new ArrayList<>(); public final List<TableDescriptionExtension> getReloadableExtension() { return reloadableExtension; }
 
   private PropertyChangeSupport pch = new PropertyChangeSupport(this);
+  private final UndoableEditSupport undoableEditSupport;
 
   public TableDescription(String catalog, String schema, String tableType, String name) {
     this.catalog = catalog;
     this.schema = schema;
     this.name = name;
     if (tableType != null) { this.tableType = TableType.valueOf(tableType); }
+    this.undoableEditSupport = new UndoableEditSupport(this);
   }
 
   public final void addForeignKey(DbStructureReader.ForeignKey foreignKey) {
@@ -121,11 +129,6 @@ public class TableDescription implements Comparable<TableDescription> {
   public final void removePropertyChangeListener(PropertyChangeListener l) { pch.removePropertyChangeListener(l); }
 
   @Override
-  public final String toString() {
-    return name;
-  }
-
-  @Override
   public final int compareTo(TableDescription other) {
     if (other == null) { throw new NullPointerException(); }
     return AbstractHelper.compareArrayNull(new Comparable[] {catalog, schema, tableType, name},
@@ -155,15 +158,19 @@ public class TableDescription implements Comparable<TableDescription> {
   }
 
   public Object[] createRow() {
+    undoableEditSupport.beginUpdate();
     Object[] row = new Object[columns.size()];
     if (rows != null) { rows.add(row); }
     newRows.add(row);
     this.pch.firePropertyChange(null, null, null);
+    undoableEditSupport.endUpdate();
+    register();
     return row;
   }
 
   /** remove rows on given position */
   public void removeRows(int[] poz) {
+    undoableEditSupport.beginUpdate();
     List<Integer> l = new ArrayList<>();
     for (int po : poz) { l.add(po); }
     Collections.sort(l);
@@ -172,6 +179,8 @@ public class TableDescription implements Comparable<TableDescription> {
       this.getRows().remove(l.get(i).intValue() - i);
     }
     this.pch.firePropertyChange(null, null, null);
+    undoableEditSupport.endUpdate();
+    register();
   }
 
   public void cancelChanges() {
@@ -179,6 +188,7 @@ public class TableDescription implements Comparable<TableDescription> {
     this.newRows.clear();
     this.rows = null;
     this.pch.firePropertyChange(null, null, null);
+    unregister();
   }
 
   public void reloadRows() {
@@ -187,6 +197,7 @@ public class TableDescription implements Comparable<TableDescription> {
     this.newRows.clear();
     removedRows.clear();
     this.pch.firePropertyChange(null, null, null);
+    unregister();
   }
 
   public void saveChanges() {
@@ -226,6 +237,23 @@ public class TableDescription implements Comparable<TableDescription> {
     removedRows.clear();
   }
 
+  /** Method called when any field in any row is changed */
+  public void rowFieldChanged(Object[] row, Column col, Object newValue) {
+    register();
+    undoableEditSupport.beginUpdate();
+    undoableEditSupport.endUpdate();
+    // TODO inteligent write changes, when changes is removed
+  }
+
+  public synchronized void addUndoableEditListener(UndoableEditListener l) {
+    undoableEditSupport.addUndoableEditListener(l);
+  }
+
+  public synchronized void removeUndoableEditListener(UndoableEditListener l) {
+    undoableEditSupport.removeUndoableEditListener(l);
+  }
+
+
   @Override
   public int hashCode() {
     int hash = 7;
@@ -234,6 +262,18 @@ public class TableDescription implements Comparable<TableDescription> {
     hash = 41 * hash + (this.catalog != null ? this.catalog.hashCode() : 0);
     hash = 41 * hash + (this.tableType != null ? this.tableType.hashCode() : 0);
     return hash;
+  }
+
+  @Override
+  protected String findDisplayName() {
+    return String.format("%s: %s.%s.%s", getSessionConfiguration().getId(),
+        getCatalog(), getSchema(), getName());
+  }
+
+  @Override
+  protected void handleSave() throws IOException {
+    this.saveChanges();
+    unregister();
   }
 
   @Override

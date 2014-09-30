@@ -5,7 +5,6 @@
  */
 package cz.lbenda.dbapp.actions;
 
-import cz.lbenda.dbapp.rc.db.TableDescription;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import org.openide.awt.ActionID;
@@ -15,7 +14,7 @@ import org.openide.awt.ActionRegistration;
 import org.openide.util.NbBundle.Messages;
 
 @ActionID(
-        category = "Edit",
+        category = "DBTable",
         id = "cz.lbenda.dbapp.actions.RowAddAction"
 )
 @ActionRegistration(
@@ -23,20 +22,19 @@ import org.openide.util.NbBundle.Messages;
         displayName = "#CTL_RowAddAction"
 )
 @ActionReferences({
-  @ActionReference(path = "Menu/Edit", position = 2200, separatorBefore = 2150),
-  @ActionReference(path = "Toolbars/File", position = 500)
+  @ActionReference(path = "Toolbars/DBTable", position = 500)
 })
 @Messages("CTL_RowAddAction=Add new row to table")
-public final class RowAddAction implements ActionListener {
+public final class DBTableRowAddAction implements ActionListener {
 
-  private final TableDescription context;
+  private final DBTableRowAddCookie context;
 
-  public RowAddAction(TableDescription context) {
+  public DBTableRowAddAction(DBTableRowAddCookie context) {
     this.context = context;
   }
 
   @Override
   public void actionPerformed(ActionEvent ev) {
-    // TODO use context
+    context.addRow();
   }
 }
