@@ -23,8 +23,6 @@ import cz.lbenda.dbapp.rc.frm.gui.TOKPropertyEditor;
 import java.awt.Component;
 import java.awt.datatransfer.Transferable;
 import java.beans.IntrospectionException;
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 import java.beans.PropertyEditor;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -180,9 +178,27 @@ public class RowNode extends AbstractNode {
     private final TableDescription tableDescription; public final TableDescription getTableDescription() { return tableDescription; }
     private final Object[] rowValues; public final Object[] getRowValues() { return rowValues; }
 
+    public Row(TableDescription td) {
+      this.tableDescription = td;
+      this.rowValues = new Object[td.columnCount()];
+    }
+
     public Row(TableDescription td, Object[] rowValues) {
       this.tableDescription = td;
       this.rowValues = rowValues;
+    }
+
+    public final Object getValue(Column column) {
+      return rowValues[column.getPosition()];
+    }
+    public final Object getValue(int position) {
+      return rowValues[position];
+    }
+    public final void setValue(Column column, Object value) {
+      rowValues[column.getPosition()] = value;
+    }
+    public final void setValue(int position, Object value) {
+      rowValues[position] = value;
     }
 
     public final Object getId() {

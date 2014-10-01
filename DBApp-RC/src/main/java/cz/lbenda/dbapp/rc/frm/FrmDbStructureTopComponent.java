@@ -16,10 +16,8 @@
 package cz.lbenda.dbapp.rc.frm;
 
 import cz.lbenda.dbapp.rc.SessionConfiguration;
-import cz.lbenda.dbapp.rc.db.TableDescription;
 
 import java.awt.*;
-import java.util.*;
 
 import org.netbeans.api.settings.ConvertAsProperties;
 import org.openide.awt.ActionID;
@@ -29,7 +27,6 @@ import org.openide.explorer.ExplorerUtils;
 import org.openide.explorer.view.BeanTreeView;
 import org.openide.util.NbBundle.Messages;
 import org.openide.windows.TopComponent;
-import org.openide.windows.WindowManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,24 +114,7 @@ public final class FrmDbStructureTopComponent extends TopComponent implements Ex
     // TODO add custom code on component closing
   }
 
-  /*
-  public void selectTable(TableDescription td) {
-    TopComponent tc = findTheTableComponent(td);
-    ChosenTable.getInstance().setTableDescription(td);
-  }
-
-  private TopComponent findTheTableComponent(TableDescription td) {
-    Set<TopComponent> openTC = WindowManager.getDefault().getRegistry().getOpened();
-    for (TopComponent tc : openTC) {
-      if (tc.getLookup().lookup(TableDescription.class) == td) {
-        return tc;
-      }
-    }
-    return null;
-  }
-  */
-
-  void writeProperties(java.util.Properties p) {
+   void writeProperties(java.util.Properties p) {
     // better to version settings since initial version as advocated at
     // http://wiki.apidesign.org/wiki/PropertyFiles
     p.setProperty("version", "1.0");

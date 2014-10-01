@@ -34,7 +34,7 @@ public final class ChosenTable {
   }
 
   public interface ChosenRowListener {
-    void rowChosen(TableDescription td, Map<Column, Object> selectedRowValues);
+    void rowChosen(TableDescription td, RowNode.Row selectedRowValues);
   }
 
   public interface RowUpdateListener {
@@ -70,12 +70,8 @@ public final class ChosenTable {
   }
 
   public void setSelectedRowValues(RowNode.Row row) {
-    Map<Column, Object> selectedRowValues = new HashMap<>();
-    for (Column col : row.getTableDescription().getColumns()) {
-      selectedRowValues.put(col, row.getRowValues()[col.getPosition()]);
-    }
     for (ChosenRowListener listener : rowListeners) {
-      listener.rowChosen(row.getTableDescription(), selectedRowValues);
+      listener.rowChosen(row.getTableDescription(), row);
     }
   }
 

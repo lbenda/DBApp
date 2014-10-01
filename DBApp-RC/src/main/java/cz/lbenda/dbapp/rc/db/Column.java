@@ -41,6 +41,7 @@ public class Column {
   private boolean pk; public final boolean isPK() { return pk; } public final void setPK(boolean pk) { this.pk = pk; }
   private boolean autoincrement; public final boolean isAutoincrement() { return autoincrement; }
   private boolean generated; public final boolean isGenerated() { return generated; }
+  private String comment; public final String getComment() { return comment; } public final void setComment(String comment) { this.comment = comment; }
 
   public Column(final TableDescription td, final String name, final int dataType, final int size, final boolean nullable,
                 final boolean autoincrement, final boolean generated) {

@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.sql.DataSource;
+
+import cz.lbenda.dbapp.rc.frm.RowNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,24 +110,22 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
    * <b>fk</b>.
    * @param fk foreign key which describe connection between tables
    * @param selectedRow all values of selected row
-   * @param masterRow flag which inform if selected row is master (fk is exported) or slave (fk is imported)
    * @return resul set or null
    */
-  public final List<Object[]> getJoinedRows(final ForeignKey fk, final Map<Column, Object> selectedRow,
-          final boolean masterRow) {
+  public final List<RowNode.Row> getJoinedRows(final ForeignKey fk, final RowNode.Row selectedRow) {
     final Object fkValue;
     final String tbSchema;
     final String tbName;
     final String tbColumn;
     final TableDescription td;
-    if (masterRow) {
-      fkValue = selectedRow.get(fk.getMasterColumn());
+    if (selectedRow.getTableDescription().equals(fk.getMasterTable())) {
+      fkValue = selectedRow.getValue(fk.getMasterColumn());
       tbSchema = fk.getSlaveTable().getSchema();
       tbName = fk.getSlaveTable().getName();
       tbColumn = fk.getSlaveColumn().getName();
       td = fk.getSlaveTable();
     } else {
-      fkValue = selectedRow.get(fk.getSlaveColumn());
+      fkValue = selectedRow.getValue(fk.getSlaveColumn());
       tbSchema = fk.getMasterTable().getSchema();
       tbName = fk.getMasterTable().getName();
       tbColumn = fk.getMasterColumn().getName();
@@ -139,11 +139,11 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
       try (PreparedStatement ps = conn.prepareCall(sql)) {
         ps.setObject(1, fkValue);
         try (ResultSet rs =  ps.executeQuery()) {
-          List<Object[]> result = new ArrayList<>();
+          List<RowNode.Row> result = new ArrayList<>();
           while (rs.next()) {
-            Object[] row = new Object[td.getColumns().size()];
-            for (int i = 0; i < td.getColumns().size(); i++) {
-              row[i] = rs.getObject(i + 1);
+            RowNode.Row row = new RowNode.Row(td);
+            for (int i = 0; i < td.columnCount(); i++) {
+              row.setValue(i, rs.getObject(i + 1));
             }
             result.add(row);
           }
@@ -289,6 +289,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
           TableDescription td = this.sessionConfiguration.getOrCreateTableDescription(tabs.getString("TABLE_CAT"),
               tabs.getString("TABLE_SCHEM"), tabs.getString("TABLE_NAME"));
           td.setTableType(TableDescription.TableType.fromJDBC(tabs.getString("TABLE_TYPE")));
+          td.setComment(tabs.getString("REMARKS"));
         }
         generateStructureColumns(dmd);
         generatePKColumns(dmd);
@@ -308,6 +309,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
                 rsColumn.getInt("COLUMN_SIZE"), "YES".equals(rsColumn.getString("IS_NULLABLE")),
                 "YES".equals(rsColumn.getString("IS_AUTOINCREMENT")),
                 "YES".equals(rsColumn.getString("IS_GENERATEDCOLUMN")));
+        column.setComment(rsColumn.getString("REMARKS"));
         td.addColumn(column);
       }
     }

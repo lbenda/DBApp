@@ -50,6 +50,7 @@ public class TableDescription extends AbstractSavable implements Comparable<Tabl
   private final String schema; public final String getSchema() { return schema; }
   private final String catalog; public final String getCatalog() { return catalog; }
   private TableType tableType; public final TableType getTableType() { return tableType; } public final void setTableType(TableType tableType) { this.tableType = tableType; }
+  private String comment; public final String getComment() { return comment; } public final void setComment(String comment) { this.comment = comment; }
 
   /** List of all foreign keys in table */
   private final List<DbStructureReader.ForeignKey> foreignKeys = new ArrayList<>(); public final List<DbStructureReader.ForeignKey> getForeignKeys() { return foreignKeys; }
@@ -94,6 +95,11 @@ public class TableDescription extends AbstractSavable implements Comparable<Tabl
       if (result.getName().equals(columnName)) { return result; }
     }
     return null;
+  }
+
+  /** Count of column in one row */
+  public final int columnCount() {
+    return getColumns().size();
   }
 
   /** Return string representation of value which is given in row

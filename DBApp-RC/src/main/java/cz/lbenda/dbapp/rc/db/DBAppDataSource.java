@@ -27,9 +27,7 @@ import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
 
@@ -110,10 +108,16 @@ public class DBAppDataSource implements DataSource {
         sessionConfiguration.getJdbcConfiguration().getPassword());
   }
 
-  private Connection createConnection(String username, String password) throws SQLException {
-    URL[] urls = new URL[sessionConfiguration.getLibrariesPaths().size()];
+  private static Map<SessionConfiguration, Driver> drivers = new WeakHashMap<>();
+  private static Map<SessionConfiguration, DBAppConnection> connections = new WeakHashMap<>();
+
+  private Driver getDriver(SessionConfiguration sc) throws SQLException {
+    Driver driver = drivers.get(sc);
+    if (driver != null) { return driver; }
+
+    URL[] urls = new URL[sc.getLibrariesPaths().size()];
     int i = 0;
-    for (String lib : sessionConfiguration.getLibrariesPaths()) {
+    for (String lib : sc.getLibrariesPaths()) {
       try {
         urls[i] = (new File(lib)).toURI().toURL();
       } catch (MalformedURLException e) {
@@ -126,26 +130,37 @@ public class DBAppDataSource implements DataSource {
       i++;
     }
 
-    Properties connectionProps = new Properties();
-    connectionProps.put("user", username);
-    connectionProps.put("password", password);
-
     try {
       URLClassLoader urlCl = new URLClassLoader(urls, System.class.getClassLoader());
-      if (sessionConfiguration.getJdbcConfiguration().getDriverClass() == null
-          || "".equals(sessionConfiguration.getJdbcConfiguration().getDriverClass())) {
-        sessionConfiguration.getJdbcConfiguration().setDriverClass("org.hsqldb.jdbcDriver");
+      if (sc.getJdbcConfiguration().getDriverClass() == null
+          || "".equals(sc.getJdbcConfiguration().getDriverClass())) {
+        sc.getJdbcConfiguration().setDriverClass("org.hsqldb.jdbcDriver");
       }
-      Class driverCls = urlCl.loadClass(sessionConfiguration.getJdbcConfiguration().getDriverClass());
-      Driver driver = (Driver) driverCls.newInstance();
-      return driver.connect(sessionConfiguration.getJdbcConfiguration().getUrl(), connectionProps);
+      Class driverCls = urlCl.loadClass(sc.getJdbcConfiguration().getDriverClass());
+      driver = (Driver) driverCls.newInstance();
+      drivers.put(sc, driver);
+      return driver;
     } catch (ClassNotFoundException | SecurityException
-            | InstantiationException | IllegalAccessException | IllegalArgumentException e) {
+        | InstantiationException | IllegalAccessException | IllegalArgumentException e) {
       getLogWriter().print("Filed to create connection");
       e.printStackTrace(getLogWriter());
       SQLException ex = new SQLException("Filed to create connection", e);
       onException(ex);
       throw ex;
+    }
+  }
+
+  private Connection createConnection(String username, String password) throws SQLException {
+    DBAppConnection connection = this.connections.get(sessionConfiguration);
+    if (connection != null && !connection.isClosed()) { return connection; }
+    Properties connectionProps = new Properties();
+    connectionProps.put("user", username);
+    connectionProps.put("password", password);
+    Driver driver = getDriver(sessionConfiguration);
+    try {
+      connection = new DBAppConnection(driver.connect(sessionConfiguration.getJdbcConfiguration().getUrl(), connectionProps));
+      connections.put(sessionConfiguration, connection);
+      return connection;
     } catch (SQLException e) {
       getLogWriter().print("Filed to create connection");
       e.printStackTrace(getLogWriter());

@@ -238,6 +238,7 @@ public class StructureChildFactory extends ChildFactory<Object> {
         }
       });
       setDisplayName(td.getName());
+      setShortDescription(td.getComment());
     }
 
     private TopComponent findTheTableComponent(TableDescription td) {
