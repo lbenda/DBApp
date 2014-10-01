@@ -41,7 +41,7 @@ import javax.swing.*;
 )
 @TopComponent.Description(
         preferredID = "FrmDBJoinedTableTopComponent",
-        iconBase = "cz/lbenda/dbapp/rc/frm/join_indexes24.png",
+        iconBase = "cz/lbenda/dbapp/rc/frm/join_indexes.png",
         persistenceType = TopComponent.PERSISTENCE_ALWAYS
 )
 @TopComponent.Registration(mode = "output", openAtStartup = true)//mode = "bottomSlidingSide", openAtStartup = false)

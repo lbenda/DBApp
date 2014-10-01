@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
  */
 @TopComponent.Description(
         preferredID = "FrnDbTableTopComponent",
-        //iconBase="SET/PATH/TO/ICON/HERE",
+        iconBase = "cz/lbenda/dbapp/rc/frm/table.png",
         persistenceType = TopComponent.PERSISTENCE_ALWAYS
 )
 @TopComponent.Registration(mode = "editor", openAtStartup = false)

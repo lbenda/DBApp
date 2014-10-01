@@ -15,7 +15,6 @@
  */
 package cz.lbenda.dbapp.rc.db;
 
-import com.mchange.v2.c3p0.DataSources;
 import cz.lbenda.dbapp.rc.SessionConfiguration;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -57,14 +56,8 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
     if (!isPrepared()) {
       throw new IllegalStateException("The DBStructureReader isn't yet prepared for create dataSource. Please check isPrepared() properties");
     }
-    try {
-      if (dataSource != null) { DataSources.destroy(dataSource); }
-      dataSource = new DBAppDataSource(sessionConfiguration);
-      // dataSource = DataSources.pooledDataSource(dbAppDataSource);
-    } catch (SQLException e) {
-      LOG.error("DataSource can't be create", e);
-      throw new RuntimeException("DataSource can't be create", e);
-    }
+    if (dataSource != null) { dataSource = null; }
+    dataSource = new DBAppDataSource(sessionConfiguration);
   }
 
   public Connection getConnection() throws RuntimeException {

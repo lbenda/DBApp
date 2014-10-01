@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 )
 @TopComponent.Description(
         preferredID = "FrmDbStructureTopComponent",
-        //iconBase="SET/PATH/TO/ICON/HERE",
+        iconBase = "cz/lbenda/dbapp/rc/frm/structure.png",
         persistenceType = TopComponent.PERSISTENCE_ALWAYS
 )
 @TopComponent.Registration(mode = "explorer", openAtStartup = true)

@@ -191,7 +191,13 @@ public class StructureChildFactory extends ChildFactory<Object> {
         case 1 : setDisplayName(sh.getSessionConfiguration().getId()); break;
         case 2 : setDisplayName(sh.getCatalog()); break;
         case 3 : setDisplayName(sh.getSchema()); break;
-        case 4 : setDisplayName(sh.getTableType().toString()); break;
+        case 4 :
+          setDisplayName(sh.getTableType().toString());
+          switch (sh.getTableType()) {
+            case TABLE : setIconBaseWithExtension("cz/lbenda/dbapp/rc/frm/table.png"); break;
+            case VIEW : setIconBaseWithExtension("cz/lbenda/dbapp/rc/frm/table_view.png"); break;
+          }
+          break;
       }
     }
   }
@@ -207,6 +213,7 @@ public class StructureChildFactory extends ChildFactory<Object> {
         public void open() { sc.reloadStructure(); }
       });
       setDisplayName(sc.getId());
+      setIconBaseWithExtension("cz/lbenda/dbapp/rc/frm/database.png");
     }
     @Override
     public Action getPreferredAction() {
@@ -239,6 +246,10 @@ public class StructureChildFactory extends ChildFactory<Object> {
       });
       setDisplayName(td.getName());
       setShortDescription(td.getComment());
+      switch (td.getTableType()) {
+        case TABLE : setIconBaseWithExtension("cz/lbenda/dbapp/rc/frm/table.png"); break;
+        case VIEW : setIconBaseWithExtension("cz/lbenda/dbapp/rc/frm/table_view.png"); break;
+      }
     }
 
     private TopComponent findTheTableComponent(TableDescription td) {
