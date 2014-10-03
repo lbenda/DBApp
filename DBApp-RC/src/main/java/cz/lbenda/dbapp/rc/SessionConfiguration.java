@@ -179,6 +179,8 @@ public class SessionConfiguration {
   private final Map<String, List<String>> shownSchemas = new HashMap<>();
   /** Instance of DB reader for this session */
   private DbStructureReader reader; public final DbStructureReader getReader() { return reader; }
+  /** Timeout when unused connection will be closed */
+  private int connectionTimeout; public int getConnectionTimeout() { return connectionTimeout; } public void setConnectionTimeout(int connectionTimeout) { this.connectionTimeout = connectionTimeout; }
 
   /** Table description map */
   private final Map<String, Map<String, Map<String, TableDescription>>> tableDescriptionsMap
@@ -226,9 +228,9 @@ public class SessionConfiguration {
   }
 
   /** List of shown table type (sorted)
-   * @param catalog
-   * @param schema
-   * @return
+   * @param catalog catalog which is show
+   * @param schema schema which is show
+   * @return catalog is show or not
    */
   public final List<TableDescription.TableType> shownTableType(final String catalog, final String schema) {
     Set<TableDescription.TableType> set = new HashSet<>(2);
@@ -243,34 +245,14 @@ public class SessionConfiguration {
   public final Element storeToElement() {
     Element ses = new Element("session");
     ses.setAttribute("id", getId());
+    if (this.connectionTimeout > 0) {
+      ses.addContent(new Element("connectionTimeout").setText(Integer.toString(this.connectionTimeout)));
+    }
     if (jdbcConfiguration != null) { ses.addContent(jdbcConfiguration.storeToElement()); }
     Element ed = new Element("extendedDescription");
     ed.setAttribute("type", this.getExtendedConfigurationType().name());
     ed.setText(this.getExtendedConfigurationPath());
     ses.addContent(ed);
-    /*
-    if (!tableOfKeysSQL.isEmpty()) {
-      Element tok = new Element("tableOfKeySQLs");
-      ses.addContent(tok);
-      for (Map.Entry<String, String> entry : tableOfKeysSQL.entrySet()) {
-        tok.addContent(new Element("tableOfKeySQL").setAttribute("id", entry.getKey()).setText(entry.getValue()));
-      }
-    }
-    */
-    /*
-    if (!extendedTD.isEmpty()) {
-      Element exts = new Element("tableDescriptionExtensions");
-      ses.addContent(exts);
-      for (TableDescription td : extendedTD) {
-        Element ext = new Element("tableDescriptionExtension");
-        exts.addContent(ext);
-        ext.setAttribute("catalog", td.getCatalog()).setAttribute("schema", td.getSchema()).setAttribute("table", td.getName());
-        for (TableDescriptionExtension tde : td.getExtensions()) {
-          ext.addContent(tde.storeToElement());
-        }
-      }
-    }
-    */
     if (!librariesPaths.isEmpty()) {
       Element libs = new Element("libraries");
       for (String path : getLibrariesPaths()) {
@@ -291,6 +273,9 @@ public class SessionConfiguration {
 
   private void fromElement(final Element element) {
     setId(element.getAttributeValue("id"));
+    if (element.getChild("connectionTimeout") != null) {
+      this.connectionTimeout = Integer.valueOf(element.getChildText("connectionTimeout"));
+    } else { connectionTimeout = -1; }
     jdbcConfigurationFromElement(element.getChild("jdbc"));
     // tableOfKeysSQLFromElement(element.getChild("tableOfKeySQLs"));
     Element ed = element.getChild("extendedDescription");

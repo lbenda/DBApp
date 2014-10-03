@@ -123,7 +123,7 @@ final class DBConfigurationPanel extends javax.swing.JPanel {
       }
     }
     SessionConfiguration.saveConfiguration();
-    ChosenTable.getInstance().configurationUpdated();
+    ChosenTable.getDefault().configurationUpdated();
   }
 
   boolean valid() {

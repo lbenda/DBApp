@@ -111,6 +111,7 @@ public class ColumnCellRenderer extends DefaultOutlineCellRenderer {
   public boolean isCentered() {
     return centered;
   }
+  public void setCentered(boolean centered) { this.centered = centered; }
 
   /**
    * @return true if non editable cells have a lighter foreground.

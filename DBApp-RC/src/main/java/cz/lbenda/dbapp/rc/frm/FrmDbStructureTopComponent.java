@@ -71,7 +71,7 @@ public final class FrmDbStructureTopComponent extends TopComponent implements Ex
     add(btw, BorderLayout.CENTER);
     refreshNode();
     associateLookup(ExplorerUtils.createLookup(em, getActionMap()));
-    ChosenTable.getInstance().addConfigurationUpdateListener(this);
+    ChosenTable.getDefault().addConfigurationUpdateListener(this);
   }
 
   /**

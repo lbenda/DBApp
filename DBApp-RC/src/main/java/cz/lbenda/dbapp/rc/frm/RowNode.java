@@ -22,7 +22,6 @@ import cz.lbenda.dbapp.rc.db.TableDescription;
 import cz.lbenda.dbapp.rc.frm.gui.TOKPropertyEditor;
 import java.awt.Component;
 import java.awt.datatransfer.Transferable;
-import java.beans.IntrospectionException;
 import java.beans.PropertyEditor;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -50,17 +49,17 @@ public class RowNode extends AbstractNode {
 
   private final Row row;
 
-  public RowNode(Row row) throws IntrospectionException {
+  public RowNode(Row row) {
     this(row, new InstanceContent());
   }
 
-  public RowNode(final Row row, final InstanceContent ic) throws IntrospectionException {
+  public RowNode(final Row row, final InstanceContent ic) {
     super(Children.LEAF, new AbstractLookup(ic));
     this.row = row;
     ic.add(new OpenCookie() {
       @Override
       public void open() {
-        ChosenTable.getInstance().setSelectedRowValues(row);
+        ChosenTable.getDefault().setSelectedRowValues(row);
       }
     });
   }
@@ -76,12 +75,7 @@ public class RowNode extends AbstractNode {
 
   @Override
   public Node cloneNode() {
-    try {
-      return new RowNode(row);
-    } catch (IntrospectionException e) {
-      LOG.error("Problem with cloning node");
-      throw new RuntimeException("Problem with cloning node", e);
-    }
+    return new RowNode(row);
   }
 
   @Override
@@ -225,15 +219,7 @@ public class RowNode extends AbstractNode {
 
     @Override
     public Object getValue() throws IllegalAccessException, InvocationTargetException {
-      if (column.getExtensions().isEmpty()) {
-        /* if (column.getDataType() == Column.ColumnType.DATE) {
-          Date value = (Date) row.getRowValues()[column.getPosition()];
-          if (value == null) { return null; }
-          DateFormat format = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault());
-          return format.format(value);
-        } else { */ return row.getRowValues()[column.getPosition()];// }
-      }
-
+      if (column.getExtensions().isEmpty()) { return row.getRowValues()[column.getPosition()]; }
       ComboBoxTDExtension cb = (ComboBoxTDExtension) column.getExtensions().get(0); // FIXME
       ComboBoxTDExtension.ComboBoxItem item = cb.itemForValue(row.getRowValues()[column.getPosition()]);
       if (item == null) { return null; }
@@ -252,33 +238,17 @@ public class RowNode extends AbstractNode {
     @Override
     public void setValue(Object val) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
       if (column.getExtensions().isEmpty()) {
-        /*if (column.getDataType() == Column.ColumnType.DATE) {
-          Date date = null;
-          if (val instanceof Date) {
-            date = (Date) val;
-          } else if (val != null) {
-            DateFormat format = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault());
-            try {
-              date = format.parse((String) val);
-            } catch (ParseException ex) {
-              LOG.error("Problem with parse Date string: " + val, ex);
-              throw new IllegalArgumentException("Problem with parse Date string: " + val, ex);
-            }
-          }
-          row.getRowValues()[column.getPosition()] = date;
-        } else {*/ row.getRowValues()[column.getPosition()] = val; //}
+        row.getRowValues()[column.getPosition()] = val;
       } else {
         ComboBoxTDExtension cb = (ComboBoxTDExtension) column.getExtensions().get(0); // FIXME
         ComboBoxTDExtension.ComboBoxItem item = cb.itemForChoice((String) val);
         row.getRowValues()[column.getPosition()] = item == null ? null : item.getValue();
       }
-      LOG.trace("before fire");
       try {
         firePropertyChange(column.getName(), orignalValue, val);
       } catch (Exception e) {
         LOG.error("Error when property is fired.", e);
       }
-      LOG.trace("after fire");
     }
 
     @Override
@@ -289,9 +259,7 @@ public class RowNode extends AbstractNode {
     @Override
     public PropertyEditor getPropertyEditor() {
       if (column.getExtensions().isEmpty()) {
-        // if (column.getDataType() == Column.ColumnType.DATE) {
-        //  return new DatePropertyEditor(column);
-        /* } else { */ return super.getPropertyEditor(); //}
+        return super.getPropertyEditor();
       }
       return new TOKPropertyEditor(column);
     }

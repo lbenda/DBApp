@@ -49,6 +49,8 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
     this.tfUrl.setText(sc.getJdbcConfiguration().getUrl());
     this.tfPath.setText(sc.getExtendedConfigurationPath());
     this.cbExtendConfigType.setSelectedIndex(sc.getExtendedConfigurationType().ordinal());
+    if (sc.getConnectionTimeout() > 0) { this.tfTimeout.setText(String.valueOf(sc.getConnectionTimeout())); }
+    else { tfTimeout.setText(""); }
 
     ChangeListener cl = new ChangeListener();
     tfUsername.getDocument().addDocumentListener(cl);
@@ -56,6 +58,7 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
     tfUrl.getDocument().addDocumentListener(cl);
     tfDriverClass.getDocument().addDocumentListener(cl);
     tfPath.getDocument().addDocumentListener(cl);
+    tfTimeout.getDocument().addDocumentListener(cl);
   }
 
   void store() {
@@ -65,6 +68,9 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
     sc.getJdbcConfiguration().setUrl(tfUrl.getText());
     sc.setExtendedConfigurationType(SessionConfiguration.ExtendedConfigurationType.values()[cbExtendConfigType.getSelectedIndex()]);
     sc.setExtendedConfigurationPath(tfPath.getText());
+    if (tfTimeout.getText() != null && !"".equals(tfTimeout.getText().trim())) {
+      sc.setConnectionTimeout(Integer.valueOf(tfTimeout.getText()));
+    } else { sc.setConnectionTimeout(-1); }
     SessionConfiguration.registerNewConfiguration(sc);
   }
 
@@ -107,6 +113,8 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
     pfPassword = new javax.swing.JPasswordField();
     bRemoveLibs = new javax.swing.JButton();
     tfDriverClass = new javax.swing.JTextField();
+    lTimeout = new javax.swing.JLabel();
+    tfTimeout = new javax.swing.JTextField();
     jPanel1 = new javax.swing.JPanel();
     lExtendConfigType = new javax.swing.JLabel();
     cbExtendConfigType = new javax.swing.JComboBox();
@@ -150,30 +158,35 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
 
     tfDriverClass.setText(org.openide.util.NbBundle.getMessage(SingleConfigurationPanel.class, "SingleConfigurationPanel.tfDriverClass.text")); // NOI18N
 
+    org.openide.awt.Mnemonics.setLocalizedText(lTimeout, org.openide.util.NbBundle.getMessage(SingleConfigurationPanel.class, "SingleConfigurationPanel.lTimeout.text")); // NOI18N
+
+    tfTimeout.setText(org.openide.util.NbBundle.getMessage(SingleConfigurationPanel.class, "SingleConfigurationPanel.tfTimeout.text")); // NOI18N
+
     javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
     jPanel2.setLayout(jPanel2Layout);
     jPanel2Layout.setHorizontalGroup(
       jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+      .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 490, Short.MAX_VALUE)
       .addGroup(jPanel2Layout.createSequentialGroup()
         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
           .addComponent(lDriverClass)
           .addComponent(lPassword)
           .addComponent(lUserName)
-          .addComponent(lLibraries)
-          .addComponent(lUrl))
+          .addComponent(lUrl)
+          .addComponent(lTimeout))
         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
           .addComponent(tfUsername, javax.swing.GroupLayout.Alignment.TRAILING)
           .addComponent(tfUrl)
-          .addGroup(jPanel2Layout.createSequentialGroup()
-            .addGap(0, 183, Short.MAX_VALUE)
-            .addComponent(bAddLibraries, javax.swing.GroupLayout.PREFERRED_SIZE, 106, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-            .addComponent(bRemoveLibs, javax.swing.GroupLayout.PREFERRED_SIZE, 103, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addContainerGap())
           .addComponent(pfPassword)
-          .addComponent(tfDriverClass)))
-      .addComponent(jScrollPane2)
+          .addComponent(tfDriverClass)
+          .addComponent(tfTimeout)))
+      .addGroup(jPanel2Layout.createSequentialGroup()
+        .addComponent(lLibraries)
+        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+        .addComponent(bAddLibraries, javax.swing.GroupLayout.PREFERRED_SIZE, 106, javax.swing.GroupLayout.PREFERRED_SIZE)
+        .addGap(23, 23, 23)
+        .addComponent(bRemoveLibs, javax.swing.GroupLayout.PREFERRED_SIZE, 103, javax.swing.GroupLayout.PREFERRED_SIZE))
     );
     jPanel2Layout.setVerticalGroup(
       jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -194,13 +207,16 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
           .addComponent(lPassword)
           .addComponent(pfPassword, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-          .addComponent(lLibraries)
-          .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-            .addComponent(bAddLibraries)
-            .addComponent(bRemoveLibs)))
+        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+          .addComponent(lTimeout)
+          .addComponent(tfTimeout, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-        .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 83, Short.MAX_VALUE))
+        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+          .addComponent(lLibraries, javax.swing.GroupLayout.PREFERRED_SIZE, 14, javax.swing.GroupLayout.PREFERRED_SIZE)
+          .addComponent(bAddLibraries)
+          .addComponent(bRemoveLibs))
+        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+        .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 150, Short.MAX_VALUE))
     );
 
     jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder(org.openide.util.NbBundle.getMessage(SingleConfigurationPanel.class, "SingleConfigurationPanel.jPanel1.border.title"))); // NOI18N
@@ -327,12 +343,14 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
   private javax.swing.JLabel lLibraries;
   private javax.swing.JLabel lPassword;
   private javax.swing.JLabel lPath;
+  private javax.swing.JLabel lTimeout;
   private javax.swing.JLabel lUrl;
   private javax.swing.JLabel lUserName;
   private javax.swing.JList listLibraries;
   private javax.swing.JPasswordField pfPassword;
   private javax.swing.JTextField tfDriverClass;
   private javax.swing.JTextField tfPath;
+  private javax.swing.JTextField tfTimeout;
   private javax.swing.JTextField tfUrl;
   private javax.swing.JTextField tfUsername;
   // End of variables declaration//GEN-END:variables

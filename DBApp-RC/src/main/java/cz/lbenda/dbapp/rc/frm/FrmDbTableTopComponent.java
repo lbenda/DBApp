@@ -13,7 +13,6 @@ import cz.lbenda.dbapp.rc.db.Column;
 import cz.lbenda.dbapp.rc.db.TableDescription;
 import java.awt.BorderLayout;
 import java.awt.Rectangle;
-import java.beans.IntrospectionException;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.List;
@@ -39,7 +38,6 @@ import org.openide.nodes.AbstractNode;
 import org.openide.nodes.ChildFactory;
 import org.openide.nodes.Children;
 import org.openide.nodes.Node;
-import org.openide.util.Exceptions;
 import org.openide.util.NbBundle.Messages;
 import org.openide.util.Utilities;
 import org.openide.util.lookup.AbstractLookup;
@@ -54,15 +52,12 @@ import org.slf4j.LoggerFactory;
 @TopComponent.Description(
         preferredID = "FrnDbTableTopComponent",
         iconBase = "cz/lbenda/dbapp/rc/frm/table.png",
-        persistenceType = TopComponent.PERSISTENCE_ALWAYS
+        persistenceType = TopComponent.PERSISTENCE_NEVER// TopComponent.PERSISTENCE_ALWAYS
 )
 @TopComponent.Registration(mode = "editor", openAtStartup = false)
 // @ActionID(category = "Window", id = "cz.lbenda.dbapp.rc.frm.FrnDbTableTopComponent")
 // @ActionReference(path = "Menu/Window" /*, position = 333 */)
 @Messages({
-  "CTL_FrnDbTableAction=FrnDbTable",
-  "CTL_FrnDbTableTopComponent=FrnDbTable Window",
-  "HINT_FrnDbTableTopComponent=This is a FrnDbTable window"
 })
 public final class FrmDbTableTopComponent extends TopComponent implements ExplorerManager.Provider {
 
@@ -79,8 +74,6 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
     td.addUndoableEditListener(manager);
     initComponents();
     registerActionMap();
-    // setName(Bundle.CTL_FrnDbTableTopComponent());
-    // setToolTipText(Bundle.HINT_FrnDbTableTopComponent());
     setHtmlDisplayName(generateTitle());
     setLayout(new BorderLayout());
     ov = new OutlineView();
@@ -90,8 +83,9 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
 
     definePropertyAndHint();
 
-    ov.getOutline().setDefaultRenderer(Node.Property.class, new ColumnCellRenderer(td.getColumns()));
-    // setCellEditors(ov);
+    ColumnCellRenderer ccr = new ColumnCellRenderer(td.getColumns());
+    ccr.setCentered(false);
+    ov.getOutline().setDefaultRenderer(Node.Property.class, ccr);
     add(ov, BorderLayout.CENTER);
     Node rootNode = new AbstractNode(Children.create(new RowChildFactory(td), true));
     em.setRootContext(rootNode);
@@ -104,16 +98,13 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
     ic.add(getActionMap());
     associateLookup(new AbstractLookup(ic));
 
-    // associateLookup(ExplorerUtils.createLookup(em, getActionMap()));
     for (Column col : td.getColumns()) {
       CellEditor ce = ((ETable) ov.getOutline()).getCellEditor(1, col.getPosition() + 1);
-      LOG.trace("Celle editor for column: " + col.getName() + " is " + ce.getClass());
-      // ((ETable) ov.getOutline()).setCellEditor(null);
     }
     ov.getOutline().getSelectionModel().addListSelectionListener(listSelectionListener);
   }
 
-  private final void definePropertyAndHint() {
+  private void definePropertyAndHint() {
     String[] ar = new String[td.getColumns().size() * 2];
     int i = 0;
     for (Column column : td.getColumns()) {
@@ -127,7 +118,7 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
     }
   }
 
-  TableModelListener tableModelListener = new TableModelListener() {
+  private TableModelListener tableModelListener = new TableModelListener() {
     @Override
     public void tableChanged(final TableModelEvent e) {
       if (TableModelEvent.INSERT == e.getType()) {
@@ -151,17 +142,17 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
     }
   };
 
-  ListSelectionListener listSelectionListener = new ListSelectionListener() {
+  private ListSelectionListener listSelectionListener = new ListSelectionListener() {
     @Override
     public void valueChanged(ListSelectionEvent e) {
       if (ov.getOutline().getSelectedRow() != -1) {
         RowNode.Row row = new RowNode.Row(td, td.getRows().get(ov.getOutline().getSelectedRow()));
-        ChosenTable.getInstance().setSelectedRowValues(row);
+        ChosenTable.getDefault().setSelectedRowValues(row);
       }
     }
   };
 
-  DBTableRowAddCookie addCookie = new DBTableRowAddCookie() {
+  private DBTableRowAddCookie addCookie = new DBTableRowAddCookie() {
     @Override
     public void addRow() {
       ov.getOutline().getModel().addTableModelListener(tableModelListener);
@@ -171,7 +162,7 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
     }
   };
 
-  DBTableRowsRemoveCookie removeCookie = new DBTableRowsRemoveCookie() {
+  private DBTableRowsRemoveCookie removeCookie = new DBTableRowsRemoveCookie() {
     @Override
     public void removeRows() {
       td.removeRows(ov.getOutline().getSelectedRows());
@@ -179,14 +170,14 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
     }
   };
 
-  DBTableCancelCookie cancelCookie = new DBTableCancelCookie() {
+  private DBTableCancelCookie cancelCookie = new DBTableCancelCookie() {
     @Override
     public void cancelChanges() {
       td.cancelChanges();
     }
   };
 
-  DBTableReloadCookie reloadCookie = new DBTableReloadCookie() {
+  private DBTableReloadCookie reloadCookie = new DBTableReloadCookie() {
     @Override
     public void reloadTable() {
       td.reloadRows();
@@ -240,7 +231,7 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
   @Override
   public void componentActivated() {
     super.componentActivated();
-    ChosenTable.getInstance().setTableDescription(td);
+    ChosenTable.getDefault().setTableDescription(td);
     ExplorerUtils.activateActions(em, true);
   }
 
@@ -296,14 +287,8 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
     }
     @Override
     protected Node createNodeForKey(cz.lbenda.dbapp.rc.frm.RowNode.Row row) {
-      RowNode node = null;
-      try {
-        node = new RowNode(row);
-        node.addPropertyChangeListener(nodeChangeListener);
-      } catch (IntrospectionException ex) {
-        LOG.error("Faild to create node.", ex);
-        Exceptions.printStackTrace(ex);
-      }
+      RowNode node = new RowNode(row);
+      node.addPropertyChangeListener(nodeChangeListener);
       return node;
     }
   }

@@ -63,7 +63,6 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   public Connection getConnection() throws RuntimeException {
     if (dataSource == null) { createDataSource(); }
     try {
-      LOG.debug("create connection");
       Connection result = dataSource.getConnection();
       if (result == null) { throw new RuntimeException("The connection isn't created"); }
       return result;

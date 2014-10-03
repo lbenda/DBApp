@@ -34,6 +34,7 @@ public class DBAppConnection implements Connection {
   private static final Logger LOG = Logger.getLogger(DBAppConnection.class.getName());
 
   private Connection connection;
+  private int connectionTimeout; public int getConnectionTimeout() { return connectionTimeout; } public void setConnectionTimeout(int connectionTimeout) { this.connectionTimeout = connectionTimeout; }
 
   public DBAppConnection(Connection connection) {
     this.connection = connection;

@@ -16,92 +16,180 @@
 package cz.lbenda.dbapp.rc.frm.gui;
 
 import com.toedter.calendar.JDateChooser;
-import cz.lbenda.dbapp.rc.db.Column;
-import java.awt.Color;
 import java.awt.Component;
-import java.awt.Graphics;
-import java.awt.Rectangle;
+import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 import java.beans.PropertyEditor;
+import java.beans.PropertyEditorSupport;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.Locale;
-import javax.swing.BorderFactory;
+import javax.swing.JComponent;
+import javax.swing.KeyStroke;
+
+import org.openide.explorer.propertysheet.ExPropertyEditor;
+import org.openide.explorer.propertysheet.InplaceEditor;
+import org.openide.explorer.propertysheet.PropertyEnv;
+import org.openide.explorer.propertysheet.PropertyModel;
+import org.openide.nodes.PropertyEditorRegistration;
+import org.openide.util.NbBundle;
+import org.openide.util.NbBundle.Messages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
+/** Global editor for Date type
  * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/29/14.
  */
-public class DatePropertyEditor implements PropertyEditor {
+@Messages ({
+    "DPE_DateNotSet=No Date Set",
+    "DPE_Unparsablet=Could not parse date %s",
+})
+@PropertyEditorRegistration(targetType = Date.class)
+public class DatePropertyEditor extends PropertyEditorSupport implements ExPropertyEditor, InplaceEditor.Factory {
+
   private static final Logger LOG = LoggerFactory.getLogger(DatePropertyEditor.class);
-  public final Column column;
-  private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
-  private Date value;
-  public DatePropertyEditor(final Column col) {
-    this.column = col;
-  }
 
-  @Override
-  public void setValue(Object value) {
-    if (value instanceof String) {
-      setAsText((String) value);
-    } else { this.value = (Date) value; }
-  }
-
-  @Override
-  public Object getValue() { return value; }
-
-  @Override
-  public boolean isPaintable() { return true; }
-  @Override
-  public void paintValue(Graphics gfx, Rectangle box) {
-    JDateChooser dc = new JDateChooser();
-    dc.setDate(value);
-    dc.setBorder(BorderFactory.createEmptyBorder(0,3,0,0));
-    dc.setForeground(Color.blue);
-    dc.setBounds(box);
-    dc.paint(gfx);
-  }
-
-  @Override
-  public String getJavaInitializationString() { return "???"; }
+  private PropertyChangeListener listener = new PropertyChangeListener() {
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+      LOG.trace("propertyChange: " + evt.getPropertyName() + " old value: " + evt.getOldValue() + " new value: " + evt.getNewValue());
+      setValue(evt.getNewValue());
+    }
+  };
 
   @Override
   public String getAsText() {
-    if (value == null) { return null; }
-    DateFormat formater = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault());
-    return formater.format(value);
+    Date d = (Date) getValue();
+    if (d == null) { return NbBundle.getMessage(DatePropertyEditor.class, "DPE_DateNotSet"); }
+    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault());
+    return df.format(d);
   }
 
   @Override
-  public void setAsText(String text) throws IllegalArgumentException {
-    if (text == null || "".equals(text.trim())) { setValue(null); return; }
-    DateFormat formater = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault());
+  public void setAsText(String s) {
     try {
-      setValue(formater.parse(text));
-    } catch (ParseException ex) {
-      LOG.error("The given date isn't in right format: " + text, ex);
-      throw new IllegalArgumentException("The given date isn't in right format: " + text, ex);
+      DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault());
+      setValue(df.parse(s));
+    } catch (ParseException ps) {
+      IllegalArgumentException iae = new IllegalArgumentException (String.format(NbBundle.getMessage(DatePropertyEditor.class, "DPE_Unparsable"), s));
+      throw iae;
     }
   }
 
   @Override
-  public String[] getTags() { return new String[0]; }
-
-  @Override
-  public Component getCustomEditor() {
-    JDateChooser chooser = new JDateChooser();
-    chooser.setDate(value);
-    return chooser;
+  public void attachEnv(PropertyEnv env) {
+    env.registerInplaceEditorFactory(this);
   }
-  @Override
-  public boolean supportsCustomEditor() { return true; }
+
+  private InplaceEditor ed = null;
 
   @Override
-  public void addPropertyChangeListener(PropertyChangeListener listener) { pcs.addPropertyChangeListener(listener); }
-  @Override
-  public void removePropertyChangeListener(PropertyChangeListener listener) { pcs.removePropertyChangeListener(listener); }
+  public InplaceEditor getInplaceEditor() {
+    if (ed == null)  { ed = new Inplace(); }
+    return ed;
+  }
+
+  private static class Inplace implements InplaceEditor {
+
+    private final JDateChooser picker = new JDateChooser();
+    private PropertyEditor editor = null;
+
+    private PropertyChangeListener listener = new PropertyChangeListener() {
+      @Override
+      public void propertyChange(PropertyChangeEvent evt) {
+        /*
+        LOG.trace("propertyChange: " + evt.getPropertyName() + " old value: " + evt.getOldValue() + " new value: " + evt.getNewValue());
+        if (getPropertyEditor() != null) {
+          ((PropertyEditorSupport) getPropertyEditor()).firePropertyChange();
+        }
+        */
+      }
+    };
+
+    public Inplace() {
+      picker.addPropertyChangeListener(listener);
+    }
+
+
+    @Override
+    public void connect(PropertyEditor propertyEditor, PropertyEnv env) {
+      editor = propertyEditor;
+      reset();
+    }
+
+    @Override
+    public JComponent getComponent() {
+      return picker;
+    }
+
+    @Override
+    public void clear() {
+      LOG.trace("clear");
+      //avoid memory leaks:
+      editor = null;
+      model = null;
+    }
+
+    @Override
+    public Object getValue() {
+      return picker.getDate();
+    }
+
+    @Override
+    public void setValue(Object object) {
+      picker.setDate((Date) object);
+    }
+
+    @Override
+    public boolean supportsTextEntry() {
+      return true;
+    }
+
+    @Override
+    public void reset() {
+      Date d = (Date) editor.getValue();
+      if (d != null) {
+        picker.setDate(d);
+      }
+    }
+
+    @Override
+    public KeyStroke[] getKeyStrokes() {
+      return new KeyStroke[0];
+    }
+
+    @Override
+    public PropertyEditor getPropertyEditor() {
+      return editor;
+    }
+
+    @Override
+    public PropertyModel getPropertyModel() {
+      return model;
+    }
+
+    private PropertyModel model;
+
+    @Override
+    public void setPropertyModel(PropertyModel propertyModel) {
+      this.model = propertyModel;
+    }
+
+    @Override
+    public boolean isKnownComponent(Component component) {
+      return component == picker || picker.isAncestorOf(component);
+    }
+
+    @Override
+    public void addActionListener(ActionListener actionListener) {
+      //do nothing - not needed for this component
+    }
+
+    @Override
+    public void removeActionListener(ActionListener actionListener) {
+      //do nothing - not needed for this component
+    }
+  }
 }

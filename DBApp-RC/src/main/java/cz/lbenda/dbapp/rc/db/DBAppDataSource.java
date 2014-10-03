@@ -110,6 +110,7 @@ public class DBAppDataSource implements DataSource {
 
   private static Map<SessionConfiguration, Driver> drivers = new WeakHashMap<>();
   private static Map<SessionConfiguration, DBAppConnection> connections = new WeakHashMap<>();
+  private static Map<DBAppConnection, Date> lastConnectionUse = new WeakHashMap<>();
 
   private Driver getDriver(SessionConfiguration sc) throws SQLException {
     Driver driver = drivers.get(sc);
@@ -152,14 +153,21 @@ public class DBAppDataSource implements DataSource {
 
   private Connection createConnection(String username, String password) throws SQLException {
     DBAppConnection connection = this.connections.get(sessionConfiguration);
-    if (connection != null && !connection.isClosed()) { return connection; }
+    if (connection != null && !connection.isClosed()) {
+      lastConnectionUse.put(connection, new Date());
+      (new Timer()).schedule(new timerTask(), connection.getConnectionTimeout());
+      return connection;
+    }
     Properties connectionProps = new Properties();
     connectionProps.put("user", username);
     connectionProps.put("password", password);
     Driver driver = getDriver(sessionConfiguration);
     try {
       connection = new DBAppConnection(driver.connect(sessionConfiguration.getJdbcConfiguration().getUrl(), connectionProps));
+      connection.setConnectionTimeout(sessionConfiguration.getConnectionTimeout());
       connections.put(sessionConfiguration, connection);
+      lastConnectionUse.put(connection, new Date());
+      (new Timer()).schedule(new timerTask(), connection.getConnectionTimeout());
       return connection;
     } catch (SQLException e) {
       getLogWriter().print("Filed to create connection");
@@ -182,4 +190,33 @@ public class DBAppDataSource implements DataSource {
   public void removeListener(DBAppDataSourceExceptionListener listener) {
     this.listeners.remove(listener);
   }
+
+  private class timerTask extends TimerTask {
+    @Override
+    public void run() {
+      Date now = new Date();
+      List<DBAppConnection> remove = new ArrayList<>();
+      synchronized (lastConnectionUse) {
+        for (Map.Entry<DBAppConnection, Date> entry : lastConnectionUse.entrySet()) {
+          try {
+            if (entry.getKey().getConnectionTimeout() > 0) {
+              if ((now.getTime() - entry.getValue().getTime() >= entry.getKey().getConnectionTimeout())) {
+                if (!entry.getKey().isClosed()) {
+                  entry.getKey().realyClose();
+                }
+              }
+            }
+            if (entry.getKey().isClosed()) {
+              remove.add(entry.getKey());
+            }
+          } catch (SQLException e) {
+            LOG.error("Failed when connection is closed", e);
+          }
+        }
+        for (DBAppConnection con : remove) {
+          lastConnectionUse.remove(con);
+        }
+      }
+    }
+  };
 }

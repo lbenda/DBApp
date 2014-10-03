@@ -9,10 +9,7 @@ import cz.lbenda.dbapp.rc.db.Column;
 import cz.lbenda.dbapp.rc.db.DbStructureReader;
 import cz.lbenda.dbapp.rc.db.TableDescription;
 import java.awt.BorderLayout;
-import java.beans.IntrospectionException;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import cz.lbenda.dbapp.rc.frm.gui.ColumnCellRenderer;
 import org.netbeans.api.settings.ConvertAsProperties;
@@ -24,11 +21,12 @@ import org.openide.nodes.AbstractNode;
 import org.openide.nodes.ChildFactory;
 import org.openide.nodes.Children;
 import org.openide.nodes.Node;
-import org.openide.util.Exceptions;
 import org.openide.util.NbBundle.Messages;
 import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
 import org.openide.windows.TopComponent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 
@@ -42,7 +40,7 @@ import javax.swing.*;
 @TopComponent.Description(
         preferredID = "FrmDBJoinedTableTopComponent",
         iconBase = "cz/lbenda/dbapp/rc/frm/join_indexes.png",
-        persistenceType = TopComponent.PERSISTENCE_ALWAYS
+        persistenceType = TopComponent.PERSISTENCE_NEVER//TopComponent.PERSISTENCE_ALWAYS
 )
 @TopComponent.Registration(mode = "output", openAtStartup = true)//mode = "bottomSlidingSide", openAtStartup = false)
 @ActionID(category = "Window", id = "cz.lbenda.dbapp.rc.frm.FrmDBJoinedTableTopComponent")
@@ -58,25 +56,19 @@ import javax.swing.*;
 })
 public final class FrmDBJoinedTableTopComponent extends TopComponent implements ExplorerManager.Provider, ChosenTable.ChosenTableListener {
 
-  private static final Logger LOG = Logger.getLogger(FrmDbStructureTopComponent.class.getName());
-  private final OutlineView ov;
+  private static final Logger LOG = LoggerFactory.getLogger(FrmDBJoinedTableTopComponent.class);
+  private OutlineView ov;
   private final ExplorerManager em = new ExplorerManager();
   private final InstanceContent ic = new InstanceContent();
+  private JoinedTableChildFactory childFactory;
 
   public FrmDBJoinedTableTopComponent() {
     initComponents();
-    ChosenTable.getInstance().addTableListener(this);
+    ChosenTable.getDefault().addTableListener(this);
     setName(Bundle.CTL_FrmDBJoinedTableTopComponent());
     setToolTipText(Bundle.HINT_FrmDBJoinedTableTopComponent());
 
     setLayout(new BorderLayout());
-    ov = new OutlineView();
-    ov.getOutline().setRootVisible(false);
-    ov.getOutline().setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-    add(ov, BorderLayout.CENTER);
-
-    Node rootNode = new AbstractNode(Children.create(new JoinedTableChildFactory(), true));
-    em.setRootContext(rootNode);
 
     ic.add(em);
     ic.add(getActionMap());
@@ -94,7 +86,6 @@ public final class FrmDBJoinedTableTopComponent extends TopComponent implements 
    */
   // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
   private void initComponents() {
-
     javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
     this.setLayout(layout);
     layout.setHorizontalGroup(
@@ -111,12 +102,32 @@ public final class FrmDBJoinedTableTopComponent extends TopComponent implements 
   // End of variables declaration//GEN-END:variables
   @Override
   public void componentOpened() {
-    // TODO add custom code on component opening
+    ChosenTable.getDefault().addTableListener(this);
+    childFactory = new JoinedTableChildFactory();
+    ov = new OutlineView();
+    ov.getOutline().setRootVisible(false);
+    ov.getOutline().setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+    add(ov, BorderLayout.CENTER);
+    Node rootNode = new AbstractNode(Children.create(childFactory, true));
+    em.setRootContext(rootNode);
+
+    if (ChosenTable.getDefault().getLastChosenRow() != null) {
+      this.tableChosen(ChosenTable.getDefault().getLastChosenRow().getTableDescription());
+      childFactory.tableChosen(ChosenTable.getDefault().getLastChosenRow().getTableDescription());
+      ChosenTable.getDefault().setSelectedRowValues(ChosenTable.getDefault().getLastChosenRow());
+    } else if (ChosenTable.getDefault().getLastTD() != null) {
+      this.tableChosen(ChosenTable.getDefault().getLastTD());
+      childFactory.tableChosen(ChosenTable.getDefault().getLastTD());
+    }
   }
 
   @Override
   public void componentClosed() {
-    // TODO add custom code on component closing
+    childFactory.close();
+    this.childFactory = null;
+    remove(ov);
+    ov = null;
+    ChosenTable.getDefault().removeTableListener(this);
   }
 
   void writeProperties(java.util.Properties p) {
@@ -133,7 +144,6 @@ public final class FrmDBJoinedTableTopComponent extends TopComponent implements 
 
   @Override
   public void tableChosen(TableDescription tableDescription) {
-    LOG.log(Level.INFO, "Table chosen");
     LinkedHashSet<String> columnNames = new LinkedHashSet<>();
     List<Column> columns = new ArrayList<>();
     Map<String, String> descriptions = new HashMap<>();
@@ -160,7 +170,6 @@ public final class FrmDBJoinedTableTopComponent extends TopComponent implements 
           if (!col.equals(skipColumn) && !columnNames.contains(col.getName())) {
             columnNames.add(col.getName());
             columns.add(col);
-            LOG.log(Level.INFO, "Column for show: " + col.getName());
           }
         }
       }
@@ -173,7 +182,9 @@ public final class FrmDBJoinedTableTopComponent extends TopComponent implements 
       cols[i] = col;
       i++;
     }
-    ov.getOutline().setDefaultRenderer(Node.Property.class, new ColumnCellRenderer(columns));
+    ColumnCellRenderer ccr = new ColumnCellRenderer(columns);
+    ccr.setCentered(false);
+    ov.getOutline().setDefaultRenderer(Node.Property.class, ccr);
     ov.setPropertyColumns(cols);
 
 
@@ -182,11 +193,18 @@ public final class FrmDBJoinedTableTopComponent extends TopComponent implements 
     }
   }
 
-  public static class JoinedTableChildFactory extends ChildFactory<DbStructureReader.ForeignKey> implements ChosenTable.ChosenTableListener {
+  public static class JoinedTableChildFactory extends ChildFactory<DbStructureReader.ForeignKey> implements ChosenTable.ChosenTableListener, ChosenTable.ChosenRowListener {
     /** Master table */
     private TableDescription masterTD;
     public JoinedTableChildFactory() {
-      ChosenTable.getInstance().addTableListener(this);
+      ChosenTable.getDefault().addTableListener(this);
+      ChosenTable.getDefault().addRowListener(this);
+    }
+    public void close() {
+      ChosenTable.getDefault().removeTableListener(this);
+      ChosenTable.getDefault().removeRowListener(this);
+      masterTD = null;
+      this.childFactories.clear();
     }
     @Override
     protected boolean createKeys(List<DbStructureReader.ForeignKey> toPopulate) {
@@ -201,24 +219,33 @@ public final class FrmDBJoinedTableTopComponent extends TopComponent implements 
       }
       return true;
     }
+    private List<JoinedRowChildFactory> childFactories = new ArrayList<>();
     @Override
     protected Node createNodeForKey(DbStructureReader.ForeignKey key) {
-      AbstractNode node = new AbstractNode(Children.create(new JoinedRowChildFactory(masterTD, key), true));
+      JoinedRowChildFactory childFactory = new JoinedRowChildFactory(masterTD, key);
+      childFactories.add(childFactory);
+      AbstractNode node = new AbstractNode(Children.create(childFactory, true));
       if (key.getMasterTable().equals(masterTD)) { node.setName(key.getSlaveTable().getName() + " > " + key.getMasterColumn().getName()); }
       else { node.setName(key.getMasterTable().getName() + " > " + key.getSlaveColumn().getName()); }
       return node;
     }
-
     @Override
     public void tableChosen(TableDescription tableDescription) {
       if (!tableDescription.equals(masterTD)) {
         masterTD = tableDescription;
+        childFactories.clear();
         refresh(true);
+      }
+    }
+    @Override
+    public void rowChosen(RowNode.Row selectedRowValues) {
+      for (JoinedRowChildFactory fac : childFactories) {
+        fac.setMasterRow(selectedRowValues);
       }
     }
   }
 
-  public static class JoinedRowChildFactory extends ChildFactory<RowNode.Row> implements ChosenTable.ChosenRowListener {
+  public static class JoinedRowChildFactory extends ChildFactory<RowNode.Row> {
     /** Master table */
     private TableDescription masterTD;
     private final DbStructureReader.ForeignKey fKey;
@@ -226,7 +253,10 @@ public final class FrmDBJoinedTableTopComponent extends TopComponent implements 
     public JoinedRowChildFactory(TableDescription masterTD, DbStructureReader.ForeignKey fKey) {
       this.masterTD = masterTD;
       this.fKey = fKey;
-      ChosenTable.getInstance().addRowListener(this);
+    }
+    public void setMasterRow(RowNode.Row masterRow) {
+      this.masterRow = masterRow;
+      refresh(true);
     }
     @Override
     protected boolean createKeys(List<RowNode.Row> toPopulate) {
@@ -236,20 +266,7 @@ public final class FrmDBJoinedTableTopComponent extends TopComponent implements 
     }
     @Override
     protected Node createNodeForKey(RowNode.Row key) {
-      RowNode node = null;
-      try {
-        node = new RowNode(key);
-      } catch (IntrospectionException ex) {
-        LOG.log(Level.SEVERE, "Faild to create node.", ex);
-        Exceptions.printStackTrace(ex);
-      }
-      return node;
-    }
-    @Override
-    public void rowChosen(TableDescription td, RowNode.Row selectedRowValues) {
-      masterTD = td;
-      masterRow = selectedRowValues;
-      refresh(true);
+      return new RowNode(key);
     }
   }
 }

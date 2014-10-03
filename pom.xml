@@ -62,7 +62,7 @@
     </modules>
 
     <properties>
-        <netbeans.version>RELEASE80</netbeans.version>
+        <netbeans.version>RELEASE80-BETA</netbeans.version>
         <brandingToken>dbapp</brandingToken>
     </properties>
 </project>

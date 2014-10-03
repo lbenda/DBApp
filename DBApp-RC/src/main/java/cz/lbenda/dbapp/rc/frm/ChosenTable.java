@@ -18,8 +18,9 @@ package cz.lbenda.dbapp.rc.frm;
 import cz.lbenda.dbapp.rc.SessionConfiguration;
 import cz.lbenda.dbapp.rc.db.Column;
 import cz.lbenda.dbapp.rc.db.TableDescription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -29,12 +30,14 @@ import java.util.Set;
  */
 public final class ChosenTable {
 
+  public static final Logger LOG = LoggerFactory.getLogger(ChosenTable.class);
+
   public interface ChosenTableListener {
     void tableChosen(TableDescription tableDescription);
   }
 
   public interface ChosenRowListener {
-    void rowChosen(TableDescription td, RowNode.Row selectedRowValues);
+    void rowChosen(RowNode.Row selectedRowValues);
   }
 
   public interface RowUpdateListener {
@@ -49,29 +52,34 @@ public final class ChosenTable {
     void sessionConfigurationChanged(SessionConfiguration sc);
   }
 
-  private final static ChosenTable instance = new ChosenTable();
-
   public final Set<ChosenTableListener> tableListeners = new HashSet<>();
   public final Set<ChosenRowListener> rowListeners = new HashSet<>();
   public final Set<RowUpdateListener> rowUpdateListeners = new HashSet<>();
   public final Set<ConfigurationUpdateListener> configurationUpdateListeners = new HashSet<>();
   private final Set<SessionChangeListener> sessionChangeListeners = new HashSet<>();
 
+  private RowNode.Row lastChosenRow; public RowNode.Row getLastChosenRow() { return lastChosenRow; }
+  private TableDescription lastTD; public TableDescription getLastTD() { return lastTD; }
+
+  private static final ChosenTable instance = new ChosenTable();
+
   private ChosenTable() {}
 
-  public static ChosenTable getInstance() {
+  public static ChosenTable getDefault() {
     return instance;
   }
 
   public void setTableDescription(TableDescription tableDescription) {
+    lastTD = tableDescription;
     for (ChosenTableListener listener : tableListeners) {
       listener.tableChosen(tableDescription);
     }
   }
 
   public void setSelectedRowValues(RowNode.Row row) {
+    this.lastChosenRow = row;
     for (ChosenRowListener listener : rowListeners) {
-      listener.rowChosen(row.getTableDescription(), row);
+      listener.rowChosen(row);
     }
   }
 
