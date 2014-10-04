@@ -63,7 +63,7 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
 
   void store() {
     sc.getJdbcConfiguration().setDriverClass(tfDriverClass.getText());
-    sc.getJdbcConfiguration().setPassword(pfPassword.getText());
+    sc.getJdbcConfiguration().setPassword(String.valueOf(pfPassword.getPassword()));
     sc.getJdbcConfiguration().setUsername(tfUsername.getText());
     sc.getJdbcConfiguration().setUrl(tfUrl.getText());
     sc.setExtendedConfigurationType(SessionConfiguration.ExtendedConfigurationType.values()[cbExtendConfigType.getSelectedIndex()]);

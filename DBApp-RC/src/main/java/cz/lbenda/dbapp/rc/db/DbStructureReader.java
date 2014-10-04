@@ -16,18 +16,19 @@
 package cz.lbenda.dbapp.rc.db;
 
 import cz.lbenda.dbapp.rc.SessionConfiguration;
+import cz.lbenda.dbapp.rc.db.dialect.SQLDialect;
+import cz.lbenda.dbapp.rc.frm.RowNode;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.sql.DataSource;
-
-import cz.lbenda.dbapp.rc.frm.RowNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -273,15 +274,16 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   public void generateStructure() {
     try (Connection conn = getConnection()) {
       DatabaseMetaData dmd = conn.getMetaData();
+      SQLDialect dialect = this.sessionConfiguration.getJdbcConfiguration().getDialect();
 
       // List<TableDescription> result;
       try (ResultSet tabs = dmd.getTables(null, null, null, null)) {
         // result = new ArrayList<>();
         while (tabs.next()) {
-          TableDescription td = this.sessionConfiguration.getOrCreateTableDescription(tabs.getString("TABLE_CAT"),
-              tabs.getString("TABLE_SCHEM"), tabs.getString("TABLE_NAME"));
-          td.setTableType(TableDescription.TableType.fromJDBC(tabs.getString("TABLE_TYPE")));
-          td.setComment(tabs.getString("REMARKS"));
+          TableDescription td = this.sessionConfiguration.getOrCreateTableDescription(tabs.getString(dialect.tableCatalog()),
+              tabs.getString(dialect.tableSchema()), tabs.getString(dialect.tableName()));
+          td.setTableType(TableDescription.TableType.fromJDBC(tabs.getString(dialect.tableType())));
+          td.setComment(dialect.tableRemarks());
         }
         generateStructureColumns(dmd);
         generatePKColumns(dmd);
@@ -293,14 +295,20 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   }
 
   private void generateStructureColumns(DatabaseMetaData dmd) throws SQLException {
+    SQLDialect di = this.sessionConfiguration.getJdbcConfiguration().getDialect();
     try (ResultSet rsColumn  = dmd.getColumns(null, null, null, null)) {
+      ResultSetMetaData rsmd = rsColumn.getMetaData();
+      for (int i = 1; i < rsmd.getColumnCount(); i++) {
+        LOG.trace(String.format("%s: %s", rsmd.getColumnName(i), rsmd.getColumnType(i)));
+      }
       while (rsColumn.next()) {
-        TableDescription td = sessionConfiguration.getTableDescription(rsColumn.getString("TABLE_CAT"), rsColumn.getString("TABLE_SCHEM"),
-                rsColumn.getString("TABLE_NAME"));
-        Column column = new Column(td, rsColumn.getString("COLUMN_NAME"), rsColumn.getInt("DATA_TYPE"),
-                rsColumn.getInt("COLUMN_SIZE"), "YES".equals(rsColumn.getString("IS_NULLABLE")),
-                "YES".equals(rsColumn.getString("IS_AUTOINCREMENT")),
-                "YES".equals(rsColumn.getString("IS_GENERATEDCOLUMN")));
+        TableDescription td = sessionConfiguration.getTableDescription(
+                rsColumn.getString(di.columnTableCatalog()), rsColumn.getString(di.columnTableSchema()),
+                rsColumn.getString(di.columnTableName()));
+        Column column = new Column(td, rsColumn.getString(di.columnName()), rsColumn.getInt(di.columnDateType()),
+                rsColumn.getInt(di.columnSize()), "YES".equals(rsColumn.getString(di.columnNullable())),
+                "YES".equals(rsColumn.getString(di.columnAutoIncrement())),
+                di.columnGenerated() != null ? "YES".equals(rsColumn.getString(di.columnGenerated())) : false);
         column.setComment(rsColumn.getString("REMARKS"));
         td.addColumn(column);
       }
@@ -308,10 +316,11 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   }
 
   private void generatePKColumns(DatabaseMetaData dmd) throws SQLException {
+    SQLDialect di = this.sessionConfiguration.getJdbcConfiguration().getDialect();
     for (TableDescription td : sessionConfiguration.getTableDescriptions()) {
       try (ResultSet rsPk = dmd.getPrimaryKeys(td.getCatalog(), td.getSchema(), td.getName())) {
         while (rsPk.next()) {
-          Column column = td.getColumn(rsPk.getString("COLUMN_NAME"));
+          Column column = td.getColumn(rsPk.getString(di.pkColumnName()));
           column.setPK(true);
         }
       }
@@ -356,13 +365,14 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   }
 
   private void generateStrucutreForeignKeys(DatabaseMetaData dmd) throws SQLException {
+    SQLDialect di = this.sessionConfiguration.getJdbcConfiguration().getDialect();
     for (TableDescription td : sessionConfiguration.getTableDescriptions()) {
       ResultSet rsEx = dmd.getExportedKeys(td.getCatalog(), td.getSchema(), td.getName());
       while (rsEx.next()) {
-        TableDescription slaveTD = sessionConfiguration.getTableDescription(rsEx.getString("FKTABLE_CAT"),
-                rsEx.getString("FKTABLE_SCHEM"), rsEx.getString("FKTABLE_NAME"));
-        ForeignKey fk = new ForeignKey(td, td.getColumn(rsEx.getString("PKCOLUMN_NAME")),
-                slaveTD, slaveTD.getColumn(rsEx.getString("FKCOLUMN_NAME")));
+        TableDescription slaveTD = sessionConfiguration.getTableDescription(rsEx.getString(di.fkSlaveTableCatalog()),
+                rsEx.getString(di.fkSlaveTableSchema()), rsEx.getString(di.fkSlaveTableName()));
+        ForeignKey fk = new ForeignKey(td, td.getColumn(rsEx.getString(di.fkMasterColumnName())),
+                slaveTD, slaveTD.getColumn(rsEx.getString(di.fkSlaveColumnName())));
         td.addForeignKey(fk);
         slaveTD.addForeignKey(fk);
       }

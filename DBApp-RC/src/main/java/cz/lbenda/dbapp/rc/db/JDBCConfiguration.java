@@ -15,14 +15,20 @@
  */
 package cz.lbenda.dbapp.rc.db;
 
+import cz.lbenda.dbapp.rc.db.dialect.SQLDialect;
+import cz.lbenda.dbapp.rc.db.dialect.SQLDialectsHelper;
 import java.util.ArrayList;
 import java.util.List;
 import org.jdom2.Element;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Instance of this object hold information about connection to JDBC, and cane generate some default connection URL's
  * @author Lukas Benda <lbenda at lbenda.cz>
  */
 public class JDBCConfiguration {
+
+  private static final Logger LOG = LoggerFactory.getLogger(JDBCConfiguration.class);
 
   private final List<String> importedLibreries = new ArrayList<>(5); public final List<String> getImportedLibreries() { return importedLibreries; }
   private String username = ""; public void setUsername(final String username) { this.username = username; } public String getUsername() { return this.username; }
@@ -76,5 +82,9 @@ public class JDBCConfiguration {
       }
     }
     return jdbc;
+  }
+
+  public SQLDialect getDialect() {
+    return SQLDialectsHelper.dialectForDriver(driverClass);
   }
 }
