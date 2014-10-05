@@ -15,6 +15,7 @@
  */
 package cz.lbenda.dbapp.rc.db;
 
+import cz.lbenda.dbapp.rc.AbstractHelper;
 import cz.lbenda.dbapp.rc.SessionConfiguration;
 import java.io.File;
 import java.io.PrintWriter;
@@ -171,8 +172,8 @@ public class DBAppDataSource implements DataSource {
       return connection;
     }
     Properties connectionProps = new Properties();
-    connectionProps.put("user", username);
-    connectionProps.put("password", password);
+    if (!AbstractHelper.isEmpty(username)) { connectionProps.put("user", username); }
+    if (!AbstractHelper.isEmpty(password)) { connectionProps.put("password", password); }
     Driver driver = getDriver(sessionConfiguration);
     try {
       connection = new DBAppConnection(driver.connect(sessionConfiguration.getJdbcConfiguration().getUrl(), connectionProps));

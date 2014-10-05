@@ -41,4 +41,11 @@ public abstract class AbstractHelper {
     }
     return 0;
   }
+
+  public static boolean isEmpty(String str) {
+    return str == null || "".equals(str);
+  }
+  public static boolean isBlank(String str) {
+    return str == null || "".equals(str.trim());
+  }
 }

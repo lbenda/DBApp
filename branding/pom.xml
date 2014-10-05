@@ -3,15 +3,15 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-      <groupId>cz.lbenda.dbapp</groupId>
-      <artifactId>DBApp-parent</artifactId>
+      <groupId>cz.lbenda.dataman</groupId>
+      <artifactId>dataman-parent</artifactId>
       <version>1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>DBApp-branding</artifactId>
+  <artifactId>dataman-branding</artifactId>
   <packaging>nbm</packaging>
 
-  <name>DBApp-branding</name>
+  <name>dataman-branding</name>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

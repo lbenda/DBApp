@@ -3,12 +3,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>cz.lbenda.dbapp</groupId>
-    <artifactId>DBApp-parent</artifactId>
+    <groupId>cz.lbenda.dataman</groupId>
+    <artifactId>dataman-parent</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>DBApp-parent</name>
+    <name>dataman-parent</name>
 
     <repositories>
         <!--
@@ -58,11 +58,11 @@
     <modules>
         <module>branding</module>
         <module>application</module>
-        <module>DBApp-RC</module>
+        <module>dataman</module>
     </modules>
 
     <properties>
         <netbeans.version>RELEASE80-BETA</netbeans.version>
-        <brandingToken>dbapp</brandingToken>
+        <brandingToken>dataman</brandingToken>
     </properties>
 </project>
