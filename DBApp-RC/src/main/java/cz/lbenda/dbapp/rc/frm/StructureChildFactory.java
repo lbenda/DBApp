@@ -57,7 +57,7 @@ public class StructureChildFactory extends ChildFactory<Object> {
   }
   private void createSCKeys(List<Object> toPopulate) {
     for (SessionConfiguration sc : SessionConfiguration.getConfigurations()) {
-      toPopulate.add(new StrucHolder(sc, null, null, null));
+      toPopulate.add(new StrucHolder(sc, null, null, null, StrucLevel.SC));
     }
   }
   private boolean createCatalogKeys(SessionConfiguration sc, List<Object> toPopulate) {
@@ -69,7 +69,7 @@ public class StructureChildFactory extends ChildFactory<Object> {
       return true;
     }
     for (String cat : sc.getCatalogs()) {
-      if (sc.isShowCatalog(cat)) { toPopulate.add(new StrucHolder(sc, cat, null, null)); }
+      if (sc.isShowCatalog(cat)) { toPopulate.add(new StrucHolder(sc, cat, null, null, StrucLevel.SCHEMA)); }
     }
     if (toPopulate.isEmpty()) {
       for (String cat : sc.getCatalogs()) {
@@ -80,7 +80,7 @@ public class StructureChildFactory extends ChildFactory<Object> {
   }
   private void createSchemaKeys(SessionConfiguration sc, String catalog, List<Object> toPopulate) {
     for (String sch : sc.getSchemas(catalog)) {
-      if (sc.isShowSchema(catalog, sch)) { toPopulate.add(new StrucHolder(sc, catalog, sch, null)); }
+      if (sc.isShowSchema(catalog, sch)) { toPopulate.add(new StrucHolder(sc, catalog, sch, null, StrucLevel.TABLE_TYPE)); }
     }
     if (toPopulate.isEmpty()) {
       for (String sch : sc.getSchemas(catalog)) {
@@ -90,7 +90,7 @@ public class StructureChildFactory extends ChildFactory<Object> {
   }
   private void createTableTypeKeys(SessionConfiguration sc, String catalog, String schema, List<Object> toPopulate) {
     for (TableDescription.TableType tt : sc.shownTableType(catalog, schema)) {
-      toPopulate.add(new StrucHolder(sc, catalog, schema, tt, 4));
+      toPopulate.add(new StrucHolder(sc, catalog, schema, tt, StrucLevel.TABLE));
     }
   }
   protected void createTDKeys(SessionConfiguration sc, String catalog, String schema,
@@ -103,11 +103,11 @@ public class StructureChildFactory extends ChildFactory<Object> {
   @Override
   protected boolean createKeys(List<Object> toPopulate) {
     switch (strucHolder.getLevel()) {
-      case 0 : createSCKeys(toPopulate); break;
-      case 1 : return createCatalogKeys(strucHolder.getSessionConfiguration(), toPopulate);
-      case 2 : createSchemaKeys(strucHolder.getSessionConfiguration(), strucHolder.getCatalog(), toPopulate); break;
-      case 3 : createTableTypeKeys(strucHolder.getSessionConfiguration(), strucHolder.getCatalog(), strucHolder.getSchema(), toPopulate); break;
-      case 4 : createTDKeys(strucHolder.getSessionConfiguration(), strucHolder.getCatalog(), strucHolder.getSchema(), strucHolder.getTableType(), toPopulate); break;
+      case SC : createSCKeys(toPopulate); break;
+      case CATALOG : return createCatalogKeys(strucHolder.getSessionConfiguration(), toPopulate);
+      case SCHEMA : createSchemaKeys(strucHolder.getSessionConfiguration(), strucHolder.getCatalog(), toPopulate); break;
+      case TABLE_TYPE : createTableTypeKeys(strucHolder.getSessionConfiguration(), strucHolder.getCatalog(), strucHolder.getSchema(), toPopulate); break;
+      case TABLE : createTDKeys(strucHolder.getSessionConfiguration(), strucHolder.getCatalog(), strucHolder.getSchema(), strucHolder.getTableType(), toPopulate); break;
     }
     return true;
   }
@@ -115,7 +115,7 @@ public class StructureChildFactory extends ChildFactory<Object> {
   protected Node createNodeForKey(Object key) {
     if (key instanceof StrucHolder) {
       StrucHolder sh = (StrucHolder) key;
-      if (sh.getLevel() == 0) {
+      if (StrucLevel.SC.equals(sh.getLevel())) {
         try {
           return new SessionConfigurationNode(sh.getSessionConfiguration());
         } catch (IntrospectionException ex) {
@@ -138,12 +138,17 @@ public class StructureChildFactory extends ChildFactory<Object> {
     return null;
   }
 
+  public enum StrucLevel {
+    SC, CATALOG, SCHEMA, TABLE_TYPE, TABLE, ;
+  }
+
   public static class StrucHolder {
     private final SessionConfiguration sessionConfiguration; public SessionConfiguration getSessionConfiguration() { return sessionConfiguration; }
     private final String catalog; public String getCatalog() { return catalog; }
     private final String schema; public String getSchema() { return schema; }
     private final TableDescription.TableType tableType; public TableDescription.TableType getTableType() { return tableType; }
-    private final int level; public int getLevel() { return level; }
+    private final StrucLevel level; public StrucLevel getLevel() { return level; }
+    /*
     public StrucHolder(SessionConfiguration sessionConfiguration, String catalog, String schema, TableDescription.TableType tableType) {
       this.sessionConfiguration = sessionConfiguration;
       this.catalog = catalog;
@@ -151,8 +156,9 @@ public class StructureChildFactory extends ChildFactory<Object> {
       this.tableType = tableType;
       level = tableType == null ? schema == null ? catalog == null ? sessionConfiguration == null ? 0 : 1 : 2 : 3 : 4;
     }
+    */
     public StrucHolder(SessionConfiguration sessionConfiguration, String catalog, String schema,
-                       TableDescription.TableType tableType, int level) {
+                       TableDescription.TableType tableType, StrucLevel level) {
       this.sessionConfiguration = sessionConfiguration;
       this.catalog = catalog;
       this.schema = schema;
@@ -163,7 +169,7 @@ public class StructureChildFactory extends ChildFactory<Object> {
 
   public static class RootNode extends AbstractNode {
     public RootNode() {
-      super(Children.create(new StructureChildFactory(new StrucHolder(null, null, null, null)), true));
+      super(Children.create(new StructureChildFactory(new StrucHolder(null, null, null, null, StrucLevel.SC)), true));
       setDisplayName("Sessions");
     }
   }
@@ -188,10 +194,10 @@ public class StructureChildFactory extends ChildFactory<Object> {
     public StructureNode(StrucHolder sh) {
       super(Children.create(new StructureChildFactory(sh), true));
       switch (sh.getLevel()) {
-        case 1 : setDisplayName(sh.getSessionConfiguration().getId()); break;
-        case 2 : setDisplayName(sh.getCatalog()); break;
-        case 3 : setDisplayName(sh.getSchema()); break;
-        case 4 :
+        case CATALOG : setDisplayName(sh.getSessionConfiguration().getId()); break;
+        case SCHEMA : setDisplayName(sh.getCatalog()); break;
+        case TABLE_TYPE : setDisplayName(sh.getSchema()); break;
+        case TABLE :
           setDisplayName(sh.getTableType().toString());
           switch (sh.getTableType()) {
             case TABLE : setIconBaseWithExtension("cz/lbenda/dbapp/rc/frm/table.png"); break;
@@ -207,7 +213,7 @@ public class StructureChildFactory extends ChildFactory<Object> {
       this(sc, new InstanceContent());
     }
     public SessionConfigurationNode(final SessionConfiguration sc, final InstanceContent ic) throws IntrospectionException {
-      super(sc, Children.create(new StructureChildFactory(new StrucHolder(sc, null, null, null)), true), new AbstractLookup(ic));
+      super(sc, Children.create(new StructureChildFactory(new StrucHolder(sc, null, null, null, StrucLevel.CATALOG)), true), new AbstractLookup(ic));
       ic.add(new OpenCookie() {
         @Override
         public void open() { sc.reloadStructure(); }

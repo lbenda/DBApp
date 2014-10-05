@@ -86,7 +86,7 @@ public class EditablePanneTitle extends JPanel {
       bRemove.removeAll();
       bRemove.setIcon(new ImageIcon(buttonIcon));
     } catch (Exception e) {
-      LOG.error("Problem with read icon for remove tabbed pane", e);
+      // LOG.error("Problem with read icon for remove tabbed pane", e);
       bRemove.setText("X");
       bRemove.setFont(new Font("Berlin Sans FB",java.awt.Font.BOLD,14));
       bRemove.setForeground(new Color(255, 0, 0));

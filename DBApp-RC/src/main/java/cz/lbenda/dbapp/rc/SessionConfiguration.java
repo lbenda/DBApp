@@ -212,6 +212,7 @@ public class SessionConfiguration {
    * @return catalog is show or not
    */
   public final boolean isShowCatalog(final String catalog) {
+    if (catalog == null) { return false; }
     if (shownSchemas.isEmpty()) { return true; }
     return shownSchemas.containsKey(catalog) && shownSchemas.size() > 1;
   }
@@ -222,6 +223,7 @@ public class SessionConfiguration {
    * @return catalog is show or not
    */
   public final boolean isShowSchema(final String catalog, final String schema) {
+    if (schema == null) { return true; }
     if (shownSchemas.isEmpty()) { return true; }
     if (!shownSchemas.containsKey(catalog)) { return false; }
     return shownSchemas.get(catalog).contains(schema) && shownSchemas.get(catalog).size() > 1;
@@ -311,7 +313,9 @@ public class SessionConfiguration {
 
   public final TableDescription getOrCreateTableDescription(String catalog, String schema, String table) {
     for (TableDescription td : getTableDescriptions()) {
-      if (td.getCatalog().equals(catalog) && td.getSchema().equals(schema) && td.getName().equals(table)) {
+      if (AbstractHelper.nullEquals(td.getCatalog(), catalog)
+              && AbstractHelper.nullEquals(td.getSchema(), schema)
+              && AbstractHelper.nullEquals(td.getName(), table)) {
         return td;
       }
     }

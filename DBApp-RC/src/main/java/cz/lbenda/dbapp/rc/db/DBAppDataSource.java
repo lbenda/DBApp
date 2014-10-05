@@ -16,8 +16,6 @@
 package cz.lbenda.dbapp.rc.db;
 
 import cz.lbenda.dbapp.rc.SessionConfiguration;
-import org.apache.jackrabbit.test.LogPrintWriter;
-
 import java.io.File;
 import java.io.PrintWriter;
 import java.net.MalformedURLException;
@@ -27,9 +25,17 @@ import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.WeakHashMap;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
+import org.apache.jackrabbit.test.LogPrintWriter;
 
 /** Implementation of data source
  * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/23/14.
@@ -151,11 +157,17 @@ public class DBAppDataSource implements DataSource {
     }
   }
 
+  private void scheduleUnconect(DBAppConnection connection) {
+    lastConnectionUse.put(connection, new Date());
+    if (connection.getConnectionTimeout() > 0) {
+      (new Timer()).schedule(new timerTask(), connection.getConnectionTimeout());
+    }
+  }
+
   private Connection createConnection(String username, String password) throws SQLException {
     DBAppConnection connection = this.connections.get(sessionConfiguration);
     if (connection != null && !connection.isClosed()) {
-      lastConnectionUse.put(connection, new Date());
-      (new Timer()).schedule(new timerTask(), connection.getConnectionTimeout());
+      scheduleUnconect(connection);
       return connection;
     }
     Properties connectionProps = new Properties();
@@ -166,8 +178,7 @@ public class DBAppDataSource implements DataSource {
       connection = new DBAppConnection(driver.connect(sessionConfiguration.getJdbcConfiguration().getUrl(), connectionProps));
       connection.setConnectionTimeout(sessionConfiguration.getConnectionTimeout());
       connections.put(sessionConfiguration, connection);
-      lastConnectionUse.put(connection, new Date());
-      (new Timer()).schedule(new timerTask(), connection.getConnectionTimeout());
+      scheduleUnconect(connection);
       return connection;
     } catch (SQLException e) {
       getLogWriter().print("Filed to create connection");

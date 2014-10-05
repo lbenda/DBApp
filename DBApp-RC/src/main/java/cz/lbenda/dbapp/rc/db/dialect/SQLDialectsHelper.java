@@ -11,6 +11,8 @@ package cz.lbenda.dbapp.rc.db.dialect;
  */
 public class SQLDialectsHelper {
 
+  private static final SQLDialect DEFAULT = new H2Dialect();
+
   public static SQLDialect dialectForDriver(String driver) {
     if (SQLDialect.DIALECTS.isEmpty()) {
       SQLDialect.DIALECTS.add(new H2Dialect());
@@ -19,6 +21,6 @@ public class SQLDialectsHelper {
     for (SQLDialect dialect : SQLDialect.DIALECTS) {
       if (dialect.isForDriver(driver)) { return dialect; }
     }
-    return null;
+    return DEFAULT;
   }
 }

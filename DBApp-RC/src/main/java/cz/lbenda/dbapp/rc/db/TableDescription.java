@@ -17,11 +17,6 @@ package cz.lbenda.dbapp.rc.db;
 
 import cz.lbenda.dbapp.rc.AbstractHelper;
 import cz.lbenda.dbapp.rc.SessionConfiguration;
-import org.netbeans.spi.actions.AbstractSavable;
-import org.openide.loaders.DataObject;
-
-import javax.swing.event.UndoableEditListener;
-import javax.swing.undo.UndoableEditSupport;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.IOException;
@@ -31,6 +26,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.swing.event.UndoableEditListener;
+import javax.swing.undo.UndoableEditSupport;
+import org.netbeans.spi.actions.AbstractSavable;
 
 /** Main object which hold all information about database table structure
  * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/16/14.
@@ -38,8 +36,11 @@ import java.util.Map;
 public class TableDescription extends AbstractSavable implements Comparable<TableDescription> {
 
   public enum TableType {
-    TABLE, VIEW, SYSTEM_TABLE ;
+    TABLE, VIEW, SYSTEM_TABLE, INDEX, SYSTEM_INDEX, SYSTEM_TOAST_INDEX, SYSTEM_VIEW, UNDEFINED,
+    FOREIGN_TABLE, SYSTEM_TOAST_TABLE, TEMPORARY_INDEX, TEMPORARY_SUEQUENCE, TEMPORARY_TABLE,
+    TEMPORARY_VIEW, TYPE, PROCEDURE, UDT, SEQUENCE ;
     public static TableType fromJDBC(String tt) {
+      if (tt == null) { return UNDEFINED; }
       return TableType.valueOf(tt.replace(" ", "_"));
     }
   }
