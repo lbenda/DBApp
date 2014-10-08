@@ -20,6 +20,8 @@ import cz.lbenda.dbapp.rc.db.JDBCConfiguration;
 import cz.lbenda.dbapp.rc.db.TableDescription;
 import cz.lbenda.dbapp.rc.db.TableDescriptionExtension;
 import cz.lbenda.dbapp.rc.frm.config.DBConfigurationOptionsPanelController;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -45,6 +47,8 @@ import org.slf4j.LoggerFactory;
  */
 public class SessionConfiguration {
 
+  private static final PropertyChangeSupport pcs = new PropertyChangeSupport(SessionConfiguration.class);
+
   public enum ExtendedConfigurationType {
     NONE, DATABASE, FILE, ;
   }
@@ -62,6 +66,7 @@ public class SessionConfiguration {
     SessionConfiguration.configurationNotReadedYet = false;
     String config = DBConfigurationOptionsPanelController.getConfigurationStr();
     if (config != null) { SessionConfiguration.loadFromString(config); }
+    pcs.firePropertyChange("reloadConfiguration", null, null);
   }
 
   /** This method save configuration which is stored in netbeans pref in module DBConfigurationPanel */
@@ -102,15 +107,17 @@ public class SessionConfiguration {
 
   /** This method register new configuration to global list of configurations */
   public static void registerNewConfiguration(SessionConfiguration sc) {
-    if (!configurations.contains(sc)) {
-      configurations.add(sc);
-    }
+    if (!configurations.contains(sc)) { configurations.add(sc); }
+    pcs.firePropertyChange("registerNewConfiguration", sc, sc);
   }
 
   /** Remove configuration of given name from global list of configurations */
   public static void removeConfiguration(String name) {
     SessionConfiguration sc = getConfiguration(name);
-    if (sc != null) { configurations.remove(sc); }
+    if (sc != null) {
+      configurations.remove(sc);
+      pcs.firePropertyChange("remove", sc, null);
+    }
   }
 
   public static void loadFromString(final String document) {
@@ -430,6 +437,14 @@ public class SessionConfiguration {
       }
     }
     return result;
+  }
+
+  public static void addPropertyChangeListener(PropertyChangeListener listener) {
+    pcs.addPropertyChangeListener(listener);
+  }
+
+  public static void removePropertyChangeListener(PropertyChangeListener listener) {
+    pcs.removePropertyChangeListener(listener);
   }
 
   @Override

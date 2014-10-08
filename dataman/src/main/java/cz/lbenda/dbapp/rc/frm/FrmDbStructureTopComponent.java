@@ -16,9 +16,9 @@
 package cz.lbenda.dbapp.rc.frm;
 
 import cz.lbenda.dbapp.rc.SessionConfiguration;
-
-import java.awt.*;
-
+import java.awt.BorderLayout;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import org.netbeans.api.settings.ConvertAsProperties;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
@@ -57,9 +57,8 @@ import org.slf4j.LoggerFactory;
 public final class FrmDbStructureTopComponent extends TopComponent implements ExplorerManager.Provider, ChosenTable.ConfigurationUpdateListener {
 
   private static final Logger LOG = LoggerFactory.getLogger(FrmDbStructureTopComponent.class);
-  private static ExplorerManager em = new ExplorerManager();
 
-  private SessionConfiguration sc = null;
+  private final ExplorerManager em = new ExplorerManager();
 
   public FrmDbStructureTopComponent() {
     initComponents();
@@ -67,12 +66,18 @@ public final class FrmDbStructureTopComponent extends TopComponent implements Ex
     setToolTipText(Bundle.HINT_FrmDbStructureTopComponent());
     setLayout(new BorderLayout());
     BeanTreeView btw = new BeanTreeView();
-    btw.setRootVisible(false);
+    btw.setRootVisible(true);
     add(btw, BorderLayout.CENTER);
     refreshNode();
     associateLookup(ExplorerUtils.createLookup(em, getActionMap()));
-    ChosenTable.getDefault().addConfigurationUpdateListener(this);
   }
+
+  private final PropertyChangeListener propertyChangeListener = new PropertyChangeListener() {
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+      refreshNode();
+    }
+  };
 
   /**
    * This method is called from within the constructor to initialize the form. WARNING: Do NOT
@@ -101,7 +106,9 @@ public final class FrmDbStructureTopComponent extends TopComponent implements Ex
   // End of variables declaration//GEN-END:variables
   @Override
   public void componentOpened() {
+    ChosenTable.getDefault().addConfigurationUpdateListener(this);
     refreshNode();
+    SessionConfiguration.addPropertyChangeListener(propertyChangeListener);
   }
 
   @Override
@@ -111,7 +118,8 @@ public final class FrmDbStructureTopComponent extends TopComponent implements Ex
 
   @Override
   public void componentClosed() {
-    // TODO add custom code on component closing
+    ChosenTable.getDefault().removeConfigurationUpdateListener(this);
+    SessionConfiguration.removePropertyChangeListener(propertyChangeListener);
   }
 
    void writeProperties(java.util.Properties p) {

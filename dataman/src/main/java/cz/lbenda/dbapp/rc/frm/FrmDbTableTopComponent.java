@@ -98,9 +98,11 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
     ic.add(getActionMap());
     associateLookup(new AbstractLookup(ic));
 
+    /*
     for (Column col : td.getColumns()) {
       CellEditor ce = ((ETable) ov.getOutline()).getCellEditor(1, col.getPosition() + 1);
     }
+    */
     ov.getOutline().getSelectionModel().addListSelectionListener(listSelectionListener);
   }
 

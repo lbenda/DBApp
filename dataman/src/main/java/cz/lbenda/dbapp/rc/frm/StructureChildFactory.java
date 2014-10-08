@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import javax.swing.Action;
+import org.openide.actions.CustomizeAction;
 import org.openide.actions.OpenAction;
 import org.openide.cookies.OpenCookie;
 import org.openide.nodes.AbstractNode;
@@ -40,7 +41,7 @@ import org.openide.windows.WindowManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
+/** Factory for FrmDbStructureTopComponent tree
 * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/28/14.
 */
 @Messages({
@@ -148,15 +149,6 @@ public class StructureChildFactory extends ChildFactory<Object> {
     private final String schema; public String getSchema() { return schema; }
     private final TableDescription.TableType tableType; public TableDescription.TableType getTableType() { return tableType; }
     private final StrucLevel level; public StrucLevel getLevel() { return level; }
-    /*
-    public StrucHolder(SessionConfiguration sessionConfiguration, String catalog, String schema, TableDescription.TableType tableType) {
-      this.sessionConfiguration = sessionConfiguration;
-      this.catalog = catalog;
-      this.schema = schema;
-      this.tableType = tableType;
-      level = tableType == null ? schema == null ? catalog == null ? sessionConfiguration == null ? 0 : 1 : 2 : 3 : 4;
-    }
-    */
     public StrucHolder(SessionConfiguration sessionConfiguration, String catalog, String schema,
                        TableDescription.TableType tableType, StrucLevel level) {
       this.sessionConfiguration = sessionConfiguration;
@@ -169,8 +161,24 @@ public class StructureChildFactory extends ChildFactory<Object> {
 
   public static class RootNode extends AbstractNode {
     public RootNode() {
-      super(Children.create(new StructureChildFactory(new StrucHolder(null, null, null, null, StrucLevel.SC)), true));
+      this(new InstanceContent());
+    }
+    public RootNode(InstanceContent ic) {
+      super(Children.create(new StructureChildFactory(new StrucHolder(null, null, null, null, StrucLevel.SC)), true),
+              new AbstractLookup(ic));
+      // super(Children.LEAF, new AbstractLookup(ic));
+      ic.add(new OpenCookie() {
+        @Override
+        public void open() {
+          throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+      });
       setDisplayName("Sessions");
+    }
+    @Override
+    public Action[] getActions(boolean context) {
+      List<? extends Action> myActions = Utilities.actionsForPath("Actions/DBStructure/Session/Create");
+      return myActions.toArray(new Action[myActions.size()]);
     }
   }
 
@@ -223,11 +231,11 @@ public class StructureChildFactory extends ChildFactory<Object> {
     }
     @Override
     public Action getPreferredAction() {
-      return SystemAction.get(OpenAction.class);
+      return SystemAction.get(CustomizeAction.class);
     }
     @Override
     public Action[] getActions(boolean context) {
-      return new Action[]{SystemAction.get(OpenAction.class)};
+      return new Action[]{SystemAction.get(CustomizeAction.class)};
     }
   }
 

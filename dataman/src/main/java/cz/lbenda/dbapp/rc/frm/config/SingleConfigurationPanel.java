@@ -6,11 +6,14 @@
 package cz.lbenda.dbapp.rc.frm.config;
 
 import cz.lbenda.dbapp.rc.SessionConfiguration;
+import java.beans.Customizer;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JFileChooser;
 import javax.swing.ListModel;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.ListDataEvent;
@@ -22,13 +25,14 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Lukas Benda <lbenda at lbenda.cz>
  */
-class SingleConfigurationPanel extends javax.swing.JPanel {
+public class SingleConfigurationPanel extends javax.swing.JPanel implements Customizer {
 
   private static final Logger LOG = LoggerFactory.getLogger(SingleConfigurationPanel.class);
 
-  private final SessionConfiguration sc;
-  private final DBConfigurationPanel panel;
+  private SessionConfiguration sc;
+  private DBConfigurationPanel panel;
   private final LibraryListModel llm = new LibraryListModel();
+  private final boolean optionsMode;
 
   /** Creates new form SingleConfigurationPanel
    * @param sc session configuration (which is shown)
@@ -36,13 +40,22 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
    */
   SingleConfigurationPanel(SessionConfiguration sc, DBConfigurationPanel panel) {
     initComponents();
+    optionsMode = true;
     this.sc = sc;
     this.panel = panel;
     this.listLibraries.setModel(llm);
-    LOG.debug("Start single configuration");
+  }
+
+  /** Constructor for Customizer */
+  public SingleConfigurationPanel() {
+    initComponents();
+    optionsMode = false;
+    this.listLibraries.setModel(llm);
+    this.configListener();
   }
 
   void load() {
+    this.tfName.setText(sc.getId());
     this.tfDriverClass.setText(sc.getJdbcConfiguration().getDriverClass());
     this.tfUsername.setText(sc.getJdbcConfiguration().getUsername());
     this.pfPassword.setText(sc.getJdbcConfiguration().getPassword());
@@ -53,6 +66,7 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
     else { tfTimeout.setText(""); }
 
     ChangeListener cl = new ChangeListener();
+    tfName.getDocument().addDocumentListener(cl);
     tfUsername.getDocument().addDocumentListener(cl);
     pfPassword.getDocument().addDocumentListener(cl);
     tfUrl.getDocument().addDocumentListener(cl);
@@ -62,6 +76,7 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
   }
 
   void store() {
+    sc.setId(tfName.getText());
     sc.getJdbcConfiguration().setDriverClass(tfDriverClass.getText());
     sc.getJdbcConfiguration().setPassword(String.valueOf(pfPassword.getPassword()));
     sc.getJdbcConfiguration().setUsername(tfUsername.getText());
@@ -74,11 +89,25 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
     SessionConfiguration.registerNewConfiguration(sc);
   }
 
+  private void configListener() {
+    AncestorListener listener = new AncestorListener () {
+      public @Override void ancestorAdded(AncestorEvent event) { if (!isShowing()) { onClose(); } }
+      public @Override void ancestorRemoved(AncestorEvent event) { if (!isShowing()) { onClose(); } }
+      public @Override void ancestorMoved (AncestorEvent event) { if (!isShowing()) { onClose(); } }
+    };
+    addAncestorListener(listener);
+  }
+
+  private void onClose() {
+    this.store();
+  }
+
   private void callChanged() {
-    LOG.debug("call changed");
-    if (!panel.controller.isChanged()) {
-      LOG.debug("isChanged false");
-      panel.controller.changed();
+    if (optionsMode) {
+      if (!panel.controller.isChanged()) {
+        LOG.debug("isChanged false");
+        panel.controller.changed();
+      }
     }
   }
 
@@ -121,6 +150,8 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
     lPath = new javax.swing.JLabel();
     tfPath = new javax.swing.JTextField();
     bChoosePath = new javax.swing.JButton();
+    lName = new javax.swing.JLabel();
+    tfName = new javax.swing.JTextField();
 
     jPanel2.setBorder(javax.swing.BorderFactory.createTitledBorder(org.openide.util.NbBundle.getMessage(SingleConfigurationPanel.class, "SingleConfigurationPanel.jPanel2.border.title"))); // NOI18N
 
@@ -216,7 +247,7 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
           .addComponent(bAddLibraries)
           .addComponent(bRemoveLibs))
         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-        .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 150, Short.MAX_VALUE))
+        .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 116, Short.MAX_VALUE))
     );
 
     jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder(org.openide.util.NbBundle.getMessage(SingleConfigurationPanel.class, "SingleConfigurationPanel.jPanel1.border.title"))); // NOI18N
@@ -267,16 +298,31 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
         .addGap(0, 0, Short.MAX_VALUE))
     );
 
+    org.openide.awt.Mnemonics.setLocalizedText(lName, org.openide.util.NbBundle.getMessage(SingleConfigurationPanel.class, "SingleConfigurationPanel.lName.text")); // NOI18N
+
+    tfName.setText(org.openide.util.NbBundle.getMessage(SingleConfigurationPanel.class, "SingleConfigurationPanel.tfName.text")); // NOI18N
+
     javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
     this.setLayout(layout);
     layout.setHorizontalGroup(
       layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
       .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
       .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+      .addGroup(layout.createSequentialGroup()
+        .addContainerGap()
+        .addComponent(lName)
+        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+        .addComponent(tfName)
+        .addContainerGap())
     );
     layout.setVerticalGroup(
       layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
       .addGroup(layout.createSequentialGroup()
+        .addContainerGap()
+        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+          .addComponent(lName)
+          .addComponent(tfName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
         .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
         .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -341,6 +387,7 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
   private javax.swing.JLabel lDriverClass;
   private javax.swing.JLabel lExtendConfigType;
   private javax.swing.JLabel lLibraries;
+  private javax.swing.JLabel lName;
   private javax.swing.JLabel lPassword;
   private javax.swing.JLabel lPath;
   private javax.swing.JLabel lTimeout;
@@ -349,28 +396,23 @@ class SingleConfigurationPanel extends javax.swing.JPanel {
   private javax.swing.JList listLibraries;
   private javax.swing.JPasswordField pfPassword;
   private javax.swing.JTextField tfDriverClass;
+  private javax.swing.JTextField tfName;
   private javax.swing.JTextField tfPath;
   private javax.swing.JTextField tfTimeout;
   private javax.swing.JTextField tfUrl;
   private javax.swing.JTextField tfUsername;
   // End of variables declaration//GEN-END:variables
 
+  @Override
+  public void setObject(Object bean) {
+    this.sc = (SessionConfiguration) bean;
+    load();
+  }
+
   private class ChangeListener implements DocumentListener {
-    @Override
-    public void insertUpdate(DocumentEvent e) {
-      LOG.debug("insert update");
-      callChanged();
-    }
-    @Override
-    public void removeUpdate(DocumentEvent e) {
-      LOG.debug("remove update");
-      callChanged();
-    }
-    @Override
-    public void changedUpdate(DocumentEvent e) {
-      LOG.debug("changed update");
-      callChanged();
-    }
+    public @Override void insertUpdate(DocumentEvent e) { callChanged(); }
+    public @Override void removeUpdate(DocumentEvent e) { callChanged(); }
+    public @Override void changedUpdate(DocumentEvent e) { callChanged(); }
   }
 
   private class LibraryListModel implements ListModel {
