@@ -19,6 +19,8 @@ import javax.swing.event.DocumentListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
+import cz.lbenda.schema.dbapp.dataman.ExtendedConfigTypeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +63,7 @@ public class SingleConfigurationPanel extends javax.swing.JPanel implements Cust
     this.pfPassword.setText(sc.getJdbcConfiguration().getPassword());
     this.tfUrl.setText(sc.getJdbcConfiguration().getUrl());
     this.tfPath.setText(sc.getExtendedConfigurationPath());
-    this.cbExtendConfigType.setSelectedIndex(sc.getExtendedConfigurationType().ordinal());
+    this.cbExtendConfigType.setSelectedIndex(sc.getExtendedConfigType().ordinal());
     if (sc.getConnectionTimeout() > 0) { this.tfTimeout.setText(String.valueOf(sc.getConnectionTimeout())); }
     else { tfTimeout.setText(""); }
 
@@ -81,7 +83,7 @@ public class SingleConfigurationPanel extends javax.swing.JPanel implements Cust
     sc.getJdbcConfiguration().setPassword(String.valueOf(pfPassword.getPassword()));
     sc.getJdbcConfiguration().setUsername(tfUsername.getText());
     sc.getJdbcConfiguration().setUrl(tfUrl.getText());
-    sc.setExtendedConfigurationType(SessionConfiguration.ExtendedConfigurationType.values()[cbExtendConfigType.getSelectedIndex()]);
+    sc.setExtendedConfigType(ExtendedConfigTypeType.values()[cbExtendConfigType.getSelectedIndex()]);
     sc.setExtendedConfigurationPath(tfPath.getText());
     if (tfTimeout.getText() != null && !"".equals(tfTimeout.getText().trim())) {
       sc.setConnectionTimeout(Integer.valueOf(tfTimeout.getText()));

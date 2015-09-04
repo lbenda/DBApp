@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Copyright 2015 Lukas Benda <lbenda at lbenda.cz>.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<xsd:schema version="1.0"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:dmc="http://www.lbenda.cz/schema/dbapp/Dataman"
+            targetNamespace="http://www.lbenda.cz/schema/dbapp/Dataman"
+            elementFormDefault="qualified">
+
+  <xsd:element name="dataman" type="dmc:datamanType"/>
+  <xsd:element name="sessions" type="dmc:sessionsType"/>
+
+  <xsd:complexType name="datamanType">
+    <xsd:sequence>
+      <xsd:element name="sessions" type="dmc:sessionsType" minOccurs="1" maxOccurs="1"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="sessionsType">
+    <xsd:sequence>
+      <xsd:element name="session" type="dmc:sessionType" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="sessionType">
+    <xsd:annotation><xsd:documentation>Configuration of single connection</xsd:documentation></xsd:annotation>
+    <xsd:sequence>
+      <xsd:element name="connectionTimeout" type="xsd:int" minOccurs="0" maxOccurs="1">
+        <xsd:annotation><xsd:documentation>Timeout for connection</xsd:documentation></xsd:annotation>
+      </xsd:element>
+      <xsd:element name="jdbc" type="dmc:jdbcType" minOccurs="1" maxOccurs="1">
+        <xsd:annotation><xsd:documentation>JDBC configuration</xsd:documentation></xsd:annotation>
+      </xsd:element>
+      <xsd:element name="extendedConfig" type="dmc:extendedConfigType" minOccurs="0" maxOccurs="1">
+        <xsd:annotation><xsd:documentation>Extended configuration of session</xsd:documentation></xsd:annotation>
+      </xsd:element>
+      <xsd:element name="libraries" type="dmc:librariesType" minOccurs="1" maxOccurs="1">
+        <xsd:annotation><xsd:documentation>Libraries with JDBC driver</xsd:documentation></xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name="id" type="xsd:ID">
+      <xsd:annotation><xsd:documentation>Identifier and name of session configuration</xsd:documentation></xsd:annotation>
+    </xsd:attribute>
+  </xsd:complexType>
+
+  <xsd:complexType name="extendedConfigType">
+    <xsd:annotation><xsd:documentation>Link to extended configuration</xsd:documentation></xsd:annotation>
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:string">
+        <xsd:annotation><xsd:documentation>Path to file with configuration or to table with configuration (with point notation catalog.schema.table).</xsd:documentation></xsd:annotation>
+        <xsd:attribute name="type" type="dmc:extendedConfigTypeType">
+          <xsd:annotation><xsd:documentation>Type how is extend configuration stored.</xsd:documentation></xsd:annotation>
+        </xsd:attribute>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+
+  <xsd:simpleType name="extendedConfigTypeType">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="NONE">
+        <xsd:annotation><xsd:documentation>No extend configuration</xsd:documentation></xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="DATABASE">
+        <xsd:annotation><xsd:documentation>Extend configuration is stored in database</xsd:documentation></xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="FILE">
+        <xsd:annotation><xsd:documentation>Extend configuration is stored in XML file</xsd:documentation></xsd:annotation>
+      </xsd:enumeration>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <xsd:complexType name="jdbcType">
+    <xsd:annotation><xsd:documentation>Libraries which contains JDBC driver</xsd:documentation></xsd:annotation>
+    <xsd:sequence>
+      <xsd:element name="driverClass" type="xsd:string" minOccurs="1" maxOccurs="1">
+        <xsd:annotation><xsd:documentation>Class of JDBC driver</xsd:documentation></xsd:annotation>
+      </xsd:element>
+      <xsd:element name="user" type="xsd:string" minOccurs="1" maxOccurs="1">
+        <xsd:annotation><xsd:documentation>Username for connection to database</xsd:documentation></xsd:annotation>
+      </xsd:element>
+      <xsd:element name="password" type="xsd:string" minOccurs="1" maxOccurs="1">
+        <xsd:annotation><xsd:documentation>Password for connecting to database</xsd:documentation></xsd:annotation>
+      </xsd:element>
+      <xsd:element name="url" type="xsd:string" minOccurs="1" maxOccurs="1">
+        <xsd:annotation><xsd:documentation>Connecting URL for connection to database</xsd:documentation></xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="librariesType">
+    <xsd:annotation><xsd:documentation>Libraries which contains JDBC driver</xsd:documentation></xsd:annotation>
+    <xsd:sequence>
+      <xsd:element name="library" type="xsd:string" minOccurs="0" maxOccurs="unbounded">
+        <xsd:annotation><xsd:documentation>Path to single library</xsd:documentation></xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+
+</xsd:schema>

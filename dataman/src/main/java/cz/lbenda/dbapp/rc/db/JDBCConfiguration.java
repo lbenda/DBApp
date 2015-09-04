@@ -19,7 +19,9 @@ import cz.lbenda.dbapp.rc.db.dialect.SQLDialect;
 import cz.lbenda.dbapp.rc.db.dialect.SQLDialectsHelper;
 import java.util.ArrayList;
 import java.util.List;
-import org.jdom2.Element;
+
+import cz.lbenda.schema.dbapp.dataman.JdbcType;
+import cz.lbenda.schema.dbapp.dataman.ObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,39 +50,20 @@ public class JDBCConfiguration {
     this.url = String.format("jdbc:derby:%s;create=true", fileName);
   }
 
-  public final void loadFromElement(Element element) {
-    setPassword(subElementText(element, "password", ""));
-    setUsername(subElementText(element, "user", "SA"));
-    setUrl(subElementText(element, "url", ""));
-    setDriverClass(subElementText(element, "driverClass", ""));
-    Element libraries = element.getChild("libraries");
-    if (libraries != null) {
-      for (Element librarie : (List<Element>) libraries.getChildren("librarie")) {
-        getImportedLibreries().add(librarie.getValue());
-      }
-    }
+  public final void load(JdbcType jdbc) {
+    setPassword(jdbc.getPassword() == null ? "" : jdbc.getPassword());
+    setUsername(jdbc.getUser() == null ? "" : jdbc.getUser());
+    setUrl(jdbc.getUrl() == null ? "" : jdbc.getUrl());
+    setDriverClass(jdbc.getDriverClass() == null ? "" : jdbc.getDriverClass());
   }
 
-  private String subElementText(Element element, String name, String def) {
-    Element el = element.getChild(name);
-    if (el == null) { return def; }
-    return el.getText();
-  }
-
-
-  public final Element storeToElement() {
-    Element jdbc = new Element("jdbc");
-    jdbc.addContent(new Element("driverClass").setText(driverClass));
-    jdbc.addContent(new Element("user").setText(getUsername()));
-    jdbc.addContent(new Element("password").setText(getPassword()));
-    jdbc.addContent(new Element("url").setText(getUrl()));
-    Element libraries = new Element("libraries");
-    jdbc.addContent(libraries);
-    if (importedLibreries != null) {
-      for (String library : importedLibreries) {
-        libraries.addContent(new Element("librarie").setText(library));
-      }
-    }
+  public final JdbcType storeToJdbcType() {
+    ObjectFactory of = new ObjectFactory();
+    JdbcType jdbc = of.createJdbcType();
+    jdbc.setDriverClass(driverClass);
+    jdbc.setUser(getUsername());
+    jdbc.setPassword(getPassword());
+    jdbc.setUrl(getUrl());
     return jdbc;
   }
 

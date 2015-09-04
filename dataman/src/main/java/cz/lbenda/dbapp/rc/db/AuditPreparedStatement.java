@@ -307,7 +307,7 @@ public class AuditPreparedStatement implements java.sql.PreparedStatement {
   @Override
   public void setObject(int parameterIndex, Object x) throws SQLException {
     if (x instanceof java.util.Date) {
-      this.parameterValues.put(parameterIndex, DATE_FORMAT.get().format((Date) x));
+      this.parameterValues.put(parameterIndex, DATE_FORMAT.get().format((java.util.Date) x));
     } else  if (x != null && x.getClass().isArray()) {
       this.parameterValues.put(parameterIndex, Arrays.toString((Object[]) x));
     } else {

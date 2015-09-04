@@ -23,7 +23,6 @@ import cz.lbenda.dbapp.rc.frm.config.DBConfigurationOptionsPanelController;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.File;
-import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -34,30 +33,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import cz.lbenda.schema.dbapp.dataman.*;
 import cz.lbenda.schema.dbapp.exconf.*;
-import org.jdom2.Document;
-import org.jdom2.Element;
-import org.jdom2.JDOMException;
-import org.jdom2.input.SAXBuilder;
-import org.jdom2.output.Format;
-import org.jdom2.output.XMLOutputter;
+import cz.lbenda.schema.dbapp.exconf.ObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.*;
 
 /** Object of this class define configuration of one session
  */
 public class SessionConfiguration {
 
   private static final PropertyChangeSupport pcs = new PropertyChangeSupport(SessionConfiguration.class);
-
-  public enum ExtendedConfigurationType {
-    NONE, DATABASE, FILE, ;
-  }
 
   private static final Logger LOG = LoggerFactory.getLogger(SessionConfiguration.class);
 
@@ -127,52 +115,50 @@ public class SessionConfiguration {
   }
 
   public static void loadFromString(final String document) {
-    SAXBuilder builder = new SAXBuilder();
     try {
-      loadFromDocument(builder.build(new StringReader(document)));
-    } catch (JDOMException e) {
-      LOG.error("The string isn't parsable: " + document, e);
-      throw new RuntimeException("The string isn't parsable: " + document, e);
-    } catch (IOException e) {
-      LOG.error("The string can't be opend as StringReader: " + document, e);
-      throw new RuntimeException("The string cant be opend as StringReader: " + document, e);
-    }
-  }
-
-  public static void loadFromDocument(final Document document) {
-    configurations.clear();
-    Element root = document.getRootElement();
-    Element sessions = root.getChild("sessions");
-    for (Element session : sessions.getChildren("session")) {
-      LOG.trace("loadFromDocument - session");
-      SessionConfiguration sc = new SessionConfiguration();
-      configurations.add(sc);
-      sc.fromElement(session);
+      JAXBContext jc = JAXBContext.newInstance(cz.lbenda.schema.dbapp.dataman.ObjectFactory.class);
+      Unmarshaller u = jc.createUnmarshaller();
+      JAXBElement o = (JAXBElement) u.unmarshal(new StringReader(document));
+      if (o.getValue() instanceof DatamanType) {
+        DatamanType dc = (DatamanType) o.getValue();
+        if (dc.getSessions() == null || dc.getSessions().getSession().isEmpty()) {
+          LOG.info("No configuration for loading");
+        } else {
+          configurations.clear();
+          for (SessionType session : dc.getSessions().getSession()) {
+            SessionConfiguration sc = new SessionConfiguration();
+            configurations.add(sc);
+            sc.fromSessionType(session);
+          }
+        }
+      } else {
+        LOG.error("The string didn't contains expected configuration: " + o.getClass().getName());
+      }
+    } catch (JAXBException e) {
+      LOG.error("Problem with reading extended configuration: " + e.toString(), e);
     }
   }
 
   public static String storeToString() {
-    Document doc = new Document(storeAllToElement());
-    XMLOutputter xmlOutput = new XMLOutputter();
-    xmlOutput.setFormat(Format.getPrettyFormat());
-    StringWriter sw = new StringWriter();
-    try {
-      xmlOutput.output(doc, sw);
-      return sw.toString();
-    } catch (IOException e) {
-      LOG.error("There was problem with write XML output to StringWriter", e);
-      throw new RuntimeException("There was problem with write XML output to StringWriter", e);
-    }
-  }
+    cz.lbenda.schema.dbapp.dataman.ObjectFactory of = new cz.lbenda.schema.dbapp.dataman.ObjectFactory();
+    DatamanType config = of.createDatamanType();
+    config.setSessions(of.createSessionsType());
 
-  public static Element storeAllToElement() {
-    Element root = new Element("DBApp");
-    Element sessions = new Element("sessions");
-    root.addContent(sessions);
     for (SessionConfiguration sc : getConfigurations()) {
-      sessions.addContent(sc.storeToElement());
+      config.getSessions().getSession().add(sc.storeToSessionType());
     }
-    return root;
+
+    try {
+      JAXBContext jc = JAXBContext.newInstance(cz.lbenda.schema.dbapp.dataman.ObjectFactory.class);
+      Marshaller m = jc.createMarshaller();
+      StringWriter sw = new StringWriter();
+      m.marshal(of.createDataman(config), sw);
+      m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+      return sw.toString();
+    } catch (JAXBException e) {
+      LOG.error("Problem with write configuration: " + e.toString(), e);
+      throw new RuntimeException("Problem with write configuration: " + e.toString(), e);
+    }
   }
 
   /* NON-STATIC methods and variables */
@@ -185,7 +171,7 @@ public class SessionConfiguration {
   /** List with path to file with libraries for JDBC driver load */
   private final List<String> librariesPaths = new ArrayList<>(); public final List<String> getLibrariesPaths() { return librariesPaths; }
   /** Type of extended configuration */
-  private ExtendedConfigurationType extendedConfigurationType = ExtendedConfigurationType.NONE; public final ExtendedConfigurationType getExtendedConfigurationType() { return extendedConfigurationType; }
+  private ExtendedConfigTypeType extendedConfigType = ExtendedConfigTypeType.NONE; public final ExtendedConfigTypeType getExtendedConfigType() { return extendedConfigType; }
   /** Path to configuration where is the found extended */
   private String extendedConfigurationPath; public final String getExtendedConfigurationPath() { return this.extendedConfigurationPath; }
   /** Showed schemas */
@@ -201,8 +187,8 @@ public class SessionConfiguration {
   private final Map<String, Map<String, Map<String, TableDescription>>> tableDescriptionsMap
       = new HashMap<>();
 
-  public final void setExtendedConfigurationType(ExtendedConfigurationType extendedConfigurationType) {
-    this.extendedConfigurationType = extendedConfigurationType;
+  public final void setExtendedConfigType(ExtendedConfigTypeType extendedConfigType) {
+    this.extendedConfigType = extendedConfigType;
   }
 
   public final void setExtendedConfigurationPath(String extendedConfigurationPath) {
@@ -265,59 +251,51 @@ public class SessionConfiguration {
     return result;
   }
 
-  public final Element storeToElement() {
-    Element ses = new Element("session");
-    ses.setAttribute("id", getId());
-    if (this.connectionTimeout > 0) {
-      ses.addContent(new Element("connectionTimeout").setText(Integer.toString(this.connectionTimeout)));
+  public final SessionType storeToSessionType() {
+    cz.lbenda.schema.dbapp.dataman.ObjectFactory of = new cz.lbenda.schema.dbapp.dataman.ObjectFactory();
+    SessionType result = of.createSessionType();
+    result.setId(getId());
+    if (this.connectionTimeout > 0) { result.setConnectionTimeout(this.connectionTimeout); }
+    if (jdbcConfiguration != null) {
+      result.setJdbc(jdbcConfiguration.storeToJdbcType());
     }
-    if (jdbcConfiguration != null) { ses.addContent(jdbcConfiguration.storeToElement()); }
-    Element ed = new Element("extendedDescription");
-    ed.setAttribute("type", this.getExtendedConfigurationType().name());
-    ed.setText(this.getExtendedConfigurationPath());
-    ses.addContent(ed);
-    if (!librariesPaths.isEmpty()) {
-      Element libs = new Element("libraries");
-      for (String path : getLibrariesPaths()) {
-        Element lib = new Element("library");
-        lib.setText(path);
-        libs.addContent(lib);
-      }
-      ses.addContent(libs);
-    }
-    return ses;
+
+    result.setExtendedConfig(of.createExtendedConfigType());
+    result.getExtendedConfig().setType(this.getExtendedConfigType());
+    result.getExtendedConfig().setValue(this.getExtendedConfigurationPath());
+    result.setLibraries(of.createLibrariesType());
+    result.getLibraries().getLibrary().addAll(getLibrariesPaths());
+    return result;
   }
 
-  private void jdbcConfigurationFromElement(Element element) {
+  private void loadJdbcConfiguration(JdbcType jdbcType) {
     LOG.trace("load jdbc configuration");
     jdbcConfiguration = new JDBCConfiguration();
-    jdbcConfiguration.loadFromElement(element);
+    jdbcConfiguration.load(jdbcType);
   }
 
-  private void fromElement(final Element element) {
-    setId(element.getAttributeValue("id"));
-    if (element.getChild("connectionTimeout") != null) {
-      this.connectionTimeout = Integer.valueOf(element.getChildText("connectionTimeout"));
+  private void fromSessionType(final SessionType session) {
+    setId(session.getId());
+    if (session.getConnectionTimeout() != null) {
+      this.connectionTimeout = Integer.valueOf(session.getConnectionTimeout());
     } else { connectionTimeout = -1; }
-    jdbcConfigurationFromElement(element.getChild("jdbc"));
-    // tableOfKeysSQLFromElement(element.getChild("tableOfKeySQLs"));
-    Element ed = element.getChild("extendedDescription");
+    loadJdbcConfiguration(session.getJdbc());
+    ExtendedConfigType ed = session.getExtendedConfig();
     if (ed != null) {
-      setExtendedConfigurationType(ExtendedConfigurationType.valueOf(ed.getAttributeValue("type")));
-      setExtendedConfigurationPath(ed.getText());
+      setExtendedConfigType(ed.getType());
+      setExtendedConfigurationPath(ed.getValue());
     }
-    Element e = element.getChild("libraries");
     this.librariesPaths.clear();
-    if (e != null) {
-      for (Element lib : e.getChildren("library")) {
-        this.librariesPaths.add(lib.getText());
+    if (session.getLibraries() != null) {
+      for (String lib : session.getLibraries().getLibrary()) {
+        this.librariesPaths.add(lib);
       }
     }
     loadExtendedConfiguration();
   }
 
   private void loadExtendedConfiguration() {
-    switch (getExtendedConfigurationType()) {
+    switch (getExtendedConfigType()) {
       case FILE: loadExtendedConfigurationFromFile(); break;
       case DATABASE: // TODO implement
     }

@@ -1,6 +1,6 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
- Copyright 2014 Lukas Benda <lbenda at lbenda.cz>.
+ Copyright 2015 Lukas Benda <lbenda at lbenda.cz>.
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -104,16 +104,11 @@
   </xsd:simpleType>
 
   <xsd:complexType name="tableOfKeySQLType">
-    <xsd:annotation>
-      <xsd:documentation>Predefined SQL command for getting values from table of keys. The SQL is value of tag
-      </xsd:documentation>
-    </xsd:annotation>
+    <xsd:annotation><xsd:documentation>Predefined SQL command for getting values from table of keys. The SQL is value of tag</xsd:documentation></xsd:annotation>
     <xsd:simpleContent>
       <xsd:extension base="xsd:string">
         <xsd:attribute name="id" type="xsd:ID" use="required">
-          <xsd:annotation>
-            <xsd:documentation>Identifier of SQL command</xsd:documentation>
-          </xsd:annotation>
+          <xsd:annotation><xsd:documentation>Identifier of SQL command</xsd:documentation></xsd:annotation>
         </xsd:attribute>
       </xsd:extension>
     </xsd:simpleContent>
