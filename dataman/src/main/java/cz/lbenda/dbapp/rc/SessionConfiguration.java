@@ -23,7 +23,6 @@ import cz.lbenda.dbapp.rc.frm.config.DBConfigurationOptionsPanelController;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -191,6 +190,8 @@ public class SessionConfiguration {
   private String extendedConfigurationPath; public final String getExtendedConfigurationPath() { return this.extendedConfigurationPath; }
   /** Showed schemas */
   private final Map<String, List<String>> shownSchemas = new HashMap<>();
+  /** Extended configuration of session */
+  private ExConfType exConf;
   /** Instance of DB reader for this session */
   private DbStructureReader reader; public final DbStructureReader getReader() { return reader; }
   /** Timeout when unused connection will be closed */
@@ -252,6 +253,12 @@ public class SessionConfiguration {
     Set<TableDescription.TableType> set = new HashSet<>(2);
     for (TableDescription td : this.tableDescriptionsMap.get(catalog).get(schema).values()) {
       if (isShowTable(td)) { set.add(td.getTableType()); }
+    }
+    for (TableDescription.TableType r : set) {
+      if (r == null) {
+        set.remove(null);
+        set.add(TableDescription.TableType.NULL);
+      }
     }
     List<TableDescription.TableType> result = new ArrayList<>(set);
     Collections.sort(result);
@@ -356,8 +363,8 @@ public class SessionConfiguration {
     return td;
   }
 
-  private void tableDescriptionExtensionsFromElement(final TableDescriptionExtensionsType tableDescriptionExtensionsType) {
-    TableDescriptionExtension.XMLReaderWriterHelper.loadExtensions(this, tableDescriptionExtensionsType);
+  private void readTableConf(final ExConfType exConf) {
+    TableDescriptionExtension.XMLReaderWriterHelper.loadExtensions(this, exConf);
   }
 
   /** Load schemas which will be showed */
@@ -396,10 +403,10 @@ public class SessionConfiguration {
       Unmarshaller u = jc.createUnmarshaller();
       JAXBElement o = (JAXBElement) u.unmarshal(new File(extendedConfigurationPath));
       if (o.getValue() instanceof ExConfType) {
-        ExConfType exConf = (ExConfType) o.getValue();
+        this.exConf = (ExConfType) o.getValue();
         loadSchemas(exConf.getSchemas());
         tableOfKeysSQLFromElement(exConf.getTableOfKeySQLs());
-        tableDescriptionExtensionsFromElement(exConf.getTableDescriptionExtensions());
+        readTableConf(exConf);
       } else {
         LOG.error("The file didn't contains expected configuration: " + o.getClass().getName());
       }

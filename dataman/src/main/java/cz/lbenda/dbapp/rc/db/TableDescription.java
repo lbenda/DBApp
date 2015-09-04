@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import javax.swing.event.UndoableEditListener;
 import javax.swing.undo.UndoableEditSupport;
+
+import cz.lbenda.schema.dbapp.exconf.AuditType;
 import org.netbeans.spi.actions.AbstractSavable;
 
 /** Main object which hold all information about database table structure
@@ -36,7 +38,7 @@ import org.netbeans.spi.actions.AbstractSavable;
 public class TableDescription extends AbstractSavable implements Comparable<TableDescription> {
 
   public enum TableType {
-    TABLE, VIEW, SYSTEM_TABLE, INDEX, SYSTEM_INDEX, SYSTEM_TOAST_INDEX, SYSTEM_VIEW, UNDEFINED,
+    NULL, TABLE, VIEW, SYSTEM_TABLE, INDEX, SYSTEM_INDEX, SYSTEM_TOAST_INDEX, SYSTEM_VIEW, UNDEFINED,
     FOREIGN_TABLE, SYSTEM_TOAST_TABLE, TEMPORARY_INDEX, TEMPORARY_SUEQUENCE, TEMPORARY_TABLE,
     TEMPORARY_VIEW, TYPE, PROCEDURE, UDT, SEQUENCE ;
     public static TableType fromJDBC(String tt) {
@@ -61,6 +63,8 @@ public class TableDescription extends AbstractSavable implements Comparable<Tabl
   private final List<TableDescriptionExtension> extensions = new ArrayList<>(); public final List<TableDescriptionExtension> getExtensions() { return this.extensions; }
   /** All extension which is inform about the table is change. Mainly it's extension of another table */
   private final List<TableDescriptionExtension> reloadableExtension = new ArrayList<>(); public final List<TableDescriptionExtension> getReloadableExtension() { return reloadableExtension; }
+  /** Audit configuration for this table */
+  private AuditType audit = TableDescriptionExtension.NONE_AUDIT; public final AuditType getAudit() { return audit; } public final void setAudit(AuditType audit) { this.audit = audit; }
 
   private PropertyChangeSupport pch = new PropertyChangeSupport(this);
   private final UndoableEditSupport undoableEditSupport;
@@ -120,7 +124,7 @@ public class TableDescription extends AbstractSavable implements Comparable<Tabl
     }
   }
 
-  /** Return list of extensions which for one column
+  /** Return list of extensions which are defined for one column
    * @param column column which extensions is requested
    * @return list of extensions (if extensions missing, then empty list is returned)
    */

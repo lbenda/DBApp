@@ -16,6 +16,12 @@
 package cz.lbenda.dbapp.rc.db;
 
 import cz.lbenda.dbapp.rc.SessionConfiguration;
+import cz.lbenda.dbapp.rc.User;
+import cz.lbenda.dbapp.rc.UserImpl;
+import cz.lbenda.dbapp.rc.db.audit.Auditor;
+import cz.lbenda.dbapp.rc.db.audit.AuditorNone;
+import cz.lbenda.dbapp.rc.db.audit.SqlLogToLogAuditor;
+import cz.lbenda.dbapp.rc.db.audit.SqlLogToTableAuditor;
 import cz.lbenda.dbapp.rc.db.dialect.SQLDialect;
 import cz.lbenda.dbapp.rc.frm.RowNode;
 import java.sql.Connection;
@@ -29,6 +35,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.sql.DataSource;
+
+import cz.lbenda.schema.dbapp.exconf.AuditType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,11 +48,15 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   private static final Logger LOG = LoggerFactory.getLogger(DbStructureReader.class);
 
   private SessionConfiguration sessionConfiguration;
+  private User user; public User getUser() { return user; }
 
   private DataSource dataSource = null;
 
   public final void setSessionConfiguration(SessionConfiguration sessionConfiguration) {
     this.sessionConfiguration = sessionConfiguration;
+    if (sessionConfiguration != null && sessionConfiguration.getJdbcConfiguration() != null) {
+      user = new UserImpl(sessionConfiguration.getJdbcConfiguration().getUsername());
+    }
     createDataSource();
   }
   @SuppressWarnings("unused")
@@ -171,7 +183,8 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
       String sql = String.format("insert into \"%s\" (%s) values (%s)", td.getName(), names, values);
       LOG.debug(sql);
       try (Connection conn = getConnection()) {
-        try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement ps = AuditPreparedStatement.prepareStatement(user, auditorForAudit(td.getAudit()), conn,
+            sql, Statement.RETURN_GENERATED_KEYS)) {
           int i = 1;
           for (Column col : changedColumns) {
             ps.setObject(i, newValues.get(col));
@@ -190,6 +203,18 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
       } catch (SQLException e) {
         throw new RuntimeException(e);
       }
+    }
+  }
+
+  /** Return auditor object for given audit type with configuration
+   * @param auditType audit configuration
+   * @return auditor, never return null */
+  private Auditor auditorForAudit(AuditType auditType) {
+    switch (auditType.getType()) {
+      case NONE : return AuditorNone.getInstance();
+      case SQL_LOG_TO_LOG: return SqlLogToLogAuditor.getInstance();
+      case SQL_LOG_TO_TABLE : return SqlLogToTableAuditor.getInstance(this, auditType);
+      default : return AuditorNone.getInstance();
     }
   }
 
@@ -219,7 +244,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
       String sql = String.format("update \"%s\" set %s where %s", td.getName(), set, where);
       LOG.debug(sql);
       try (Connection conn = getConnection()) {
-        try (PreparedStatement ps = conn.prepareCall(sql)) {
+        try (PreparedStatement ps = AuditPreparedStatement.prepareCall(user, auditorForAudit(td.getAudit()), conn, sql)) {
           int i = 1;
           for (Column col : changedColumns) {
             ps.setObject(i, newValues.get(col));
@@ -256,7 +281,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
     String sql = String.format("DELETE FROM \"%s\".\"%s\" WHERE %s", td.getSchema(), td.getName(), where);
     LOG.debug(sql);
     try (Connection conn = getConnection()) {
-      try (PreparedStatement ps = conn.prepareCall(sql)) {
+      try (PreparedStatement ps = AuditPreparedStatement.prepareCall(user, auditorForAudit(td.getAudit()), conn, sql)) {
         int i = 1;
         for (Column col : pks) {
           ps.setObject(i, rowValues.get(col));

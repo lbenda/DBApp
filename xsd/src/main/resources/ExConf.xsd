@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <!--
  Copyright 2014 Lukas Benda <lbenda at lbenda.cz>.
- 
+
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
- 
+
       http://www.apache.org/licenses/LICENSE-2.0
- 
+
  Unless required by applicable law or agreed to in writing, software
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,105 +21,169 @@
             targetNamespace="http://www.lbenda.cz/schema/dbapp/ExConf"
             elementFormDefault="qualified">
 
-    <xsd:element name="exConf" type="ec:exConfType"/>
+  <xsd:element name="exConf" type="ec:exConfType"/>
 
-    <xsd:complexType name="exConfType">
-	<xsd:sequence>
-            <xsd:element name="schemas" type="ec:schemasType" minOccurs="0" maxOccurs="1" />
-            <xsd:element name="tableOfKeySQLs" type="ec:tableOfKeySQLsType" minOccurs="0" maxOccurs="1" />
-            <xsd:element name="tableDescriptionExtensions" type="ec:tableDescriptionExtensionsType" minOccurs="0" maxOccurs="1" />
-	</xsd:sequence>
-    </xsd:complexType>
+  <xsd:complexType name="exConfType">
+    <xsd:sequence>
+      <xsd:element name="schemas" type="ec:schemasType" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="tableOfKeySQLs" type="ec:tableOfKeySQLsType" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="tables" type="ec:tablesType" minOccurs="0"
+                   maxOccurs="1"/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-    <xsd:complexType name="schemasType">
+  <xsd:complexType name="schemasType">
+    <xsd:sequence>
+      <xsd:element name="schema" type="ec:schemaType" minOccurs="1" maxOccurs="unbounded">
+        <xsd:annotation>
+          <xsd:documentation>DB schema which will be show</xsd:documentation>
+        </xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="tableOfKeySQLsType">
+    <xsd:sequence>
+      <xsd:element name="tableOfKeySQL" type="ec:tableOfKeySQLType" minOccurs="1" maxOccurs="unbounded">
+        <xsd:annotation>
+          <xsd:documentation>Prepared SQL commands</xsd:documentation>
+        </xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="tablesType">
+    <xsd:sequence>
+      <xsd:element name="table" type="ec:tableType" minOccurs="1" maxOccurs="unbounded">
+        <xsd:annotation>
+          <xsd:documentation>Extended configuration of table</xsd:documentation>
+        </xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="schemaType">
+    <xsd:annotation><xsd:documentation>DB schema description</xsd:documentation></xsd:annotation>
+    <xsd:sequence>
+      <xsd:element name="audit" type="ec:auditType" minOccurs="0" maxOccurs="1">
+        <xsd:annotation><xsd:documentation>Configuration of schema/table audit</xsd:documentation></xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name="catalog" type="xsd:string" use="required">
+      <xsd:annotation><xsd:documentation>Name of catalog where is schema</xsd:documentation></xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="schema" type="xsd:string" use="required">
+      <xsd:annotation><xsd:documentation>Name of schema</xsd:documentation></xsd:annotation>
+    </xsd:attribute>
+  </xsd:complexType>
+
+  <xsd:complexType name="auditType">
+    <xsd:annotation><xsd:documentation>Configuration of audit of schema/table</xsd:documentation></xsd:annotation>
+    <xsd:sequence>
+      <xsd:element name="targetLogTable" type="ec:dbTableType" minOccurs="0" maxOccurs="1">
+        <xsd:annotation><xsd:documentation>Table where is log writen.</xsd:documentation></xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name="type" type="ec:auditTypeType" use="required">
+      <xsd:annotation><xsd:documentation>Type of auditing</xsd:documentation></xsd:annotation>
+    </xsd:attribute>
+  </xsd:complexType>
+
+  <xsd:simpleType name="auditTypeType">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="none">
+        <xsd:annotation><xsd:documentation>The auditing is switch off for schema/table</xsd:documentation></xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="sqlLogToLog">
+        <xsd:annotation><xsd:documentation>Write SQL log into the log with slf4j.</xsd:documentation></xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="sqlLogToTable">
+        <xsd:annotation><xsd:documentation>Audit is write as SQL log to specific DB table.</xsd:documentation></xsd:annotation>
+      </xsd:enumeration>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <xsd:complexType name="tableOfKeySQLType">
+    <xsd:annotation>
+      <xsd:documentation>Predefined SQL command for getting values from table of keys. The SQL is value of tag
+      </xsd:documentation>
+    </xsd:annotation>
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:string">
+        <xsd:attribute name="id" type="xsd:ID" use="required">
+          <xsd:annotation>
+            <xsd:documentation>Identifier of SQL command</xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+
+  <xsd:complexType name="dbTableType">
+    <xsd:annotation>
+      <xsd:documentation>Database table type</xsd:documentation>
+    </xsd:annotation>
+    <xsd:complexContent>
+      <xsd:extension base="ec:schemaType">
+        <xsd:attribute name="table" type="xsd:string" use="required">
+          <xsd:annotation>
+            <xsd:documentation>Name of extended table</xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+  <xsd:complexType name="tableType">
+    <xsd:annotation>
+      <xsd:documentation>Extended configuration of table</xsd:documentation>
+    </xsd:annotation>
+    <xsd:complexContent>
+      <xsd:extension base="ec:dbTableType">
         <xsd:sequence>
-            <xsd:element name="schema" type="ec:schemaType" minOccurs="1" maxOccurs="unbounded">
-                <xsd:annotation><xsd:documentation>DB schema which will be show</xsd:documentation></xsd:annotation>
-            </xsd:element>
+          <xsd:element name="comboBox" type="ec:comboBoxType" minOccurs="0" maxOccurs="unbounded"/>
         </xsd:sequence>
-    </xsd:complexType>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
 
-    <xsd:complexType name="tableOfKeySQLsType">
-        <xsd:sequence>
-            <xsd:element name="tableOfKeySQL" type="ec:tableOfKeySQLType" minOccurs="1" maxOccurs="unbounded">
-                <xsd:annotation><xsd:documentation>Prepared SQL commands</xsd:documentation></xsd:annotation>
-            </xsd:element>
-        </xsd:sequence>
-    </xsd:complexType>
-    
-    <xsd:complexType name="tableDescriptionExtensionsType">
-        <xsd:sequence>
-            <xsd:element name="tableDescriptionExtension" type="ec:tableDescriptionExtensionType" minOccurs="1" maxOccurs="unbounded">
-                <xsd:annotation><xsd:documentation>Extended configuration of table</xsd:documentation></xsd:annotation>
-            </xsd:element>
-        </xsd:sequence>
-    </xsd:complexType>
+  <xsd:complexType name="comboBoxType">
+    <xsd:annotation>
+      <xsd:documentation>Configuration of combo box inside table field.</xsd:documentation>
+    </xsd:annotation>
+    <xsd:sequence>
+      <xsd:element name="reloadOn" type="ec:dbTableType" minOccurs="0" maxOccurs="unbounded">
+        <xsd:annotation>
+          <xsd:documentation>When table identify by this element is changed, then combo box is reloaded.
+          </xsd:documentation>
+        </xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name="column" type="xsd:string" use="required">
+      <xsd:annotation>
+        <xsd:documentation>Target column of table where is combo box showed</xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="tableOfKeySQL" type="xsd:IDREF" use="required">
+      <xsd:annotation>
+        <xsd:documentation>Identifier of SQL which is used for load data for enumeration.</xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="column_value" type="xsd:string" use="required">
+      <xsd:annotation>
+        <xsd:documentation>Name of column which hold value which is insert to database</xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="column_choice" type="xsd:string" use="required">
+      <xsd:annotation>
+        <xsd:documentation>Name of column which hold value which is show to user</xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="column_tooltip" type="xsd:string">
+      <xsd:annotation>
+        <xsd:documentation>Name of column which hold value which can be show as tooltip</xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+  </xsd:complexType>
 
-    <xsd:complexType name="schemaType">
-        <xsd:annotation><xsd:documentation>DB schema description</xsd:documentation></xsd:annotation>
-	<xsd:attribute name="catalog" type="xsd:string" use="required">
-            <xsd:annotation><xsd:documentation>Name of catalog where is schema</xsd:documentation></xsd:annotation>
-	</xsd:attribute>
-        <xsd:attribute name="schema" type="xsd:string" use="required">
-            <xsd:annotation><xsd:documentation>Name of schema</xsd:documentation></xsd:annotation>
-	</xsd:attribute>
-    </xsd:complexType>
-
-    <xsd:complexType name="tableOfKeySQLType">
-        <xsd:annotation><xsd:documentation>Predefined SQL command for getting values from table of keys. The SQL is value of tag</xsd:documentation></xsd:annotation>
-        <xsd:simpleContent>
-            <xsd:extension base="xsd:string">
-                <xsd:attribute name="id" type="xsd:ID" use="required">
-                    <xsd:annotation><xsd:documentation>Identifier of SQL command</xsd:documentation></xsd:annotation>
-                </xsd:attribute>
-            </xsd:extension>
-        </xsd:simpleContent>
-    </xsd:complexType>
-
-    <xsd:complexType name="dbTableType">
-        <xsd:annotation><xsd:documentation>Database table type</xsd:documentation></xsd:annotation>
-        <xsd:complexContent>
-            <xsd:extension base="ec:schemaType">
-                <xsd:attribute name="table" type="xsd:string" use="required">
-                    <xsd:annotation><xsd:documentation>Name of extended table</xsd:documentation></xsd:annotation>
-                </xsd:attribute>
-            </xsd:extension>
-        </xsd:complexContent>      
-    </xsd:complexType>
-
-    <xsd:complexType name="tableDescriptionExtensionType">
-        <xsd:annotation><xsd:documentation>Extended configuration of table</xsd:documentation></xsd:annotation>
-        <xsd:complexContent>
-            <xsd:extension base="ec:dbTableType">
-                <xsd:sequence>
-                    <xsd:element name="comboBox" type="ec:comboBoxType" minOccurs="0" maxOccurs="unbounded" />
-                </xsd:sequence>
-            </xsd:extension>
-        </xsd:complexContent>
-    </xsd:complexType>
-
-    <xsd:complexType name="comboBoxType">
-        <xsd:annotation><xsd:documentation>Configuration of combo box inside table field.</xsd:documentation></xsd:annotation>
-        <xsd:sequence>
-            <xsd:element name="reloadOn" type="ec:dbTableType" minOccurs="0" maxOccurs="unbounded">
-                <xsd:annotation><xsd:documentation>When table identify by this element is changed, then combo box is reloaded.</xsd:documentation></xsd:annotation>
-            </xsd:element>
-        </xsd:sequence>
-	<xsd:attribute name="column" type="xsd:string" use="required">
-            <xsd:annotation><xsd:documentation>Target column of table where is combo box showed</xsd:documentation></xsd:annotation>
-	</xsd:attribute>
-        <xsd:attribute name="tableOfKeySQL" type="xsd:IDREF" use="required">
-            <xsd:annotation><xsd:documentation>Identifier of SQL which is used for load data for enumeration.</xsd:documentation></xsd:annotation>
-	</xsd:attribute>
-        <xsd:attribute name="column_value" type="xsd:string" use="required">
-            <xsd:annotation><xsd:documentation>Name of column which hold value which is insert to database</xsd:documentation></xsd:annotation>
-	</xsd:attribute>
-        <xsd:attribute name="column_choice" type="xsd:string" use="required">
-            <xsd:annotation><xsd:documentation>Name of column which hold value which is show to user</xsd:documentation></xsd:annotation>
-	</xsd:attribute>
-        <xsd:attribute name="column_tooltip" type="xsd:string">
-            <xsd:annotation><xsd:documentation>Name of column which hold value which can be show as tooltip</xsd:documentation></xsd:annotation>
-	</xsd:attribute>
-    </xsd:complexType>
-    
 </xsd:schema>

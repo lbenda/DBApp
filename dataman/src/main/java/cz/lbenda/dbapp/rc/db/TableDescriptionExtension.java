@@ -28,6 +28,9 @@ import org.slf4j.LoggerFactory;
  */
 public interface TableDescriptionExtension {
 
+  /** Audit type which switch of auditing for table */
+  AuditType NONE_AUDIT = new AuditType();
+
   enum TableAction {
     SELECT, UPDATE, DELETE, INSERT, ;
   }
@@ -51,17 +54,21 @@ public interface TableDescriptionExtension {
 
   abstract class XMLReaderWriterHelper {
     private static final Logger LOG = LoggerFactory.getLogger(XMLReaderWriterHelper.class);
+    static {
+      NONE_AUDIT.setType(AuditTypeType.NONE);
+    }
 
-    public static void loadExtensions(SessionConfiguration sc, final TableDescriptionExtensionsType tableDescriptionExtensions) {
-      if (tableDescriptionExtensions == null || tableDescriptionExtensions.getTableDescriptionExtension().isEmpty()) {
+    public static void loadExtensions(SessionConfiguration sc, final ExConfType exConf) {
+      if (exConf.getTables() == null || exConf.getTables().getTable().isEmpty()) {
         LOG.debug("No table extensions defined");
         return;
       }
-      for (TableDescriptionExtensionType tdExtension : tableDescriptionExtensions.getTableDescriptionExtension()) {
+      for (TableType tdExtension : exConf.getTables().getTable()) {
         String catalog = tdExtension.getCatalog();
         String schema = tdExtension.getSchema();
         String table = tdExtension.getTable();
         TableDescription td = sc.getOrCreateTableDescription(catalog, schema, table);
+        td.setAudit(auditTypeForTable(exConf, td));
 
         if (tdExtension.getComboBox() == null || tdExtension.getComboBox().isEmpty()) {
           LOG.debug("No combo box defined on table");
@@ -71,6 +78,33 @@ public interface TableDescriptionExtension {
           }
         }
       }
+    }
+
+    /** Return audit type for given table description. If no configuration is set then return audit type NONE, elsewhere
+     * return configuration from table, and if not exist then from schema.
+     * @param tableDescription description of table
+     * @return audit type, which is configure for given table. Never return null.
+     */
+    public static AuditType auditTypeForTable(ExConfType exConf, TableDescription tableDescription) {
+      if (exConf == null) { return NONE_AUDIT; }
+      if (exConf.getTables() != null) {
+        for (TableType table : exConf.getTables().getTable()) {
+          if (tableDescription.getCatalog().equals(table.getCatalog())
+              && tableDescription.getSchema().equals(table.getSchema())
+              && tableDescription.getName().equals(table.getTable())
+              && table.getAudit() != null) {
+            return table.getAudit();
+          }
+        }
+      }
+      if (exConf.getSchemas() != null) {
+        for (SchemaType schema : exConf.getSchemas().getSchema()) {
+          if (tableDescription.getCatalog().equals(schema.getCatalog())
+              && tableDescription.getSchema().equals(schema.getSchema())
+              && schema.getAudit() != null) { return schema.getAudit(); }
+        }
+      }
+      return NONE_AUDIT;
     }
 
     private static void loadComboBox(SessionConfiguration sc, TableDescription td, ComboBoxType comboBox) {
