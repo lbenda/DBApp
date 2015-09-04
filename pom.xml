@@ -40,10 +40,10 @@
                     <!-- NetBeans 6.9+ requires JDK 6, starting NetBeans 7.4 source 1.7 is required -->
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>2.5.1</version>
+                    <version>3.1</version>
                     <configuration>
-                        <source>1.7</source>
-                        <target>1.7</target>
+                        <source>1.8</source>
+                        <target>1.8</target>
                     </configuration>
                 </plugin>
             <plugin>
@@ -58,6 +58,7 @@
     <modules>
         <module>branding</module>
         <module>application</module>
+        <module>xsd</module>
         <module>dataman</module>
     </modules>
 
@@ -65,4 +66,14 @@
         <netbeans.version>RELEASE80-BETA</netbeans.version>
         <brandingToken>dataman</brandingToken>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>cz.lbenda.dataman</groupId>
+                <artifactId>xsd</artifactId>
+                <version>${pom.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>

@@ -34,6 +34,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import cz.lbenda.schema.dbapp.exconf.*;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
@@ -42,6 +44,11 @@ import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
 
 /** Object of this class define configuration of one session
  */
@@ -309,12 +316,15 @@ public class SessionConfiguration {
     }
   }
 
-  private void tableOfKeysSQLFromElement(final Element element) {
+  private void tableOfKeysSQLFromElement(final TableOfKeySQLsType tableOfKeySQLs) {
     LOG.trace("load table of keys sql");
-    if (element == null) { return; }
+    if (tableOfKeySQLs == null || tableOfKeySQLs.getTableOfKeySQL().isEmpty()) {
+      LOG.debug("No table of keys in configuration");
+      return;
+    }
     tableOfKeysSQL.clear();
-    for (Element tableOfKey : element.getChildren("tableOfKeySQL")) {
-      this.tableOfKeysSQL.put(tableOfKey.getAttributeValue("id"), tableOfKey.getText());
+    for (TableOfKeySQLType tableOfKey : tableOfKeySQLs.getTableOfKeySQL()) {
+      this.tableOfKeysSQL.put(tableOfKey.getId(), tableOfKey.getValue());
     }
   }
 
@@ -346,22 +356,26 @@ public class SessionConfiguration {
     return td;
   }
 
-  private void tableDescriptionExtensionsFromElement(final Element element) {
-    TableDescriptionExtension.XMLReaderWriterHelper.loadExtensions(this, element);
+  private void tableDescriptionExtensionsFromElement(final TableDescriptionExtensionsType tableDescriptionExtensionsType) {
+    TableDescriptionExtension.XMLReaderWriterHelper.loadExtensions(this, tableDescriptionExtensionsType);
   }
 
   /** Load schemas which will be showed */
-  private void loadSchemas(final Element element) {
+  private void loadSchemas(final SchemasType schemas) {
     shownSchemas.clear();
-    for (Element sch : element.getChildren("schema")) {
-      String catalog = sch.getAttributeValue("catalog");
-      String schema = sch.getAttributeValue("schema");
+    if (schemas == null || schemas.getSchema().isEmpty()) {
+      LOG.debug("No schemas to configure");
+      return;
+    }
+    for (SchemaType schema : schemas.getSchema()) {
+      String catalog = schema.getCatalog();
+      String sche = schema.getSchema();
       List<String> list = shownSchemas.get(catalog);
       if (list == null) {
         list = new ArrayList<>();
         shownSchemas.put(catalog, list);
       }
-      list.add(schema);
+      list.add(sche);
     }
   }
 
@@ -377,20 +391,20 @@ public class SessionConfiguration {
   }
 
   private void loadExtendedConfigurationFromFile() {
-    SAXBuilder builder = new SAXBuilder();
     try {
-      File file = new File(extendedConfigurationPath);
-      Document document = builder.build(new FileReader(file));
-      Element root = document.getRootElement();
-      loadSchemas(root.getChild("schemas"));
-      tableOfKeysSQLFromElement(root.getChild("tableOfKeySQLs"));
-      tableDescriptionExtensionsFromElement(root.getChild("tableDescriptionExtensions"));
-    } catch (JDOMException e) {
-      LOG.error("The file isn't parsable: " + extendedConfigurationPath, e);
-      throw new RuntimeException("The file isn't parsable: " + extendedConfigurationPath, e);
-    } catch (IOException e) {
-      LOG.error("The file can't be opend as StringReader: " + extendedConfigurationPath, e);
-      throw new RuntimeException("The file cant be opend as StringReader: " + extendedConfigurationPath, e);
+      JAXBContext jc = JAXBContext.newInstance(ObjectFactory.class);
+      Unmarshaller u = jc.createUnmarshaller();
+      JAXBElement o = (JAXBElement) u.unmarshal(new File(extendedConfigurationPath));
+      if (o.getValue() instanceof ExConfType) {
+        ExConfType exConf = (ExConfType) o.getValue();
+        loadSchemas(exConf.getSchemas());
+        tableOfKeysSQLFromElement(exConf.getTableOfKeySQLs());
+        tableDescriptionExtensionsFromElement(exConf.getTableDescriptionExtensions());
+      } else {
+        LOG.error("The file didn't contains expected configuration: " + o.getClass().getName());
+      }
+    } catch (JAXBException e) {
+      LOG.error("Problem with reading extended configuration: " + e.toString(), e);
     }
   }
 

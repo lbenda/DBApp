@@ -17,6 +17,8 @@ package cz.lbenda.dbapp.rc.db;
 
 import cz.lbenda.dbapp.rc.SessionConfiguration;
 import java.util.List;
+
+import cz.lbenda.schema.dbapp.exconf.*;
 import org.jdom2.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,28 +52,40 @@ public interface TableDescriptionExtension {
   abstract class XMLReaderWriterHelper {
     private static final Logger LOG = LoggerFactory.getLogger(XMLReaderWriterHelper.class);
 
-    public static void loadExtensions(SessionConfiguration sc, final Element element) {
-      if (element == null) { return; }
-      for (Element tdExtension : element.getChildren("tableDescriptionExtension")) {
-        String catalog = tdExtension.getAttributeValue("catalog");
-        String schema = tdExtension.getAttributeValue("schema");
-        String table = tdExtension.getAttributeValue("table");
+    public static void loadExtensions(SessionConfiguration sc, final TableDescriptionExtensionsType tableDescriptionExtensions) {
+      if (tableDescriptionExtensions == null || tableDescriptionExtensions.getTableDescriptionExtension().isEmpty()) {
+        LOG.debug("No table extensions defined");
+        return;
+      }
+      for (TableDescriptionExtensionType tdExtension : tableDescriptionExtensions.getTableDescriptionExtension()) {
+        String catalog = tdExtension.getCatalog();
+        String schema = tdExtension.getSchema();
+        String table = tdExtension.getTable();
         TableDescription td = sc.getOrCreateTableDescription(catalog, schema, table);
 
-        for (Element select : tdExtension.getChildren("comboBox")) { loadComboBox(sc, td, select); }
+        if (tdExtension.getComboBox() == null || tdExtension.getComboBox().isEmpty()) {
+          LOG.debug("No combo box defined on table");
+        } else {
+          for (ComboBoxType comboBox : tdExtension.getComboBox()) {
+            loadComboBox(sc, td, comboBox);
+          }
+        }
       }
     }
 
-    private static void loadComboBox(SessionConfiguration sc, TableDescription td, Element element) {
-      ComboBoxTDExtension sb = new ComboBoxTDExtension(td, element.getAttributeValue("column"),
-          element.getAttributeValue("tableOfKeySQL"));
-      sb.setColumnValue(element.getAttributeValue("column_value"));
-      sb.setColumnChoice(element.getAttributeValue("column_choice"));
-      sb.setColumnTooltip(element.getAttributeValue("column_tooltip"));
-      for (Element reloadOn : element.getChildren("reloadOn")) {
-        TableDescription td1 = sc.getOrCreateTableDescription(reloadOn.getAttributeValue("catalog"),
-            reloadOn.getAttributeValue("schema"), reloadOn.getAttributeValue("table"));
-        td1.getReloadableExtension().add(sb);
+    private static void loadComboBox(SessionConfiguration sc, TableDescription td, ComboBoxType comboBox) {
+      ComboBoxTDExtension sb = new ComboBoxTDExtension(td, comboBox.getColumn(),
+          ((TableOfKeySQLType) comboBox.getTableOfKeySQL()).getId());
+      sb.setColumnValue(comboBox.getColumnValue());
+      sb.setColumnChoice(comboBox.getColumnChoice());
+      sb.setColumnTooltip(comboBox.getColumnTooltip());
+      if (comboBox.getReloadOn() == null || comboBox.getReloadOn().isEmpty()) {
+        LOG.debug("No reload defined on combo box");
+      } else {
+        for (DbTableType reloadOn : comboBox.getReloadOn()) {
+          TableDescription td1 = sc.getOrCreateTableDescription(reloadOn.getCatalog(), reloadOn.getSchema(), reloadOn.getTable());
+          td1.getReloadableExtension().add(sb);
+        }
       }
       td.getExtensions().add(sb);
     }
