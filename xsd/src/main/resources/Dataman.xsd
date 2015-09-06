@@ -23,6 +23,7 @@
 
   <xsd:element name="dataman" type="dmc:datamanType"/>
   <xsd:element name="sessions" type="dmc:sessionsType"/>
+  <xsd:element name="session" type="dmc:sessionType"/>
 
   <xsd:complexType name="datamanType">
     <xsd:sequence>

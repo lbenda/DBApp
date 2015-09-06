@@ -15,16 +15,12 @@
  */
 package cz.lbenda.dbapp.rc;
 
-import cz.lbenda.dbapp.rc.db.DbStructureReader;
-import cz.lbenda.dbapp.rc.db.JDBCConfiguration;
-import cz.lbenda.dbapp.rc.db.TableDescription;
-import cz.lbenda.dbapp.rc.db.TableDescriptionExtension;
+import cz.lbenda.dbapp.rc.db.*;
 import cz.lbenda.dbapp.rc.frm.config.DBConfigurationOptionsPanelController;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
-import java.io.File;
-import java.io.StringReader;
-import java.io.StringWriter;
+import java.io.*;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,6 +32,8 @@ import java.util.Set;
 import cz.lbenda.schema.dbapp.dataman.*;
 import cz.lbenda.schema.dbapp.exconf.*;
 import cz.lbenda.schema.dbapp.exconf.ObjectFactory;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +52,7 @@ public class SessionConfiguration {
   /** Flag which inform the configuration wasn't load yet */
   private static boolean configurationNotReadedYet = true;
 
-  /** This method reload configuration which is stored in ntbeans pref in module DBConfiguraitonPanl */
+  /** This method reload configuration which is stored in netbeans pref in module DBConfiguraitonPanl */
   public static void reloadConfiguration() {
     SessionConfiguration.configurations.clear();
     SessionConfiguration.configurationNotReadedYet = false;
@@ -90,8 +88,7 @@ public class SessionConfiguration {
   }
 
   /** Method create new unset configuration with default values. But the new created configuration
-   * isn't add to global list of all configurations
-   */
+   * isn't add to global list of all configurations */
   public static SessionConfiguration newConfiguration() {
     SessionConfiguration result = new SessionConfiguration();
     result.setId("<new id>");
@@ -101,13 +98,23 @@ public class SessionConfiguration {
 
   /** This method register new configuration to global list of configurations */
   public static void registerNewConfiguration(SessionConfiguration sc) {
+    LOG.debug("registerNewConfiguration");
     if (!configurations.contains(sc)) { configurations.add(sc); }
-    pcs.firePropertyChange("registerNewConfiguration", sc, sc);
+    pcs.firePropertyChange("new", sc, null);
   }
 
   /** Remove configuration of given name from global list of configurations */
   public static void removeConfiguration(String name) {
     SessionConfiguration sc = getConfiguration(name);
+    if (sc != null) {
+      sc.close();
+      configurations.remove(sc);
+      pcs.firePropertyChange("remove", sc, null);
+    }
+  }
+
+  /** Remove configuration of given name from global list of configurations */
+  public static void removeConfiguration(SessionConfiguration sc) {
     if (sc != null) {
       configurations.remove(sc);
       pcs.firePropertyChange("remove", sc, null);
@@ -152,8 +159,8 @@ public class SessionConfiguration {
       JAXBContext jc = JAXBContext.newInstance(cz.lbenda.schema.dbapp.dataman.ObjectFactory.class);
       Marshaller m = jc.createMarshaller();
       StringWriter sw = new StringWriter();
-      m.marshal(of.createDataman(config), sw);
       m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+      m.marshal(of.createDataman(config), sw);
       return sw.toString();
     } catch (JAXBException e) {
       LOG.error("Problem with write configuration: " + e.toString(), e);
@@ -352,16 +359,19 @@ public class SessionConfiguration {
       LOG.debug("No schemas to configure");
       return;
     }
-    for (SchemaType schema : schemas.getSchema()) {
-      String catalog = schema.getCatalog();
-      String sche = schema.getSchema();
-      List<String> list = shownSchemas.get(catalog);
-      if (list == null) {
-        list = new ArrayList<>();
-        shownSchemas.put(catalog, list);
-      }
-      list.add(sche);
+    schemas.getSchema().forEach(this::loadSchema);
+  }
+
+  /** Load schema which will be show */
+  private void loadSchema(final SchemaType schema) {
+    String catalog = schema.getCatalog();
+    String sche = schema.getSchema();
+    List<String> list = shownSchemas.get(catalog);
+    if (list == null) {
+      list = new ArrayList<>();
+      shownSchemas.put(catalog, list);
     }
+    list.add(sche);
   }
 
   public final void setId(final String id) {
@@ -407,6 +417,18 @@ public class SessionConfiguration {
     reader.generateStructure();
   }
 
+  /** Close connection to database */
+  public void close() {
+    try {
+      if (this.reader != null && this.reader.getConnection() != null && !this.reader.getConnection().isClosed()) {
+        ((DBAppConnection) this.reader.getConnection()).realyClose();
+        pcs.firePropertyChange("close", this, null);
+      }
+    } catch (SQLException e) {
+      LOG.warn("The connection can't be closed.");
+    }
+  }
+
   /** Return all catalogs in table */
   public Set<String> getCatalogs() {
     return tableDescriptionsMap.keySet();
@@ -436,6 +458,50 @@ public class SessionConfiguration {
       }
     }
     return result;
+  }
+
+  /** Save session conf into File */
+  public void saveToFile(File file) {
+    if (StringUtils.isBlank(FilenameUtils.getExtension(file.getAbsolutePath()))) { file = new File(file.getAbsoluteFile() + ".dtm"); } // Appned .dtm extension to file which haven't any extension
+    try (FileWriter fw = new FileWriter(file)) {
+      cz.lbenda.schema.dbapp.dataman.ObjectFactory of = new cz.lbenda.schema.dbapp.dataman.ObjectFactory();
+      SessionType st = storeToSessionType();
+      try {
+        JAXBContext jc = JAXBContext.newInstance(cz.lbenda.schema.dbapp.dataman.ObjectFactory.class);
+        Marshaller m = jc.createMarshaller();
+        m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+        m.marshal(of.createSession(st), fw);
+      } catch (JAXBException e) {
+        LOG.error("Problem with write configuration: " + e.toString(), e);
+        throw new RuntimeException("Problem with write configuration: " + e.toString(), e);
+      }
+    } catch (IOException e) {
+      LOG.error("The file is unwritable: " + e.toString(), e);
+      throw new RuntimeException("The file is unwritable: " + e.toString(), e);
+    }
+  }
+
+  /** Load session conf from File */
+  public void loadFromFile(File file) {
+    try (FileReader reader = new FileReader(file)) {
+      try {
+        JAXBContext jc = JAXBContext.newInstance(cz.lbenda.schema.dbapp.dataman.ObjectFactory.class);
+        Unmarshaller u = jc.createUnmarshaller();
+        JAXBElement<SessionType> element = (JAXBElement<SessionType>) u.unmarshal(reader);
+        if (element.getValue() instanceof SessionType) {
+          fromSessionType(element.getValue());
+        } else {
+          LOG.error("The file doesn't contains single session config");
+          throw new RuntimeException("The file doesn't contains single session config");
+        }
+      } catch (JAXBException e) {
+        LOG.error("Problem with read configuration from XML: " + e.toString(), e);
+        throw new RuntimeException("Problem with read configuration from XML: " + e.toString(), e);
+      }
+    } catch (IOException e) {
+      LOG.error("File is unreadable: " + e.toString(), e);
+      throw new RuntimeException("The file is unreadable: " + e.toString(), e);
+    }
   }
 
   public static void addPropertyChangeListener(PropertyChangeListener listener) {

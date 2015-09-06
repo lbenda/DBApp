@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cz.lbenda.dbapp.rc.frm;
+package cz.lbenda.dbapp.actions;
 
 import org.openide.nodes.Node;
 
-/**
-* Created by Lukas Benda <lbenda @ lbenda.cz> on 9/30/14.
-*/
+/** Created by Lukas Benda <lbenda @ lbenda.cz> on 9/30/14.
+ * Cookie which switch off/on the method which reload object */
+@FunctionalInterface
 public interface ReloadCookie extends Node.Cookie {
   void reload();
 }

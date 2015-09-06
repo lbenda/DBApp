@@ -15,15 +15,19 @@
  */
 package cz.lbenda.dbapp.rc.frm;
 
+import cz.lbenda.dbapp.actions.*;
 import cz.lbenda.dbapp.rc.SessionConfiguration;
 import cz.lbenda.dbapp.rc.db.TableDescription;
 import java.beans.IntrospectionException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import javax.swing.Action;
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
 import org.openide.actions.CustomizeAction;
 import org.openide.actions.OpenAction;
+import org.openide.awt.Actions;
 import org.openide.cookies.OpenCookie;
 import org.openide.nodes.AbstractNode;
 import org.openide.nodes.BeanNode;
@@ -45,7 +49,12 @@ import org.slf4j.LoggerFactory;
 * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/28/14.
 */
 @Messages({
-    "ERR_ConnectionNotEstablished=The connection isn't established: %s"
+    "ERR_ConnectionNotEstablished=The connection isn't established: %s",
+    "TITLE_SaveConfiguration=Choose file for save configuration",
+    "TITLE_LoadConfiguration=Choose file for which is configuration load",
+    "FILES_XMLandDTM=XML & DTM files",
+    "TITLE_RemoveConfiguration_YesNoDialog=Warning!!!",
+    "MSG_RemoveConfiguration_YesNoDialog=Would you remove configuration: %s"
 })
 public class StructureChildFactory extends ChildFactory<Object> {
 
@@ -56,10 +65,9 @@ public class StructureChildFactory extends ChildFactory<Object> {
   public StructureChildFactory(StrucHolder strucHolder) {
     this.strucHolder = strucHolder;
   }
-  private void createSCKeys(List<Object> toPopulate) {
-    for (SessionConfiguration sc : SessionConfiguration.getConfigurations()) {
-      toPopulate.add(new StrucHolder(sc, null, null, null, StrucLevel.SC));
-    }
+  private void createSCKeys(final List<Object> toPopulate) {
+    SessionConfiguration.getConfigurations().forEach((SessionConfiguration sc) ->
+      toPopulate.add(new StrucHolder(sc, null, null, null, StrucLevel.SC)));
   }
   private boolean createCatalogKeys(SessionConfiguration sc, List<Object> toPopulate) {
     try {
@@ -69,9 +77,9 @@ public class StructureChildFactory extends ChildFactory<Object> {
       toPopulate.add(new ErrorNode(String.format(Bundle.ERR_ConnectionNotEstablished(), e), this));
       return true;
     }
-    for (String cat : sc.getCatalogs()) {
+    sc.getCatalogs().forEach((String cat) -> {
       if (sc.isShowCatalog(cat)) { toPopulate.add(new StrucHolder(sc, cat, null, null, StrucLevel.SCHEMA)); }
-    }
+    });
     if (toPopulate.isEmpty()) {
       for (String cat : sc.getCatalogs()) {
         createSchemaKeys(sc, cat, toPopulate);
@@ -80,19 +88,16 @@ public class StructureChildFactory extends ChildFactory<Object> {
     return true;
   }
   private void createSchemaKeys(SessionConfiguration sc, String catalog, List<Object> toPopulate) {
-    for (String sch : sc.getSchemas(catalog)) {
+    sc.getSchemas(catalog).forEach((String sch) -> {
       if (sc.isShowSchema(catalog, sch)) { toPopulate.add(new StrucHolder(sc, catalog, sch, null, StrucLevel.TABLE_TYPE)); }
-    }
+    });
     if (toPopulate.isEmpty()) {
-      for (String sch : sc.getSchemas(catalog)) {
-        createTableTypeKeys(sc, catalog, sch, toPopulate);
-      }
+      sc.getSchemas(catalog).forEach((String sch1) -> createTableTypeKeys(sc, catalog, sch1, toPopulate));
     }
   }
   private void createTableTypeKeys(SessionConfiguration sc, String catalog, String schema, List<Object> toPopulate) {
-    for (TableDescription.TableType tt : sc.shownTableType(catalog, schema)) {
-      toPopulate.add(new StrucHolder(sc, catalog, schema, tt, StrucLevel.TABLE));
-    }
+    sc.shownTableType(catalog, schema).forEach((TableDescription.TableType tt) ->
+      toPopulate.add(new StrucHolder(sc, catalog, schema, tt, StrucLevel.TABLE)));
   }
   protected void createTDKeys(SessionConfiguration sc, String catalog, String schema,
                               TableDescription.TableType tableType, List<Object> toPopulate) {
@@ -173,12 +178,26 @@ public class StructureChildFactory extends ChildFactory<Object> {
           throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
       });
+      ic.add((ImportCookie) () -> {
+        JFileChooser chooser = new JFileChooser();
+        FileNameExtensionFilter filter = new FileNameExtensionFilter(Bundle.FILES_XMLandDTM(), "XML", "DTM");
+        chooser.setFileFilter(filter);
+        chooser.setDialogTitle(Bundle.TITLE_SaveConfiguration());
+        int returnVal = chooser.showOpenDialog(WindowManager.getDefault().getMainWindow());
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+          SessionConfiguration sc = new SessionConfiguration();
+          sc.loadFromFile(chooser.getSelectedFile().getAbsoluteFile());
+          sc.registerNewConfiguration(sc);
+        }});
       setDisplayName("Sessions");
     }
     @Override
     public Action[] getActions(boolean context) {
       List<? extends Action> myActions = Utilities.actionsForPath("Actions/DBStructure/Session/Create");
-      return myActions.toArray(new Action[myActions.size()]);
+      Action[] result = new Action[myActions.size() + 1];
+      myActions.forEach(a -> result[myActions.indexOf(a)] = a);
+      result[result.length - 1] = Actions.forID("DBStructure", "cz.lbenda.dbapp.actions.ImportAction");
+      return result;
     }
   }
 
@@ -208,8 +227,11 @@ public class StructureChildFactory extends ChildFactory<Object> {
         case TABLE :
           setDisplayName(sh.getTableType().toString());
           switch (sh.getTableType()) {
-            case TABLE : setIconBaseWithExtension("cz/lbenda/dbapp/rc/frm/table.png"); break;
-            case VIEW : setIconBaseWithExtension("cz/lbenda/dbapp/rc/frm/table_view.png"); break;
+            case TABLE : setIconBaseWithExtension("cz/lbenda/dbapp/rc/frm/table.png");
+              break;
+            case VIEW:
+              setIconBaseWithExtension("cz/lbenda/dbapp/rc/frm/table_view.png");
+              break;
           }
           break;
       }
@@ -222,10 +244,27 @@ public class StructureChildFactory extends ChildFactory<Object> {
     }
     public SessionConfigurationNode(final SessionConfiguration sc, final InstanceContent ic) throws IntrospectionException {
       super(sc, Children.create(new StructureChildFactory(new StrucHolder(sc, null, null, null, StrucLevel.CATALOG)), true), new AbstractLookup(ic));
-      ic.add(new OpenCookie() {
-        @Override
-        public void open() { sc.reloadStructure(); }
+      ic.add((OpenCookie) sc::reloadStructure);
+      ic.add((ReloadCookie) sc::reloadStructure);
+      ic.add((ExportCookie) () -> {
+        JFileChooser chooser = new JFileChooser();
+        FileNameExtensionFilter filter = new FileNameExtensionFilter(Bundle.FILES_XMLandDTM(), "XML", "DTM");
+        chooser.setFileFilter(filter);
+        chooser.setDialogTitle(Bundle.TITLE_SaveConfiguration());
+        int returnVal = chooser.showSaveDialog(WindowManager.getDefault().getMainWindow());
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+          sc.saveToFile(chooser.getSelectedFile().getAbsoluteFile());
+        }
       });
+      ic.add((RemoveCookie) () -> {
+        int choose = JOptionPane.showConfirmDialog(null,
+            String.format(Bundle.MSG_RemoveConfiguration_YesNoDialog(), sc.getId()),
+            Bundle.TITLE_RemoveConfiguration_YesNoDialog(), JOptionPane.YES_NO_OPTION);
+        if (choose == JOptionPane.OK_OPTION) {
+          SessionConfiguration.removeConfiguration(sc);
+        }
+      });
+      ic.add((CloseCookie) sc::close);
       setDisplayName(sc.getId());
       setIconBaseWithExtension("cz/lbenda/dbapp/rc/frm/database.png");
     }
@@ -235,7 +274,12 @@ public class StructureChildFactory extends ChildFactory<Object> {
     }
     @Override
     public Action[] getActions(boolean context) {
-      return new Action[]{SystemAction.get(CustomizeAction.class)};
+      return new Action[]{SystemAction.get(CustomizeAction.class),
+          Actions.forID("DBStructure", "cz.lbenda.dbapp.actions.ReloadAction"),
+          Actions.forID("DBStructure", "cz.lbenda.dbapp.actions.ExportAction"),
+          Actions.forID("DBStructure", "cz.lbenda.dbapp.actions.RemoveAction"),
+          Actions.forID("DBStructure", "cz.lbenda.dbapp.actions.CloseAction")
+      };
     }
   }
 

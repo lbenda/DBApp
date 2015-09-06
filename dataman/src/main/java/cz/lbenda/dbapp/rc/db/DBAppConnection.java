@@ -35,13 +35,18 @@ public class DBAppConnection implements Connection {
 
   private Connection connection;
   private int connectionTimeout; public int getConnectionTimeout() { return connectionTimeout; } public void setConnectionTimeout(int connectionTimeout) { this.connectionTimeout = connectionTimeout; }
+  private static int connectionId = 0;
 
   public DBAppConnection(Connection connection) {
     this.connection = connection;
+    this.connectionId++;
+    LOG.info("New connectionID is created: " + connectionId);
   }
 
   public void realyClose() throws SQLException {
+    LOG.info("realy close: " + connectionId);
     connection.close();
+    LOG.info("Closed after close: " + connection.isClosed());
   }
 
   @Override
@@ -71,7 +76,7 @@ public class DBAppConnection implements Connection {
   public void rollback() throws SQLException { connection.rollback(); }
   @Override
   public void close() throws SQLException {
-    LOG.log(Level.FINE, "Close connection is called");
+    LOG.log(Level.FINE, "Close connection is called: " + connectionId);
   }
   @Override
   public boolean isClosed() throws SQLException { return connection.isClosed(); }

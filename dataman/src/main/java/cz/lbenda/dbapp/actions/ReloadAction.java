@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.lbenda.dbapp.rc.frm;
+package cz.lbenda.dbapp.actions;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -13,7 +13,7 @@ import org.openide.util.NbBundle.Messages;
 
 @ActionID(
         category = "DBStructure",
-        id = "cz.lbenda.dbapp.rc.frm.ReloadAction"
+        id = "cz.lbenda.dbapp.actions.ReloadAction"
 )
 @ActionRegistration(
         iconBase = "cz/lbenda/dbapp/rc/frm/task-recurring.png",

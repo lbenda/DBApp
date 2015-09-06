@@ -99,6 +99,7 @@ public final class FrmDbStructureTopComponent extends TopComponent implements Ex
   }// </editor-fold>//GEN-END:initComponents
 
   private void refreshNode() {
+    LOG.debug("refresh node");
     em.setRootContext(new StructureChildFactory.RootNode());
   }
 
