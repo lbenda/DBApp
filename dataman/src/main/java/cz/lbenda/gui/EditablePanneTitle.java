@@ -17,10 +17,6 @@ package cz.lbenda.gui;
 
 import java.awt.Color;
 import java.awt.Font;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
@@ -33,7 +29,6 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +41,6 @@ public class EditablePanneTitle extends JPanel {
 
   /** This listener is inform when title is changed */
   public interface OnTitleChangeListener {
-    void onTitleChange(EditablePanneTitle tile, String text);
     /** Method is called when user click on remove button */
     void onRemove(EditablePanneTitle title);
   }
@@ -56,24 +50,21 @@ public class EditablePanneTitle extends JPanel {
 
   private final List<OnTitleChangeListener> listeners = new ArrayList<>();
 
-  private boolean editMode; public final boolean isEditMode() { return editMode; }
-
-  public EditablePanneTitle() {
-    setListeners();
-    configureRemoveButon();
-  }
   public EditablePanneTitle(String text) {
+    super();
     setText(text);
-    setListeners();
     configureRemoveButon();
+    this.add(label);
+    this.add(bRemove);
   }
 
   public final String getText() { return label.getText(); }
   public final void setText(String text) {
+    LOG.debug("Text of editable pane: " + text);
     label.setText(text);
   }
 
-  private final void configureRemoveButon() {
+  private void configureRemoveButon() {
     bRemove.setBorder(BorderFactory.createEmptyBorder());
     bRemove.setContentAreaFilled(false);
     try {
@@ -101,40 +92,7 @@ public class EditablePanneTitle extends JPanel {
     });
   }
 
-  private void titleChange(String text) {
-    try {
-      for (OnTitleChangeListener list : listeners) {
-        list.onTitleChange(this, text);
-      }
-      label.setText(text);
-    } catch (RuntimeException e) {
-      LOG.error("The title can't be changed.", e);
-      throw e;
-    }
-  }
-
-  private void setListeners() {
-/*    this.addMouseListener(new MouseAdapter() {
-      @Override
-      public void mousePressed(MouseEvent e) {
-        super.mousePressed(e);
-
-      }
-    }); */
-    label.addMouseListener(new MouseAdapter() {
-      @Override
-      public void mousePressed(MouseEvent e) {
-        super.mousePressed(e);
-        EditablePanneTitle.this.dispatchEvent(e);
-      }
-    });
-  }
-
   public void addOnTitleChangeListener(OnTitleChangeListener listener) {
     this.listeners.add(listener);
-  }
-
-  public void removeOnTitleChangeListener(OnTitleChangeListener listener) {
-    this.listeners.remove(listener);
   }
 }

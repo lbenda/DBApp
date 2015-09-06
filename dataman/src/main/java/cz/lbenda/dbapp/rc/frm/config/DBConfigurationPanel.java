@@ -59,12 +59,12 @@ final class DBConfigurationPanel extends javax.swing.JPanel {
     javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
     jPanel1.setLayout(jPanel1Layout);
     jPanel1Layout.setHorizontalGroup(
-      jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addGap(0, 504, Short.MAX_VALUE)
+        jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 504, Short.MAX_VALUE)
     );
     jPanel1Layout.setVerticalGroup(
-      jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addGap(0, 431, Short.MAX_VALUE)
+        jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 431, Short.MAX_VALUE)
     );
 
     tbConfigs.addTab(org.openide.util.NbBundle.getMessage(DBConfigurationPanel.class, "DBConfigurationPanel.jPanel1.TabConstraints.tabTitle"), jPanel1); // NOI18N
@@ -72,28 +72,20 @@ final class DBConfigurationPanel extends javax.swing.JPanel {
     javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
     this.setLayout(layout);
     layout.setHorizontalGroup(
-      layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addComponent(tbConfigs)
+        layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(tbConfigs)
     );
     layout.setVerticalGroup(
-      layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addComponent(tbConfigs)
+        layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(tbConfigs)
     );
   }// </editor-fold>//GEN-END:initComponents
 
   private void createSinglePanel(final SessionConfiguration sc) {
     tbConfigs.removeChangeListener(listener);
     EditablePanneTitle title = new EditablePanneTitle(sc.getId());
-    title.addOnTitleChangeListener(new EditablePanneTitle.OnTitleChangeListener() {
-      @Override
-      public void onTitleChange(EditablePanneTitle tile, String text) {
-        sc.setId(text);
-      }
-      @Override
-      public void onRemove(EditablePanneTitle title) {
-        SessionConfiguration.removeConfiguration(sc.getId());
-      }
-    });
+    title.addOnTitleChangeListener(title1 -> SessionConfiguration.removeConfiguration(sc.getId()));
+
     SingleConfigurationPanel panel = new SingleConfigurationPanel(sc, this);
     tbConfigs.add(panel, tbConfigs.getTabCount() - 1);
     tbConfigs.setTabComponentAt(tbConfigs.getTabCount() - 2, title); // Same position as previous row, but the previous row add new tab
@@ -108,9 +100,7 @@ final class DBConfigurationPanel extends javax.swing.JPanel {
     if (SessionConfiguration.getConfigurations().isEmpty()) {
       createSinglePanel(SessionConfiguration.newConfiguration());
     } else {
-      for (final SessionConfiguration sc : SessionConfiguration.getConfigurations()) {
-        createSinglePanel(sc);
-      }
+      SessionConfiguration.getConfigurations().forEach(this::createSinglePanel);
     }
     tbConfigs.setSelectedIndex(0);
   }
