@@ -20,6 +20,9 @@ import cz.lbenda.dbapp.rc.frm.config.DBConfigurationOptionsPanelController;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -139,10 +142,10 @@ public class SessionConfiguration {
           }
         }
       } else {
-        LOG.error("The string didn't contains expected configuration: " + o.getClass().getName());
+        LOG.error("The string didn't contains dataman configuration: " + o.getClass().getName());
       }
     } catch (JAXBException e) {
-      LOG.error("Problem with reading extended configuration: " + e.toString(), e);
+      LOG.error("Problem with reading dataman configuration: " + e.toString(), e);
     }
   }
 
@@ -266,12 +269,12 @@ public class SessionConfiguration {
     if (jdbcConfiguration != null) {
       result.setJdbc(jdbcConfiguration.storeToJdbcType());
     }
+    result.setLibraries(of.createLibrariesType());
+    result.getLibraries().getLibrary().addAll(getLibrariesPaths());
 
     result.setExtendedConfig(of.createExtendedConfigType());
     result.getExtendedConfig().setType(this.getExtendedConfigType());
     result.getExtendedConfig().setValue(this.getExtendedConfigurationPath());
-    result.setLibraries(of.createLibrariesType());
-    result.getLibraries().getLibrary().addAll(getLibrariesPaths());
     return result;
   }
 
@@ -287,24 +290,63 @@ public class SessionConfiguration {
       this.connectionTimeout = Integer.valueOf(session.getConnectionTimeout());
     } else { connectionTimeout = -1; }
     loadJdbcConfiguration(session.getJdbc());
-    ExtendedConfigType ed = session.getExtendedConfig();
-    if (ed != null) {
-      setExtendedConfigType(ed.getType());
-      setExtendedConfigurationPath(ed.getValue());
-    }
     this.librariesPaths.clear();
     if (session.getLibraries() != null) {
       for (String lib : session.getLibraries().getLibrary()) {
         this.librariesPaths.add(lib);
       }
     }
-    loadExtendedConfiguration();
+
+    ExtendedConfigType ed = session.getExtendedConfig();
+    if (ed != null) {
+      setExtendedConfigType(ed.getType());
+      setExtendedConfigurationPath(ed.getValue());
+    }
   }
 
   private void loadExtendedConfiguration() {
+    if (StringUtils.isBlank(extendedConfigurationPath)) {
+      loadExtendedConfiguration(null);
+      LOG.debug("No extend configuration for load");
+      return;
+    }
+    if (reader == null) {
+      this.reloadStructure();
+      return;
+    }
+
     switch (getExtendedConfigType()) {
-      case FILE: loadExtendedConfigurationFromFile(); break;
-      case DATABASE: // TODO implement
+      case FILE:
+        try (FileReader fileReader = new FileReader(new File(extendedConfigurationPath))) {
+          loadExtendedConfiguration(fileReader);
+        } catch (IOException e) {
+          LOG.error("Problem with read extend config from file: " + extendedConfigurationPath, e);
+          throw new RuntimeException("Problem with read extend config from file: " + extendedConfigurationPath, e);
+        }
+        break;
+      case DATABASE:
+        String extendConfiguration = null;
+        try (Connection connection = reader.getConnection()) {
+          try (PreparedStatement ps = connection.prepareCall("select usr, exConf from "
+              + extendedConfigurationPath + " where (usr = ? or usr is null or usr = '')")) {
+            ps.setString(1, reader.getUser().getUsername());
+            try (ResultSet rs = ps.executeQuery()) {
+              while (rs.next()) {
+                if (rs.getString(1) == null && extendConfiguration == null) { // The null user is used only if no specific user configuraiton is readed
+                  extendConfiguration = rs.getString(2);
+                } else if (rs.getString(1) != null ) {
+                  extendConfiguration = rs.getString(2);
+                }
+              }
+            }
+          }
+        } catch (SQLException e) {
+          LOG.error("Problem with read extend config from table: " + extendedConfigurationPath, e);
+          throw new RuntimeException("Problem with read extend config from table: " + extendedConfigurationPath, e);
+        }
+        if (!StringUtils.isBlank(extendConfiguration)) {
+          loadExtendedConfiguration(new StringReader(extendConfiguration));
+        } else { StringUtils.isBlank(null); }
     }
   }
 
@@ -385,21 +427,28 @@ public class SessionConfiguration {
     }
   }
 
-  private void loadExtendedConfigurationFromFile() {
-    try {
-      JAXBContext jc = JAXBContext.newInstance(ObjectFactory.class);
-      Unmarshaller u = jc.createUnmarshaller();
-      JAXBElement o = (JAXBElement) u.unmarshal(new File(extendedConfigurationPath));
-      if (o.getValue() instanceof ExConfType) {
-        this.exConf = (ExConfType) o.getValue();
-        loadSchemas(exConf.getSchemas());
-        tableOfKeysSQLFromElement(exConf.getTableOfKeySQLs());
-        readTableConf(exConf);
-      } else {
-        LOG.error("The file didn't contains expected configuration: " + o.getClass().getName());
+  private void loadExtendedConfiguration(Reader reader) {
+    if (reader == null) {
+      this.exConf = null;
+      loadSchemas(null);
+      tableOfKeysSQLFromElement(null);
+      readTableConf(null);
+    } else {
+      try {
+        JAXBContext jc = JAXBContext.newInstance(ObjectFactory.class);
+        Unmarshaller u = jc.createUnmarshaller();
+        JAXBElement o = (JAXBElement) u.unmarshal(reader);
+        if (o.getValue() instanceof ExConfType) {
+          this.exConf = (ExConfType) o.getValue();
+          loadSchemas(exConf.getSchemas());
+          tableOfKeysSQLFromElement(exConf.getTableOfKeySQLs());
+          readTableConf(exConf);
+        } else {
+          LOG.error("The file didn't contains expected configuration: " + o.getClass().getName());
+        }
+      } catch (JAXBException e) {
+        LOG.error("Problem with reading extended configuration: " + e.toString(), e);
       }
-    } catch (JAXBException e) {
-      LOG.error("Problem with reading extended configuration: " + e.toString(), e);
     }
   }
 
@@ -411,9 +460,9 @@ public class SessionConfiguration {
     this.tableDescriptionsMap.clear();
     this.tableDescriptions.clear();
 
-    loadExtendedConfiguration();
     reader = new DbStructureReader();
     reader.setSessionConfiguration(this);
+    loadExtendedConfiguration();
     reader.generateStructure();
   }
 

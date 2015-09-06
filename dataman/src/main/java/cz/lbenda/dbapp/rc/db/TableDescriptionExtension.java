@@ -59,7 +59,7 @@ public interface TableDescriptionExtension {
     }
 
     public static void loadExtensions(SessionConfiguration sc, final ExConfType exConf) {
-      if (exConf.getTables() == null || exConf.getTables().getTable().isEmpty()) {
+      if (exConf == null || exConf.getTables() == null || exConf.getTables().getTable().isEmpty()) {
         LOG.debug("No table extensions defined");
         return;
       }

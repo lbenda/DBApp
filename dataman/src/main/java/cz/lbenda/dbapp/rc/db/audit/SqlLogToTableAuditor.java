@@ -36,7 +36,7 @@ public class SqlLogToTableAuditor implements Auditor {
   private static final Map<AuditType, SqlLogToTableAuditor> CACHED_AUDITORS = new WeakHashMap<>();
 
   private static Logger LOG = LoggerFactory.getLogger(SqlLogToTableAuditor.class);
-  private static String SQL_INSERT_LOG = "insert into %s (user, created, log) values (?, ?, ?)";
+  private static String SQL_INSERT_LOG = "insert into %s (usr, created, log) values (?, ?, ?)";
 
   private final DbStructureReader dbStructureReader;
   private final AuditType auditType;
