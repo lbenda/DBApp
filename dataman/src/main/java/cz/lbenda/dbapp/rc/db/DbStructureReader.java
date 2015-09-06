@@ -180,7 +180,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
     if (changedColumns.isEmpty()) {
       LOG.info("Nothing to insert");
     } else {
-      String sql = String.format("insert into \"%s\" (%s) values (%s)", td.getName(), names, values);
+      String sql = String.format("insert into \"%s\".\"%s\" (%s) values (%s)", td.getSchema(), td.getName(), names, values);
       LOG.debug(sql);
       try (Connection conn = getConnection()) {
         try (PreparedStatement ps = AuditPreparedStatement.prepareStatement(user, auditorForAudit(td.getAudit()), conn,
@@ -194,8 +194,10 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
           ps.execute();
           ResultSet rs = ps.getGeneratedKeys();
           while (rs.next()) { // FIXME : This isn't the best solution, because there can be more auto generated fields and no every must be PK
-            Column col = td.getPKColumns().get(0);
-            newValues.put(col, rs.getObject(1));
+            if (!td.getPKColumns().isEmpty()) {
+              Column col = td.getPKColumns().get(0);
+              newValues.put(col, rs.getObject(1));
+            }
           }
           LOG.debug("New column was inserted");
           td.sqlWasFired(TableDescriptionExtension.TableAction.INSERT);
@@ -241,7 +243,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
     if (changedColumns.isEmpty()) {
       LOG.info("Nothing changed in form");
     } else {
-      String sql = String.format("update \"%s\" set %s where %s", td.getName(), set, where);
+      String sql = String.format("update \"%s\".\"%s\" set %s where %s", td.getSchema(), td.getName(), set, where);
       LOG.debug(sql);
       try (Connection conn = getConnection()) {
         try (PreparedStatement ps = AuditPreparedStatement.prepareCall(user, auditorForAudit(td.getAudit()), conn, sql)) {

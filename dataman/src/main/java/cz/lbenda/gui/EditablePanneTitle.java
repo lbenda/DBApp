@@ -52,7 +52,6 @@ public class EditablePanneTitle extends JPanel {
   }
 
   private final JLabel label = new JLabel();
-  private final JTextField tf = new JTextField();
   private final JButton bRemove = new JButton();
 
   private final List<OnTitleChangeListener> listeners = new ArrayList<>();
@@ -60,13 +59,11 @@ public class EditablePanneTitle extends JPanel {
   private boolean editMode; public final boolean isEditMode() { return editMode; }
 
   public EditablePanneTitle() {
-    setEditMode(false);
     setListeners();
     configureRemoveButon();
   }
   public EditablePanneTitle(String text) {
     setText(text);
-    setEditMode(false);
     setListeners();
     configureRemoveButon();
   }
@@ -74,7 +71,6 @@ public class EditablePanneTitle extends JPanel {
   public final String getText() { return label.getText(); }
   public final void setText(String text) {
     label.setText(text);
-    tf.setText(text);
   }
 
   private final void configureRemoveButon() {
@@ -105,30 +101,14 @@ public class EditablePanneTitle extends JPanel {
     });
   }
 
-  public final void setEditMode(boolean editMode) {
-    this.editMode = editMode;
-    if (editMode) {
-      this.remove(label);
-      this.remove(bRemove);
-      this.add(tf);
-      tf.requestFocus();
-    } else {
-      this.add(label);
-      this.add(bRemove);
-      this.remove(tf);
-    }
-  }
-
   private void titleChange(String text) {
     try {
       for (OnTitleChangeListener list : listeners) {
         list.onTitleChange(this, text);
       }
       label.setText(text);
-      tf.setText(text);
     } catch (RuntimeException e) {
       LOG.error("The title can't be changed.", e);
-      tf.setText(label.getText());
       throw e;
     }
   }
@@ -145,32 +125,7 @@ public class EditablePanneTitle extends JPanel {
       @Override
       public void mousePressed(MouseEvent e) {
         super.mousePressed(e);
-        if (e.getClickCount() == 2) { setEditMode(!editMode); }
         EditablePanneTitle.this.dispatchEvent(e);
-      }
-    });
-    tf.addKeyListener(new KeyListener() {
-      @Override public void keyTyped(KeyEvent e) { }
-      @Override
-      public void keyPressed(KeyEvent e) {
-        if (e.getID() == KeyEvent.VK_ESCAPE) {
-          setEditMode(!editMode);
-          tf.setText(label.getText());
-        } else if (e.getID() == KeyEvent.VK_ENTER) {
-          setEditMode(!editMode);
-          titleChange(tf.getText());
-        }
-      }
-      @Override public void keyReleased(KeyEvent e) {}
-    });
-    tf.addFocusListener(new FocusListener() {
-      @Override public void focusGained(FocusEvent e) {}
-      @Override
-      public void focusLost(FocusEvent e) {
-        if (editMode) {
-          titleChange(tf.getText());
-          setEditMode(false);
-        }
       }
     });
   }
