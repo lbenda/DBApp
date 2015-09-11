@@ -18,7 +18,6 @@ import java.beans.PropertyChangeListener;
 import java.util.List;
 import javax.swing.Action;
 import javax.swing.ActionMap;
-import javax.swing.CellEditor;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
@@ -27,7 +26,6 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 
 import cz.lbenda.dbapp.rc.frm.gui.ColumnCellRenderer;
-import org.netbeans.swing.etable.ETable;
 import org.netbeans.swing.etable.ETableColumn;
 import org.netbeans.swing.etable.ETableColumnModel;
 import org.openide.awt.UndoRedo;
@@ -55,8 +53,6 @@ import org.slf4j.LoggerFactory;
         persistenceType = TopComponent.PERSISTENCE_NEVER// TopComponent.PERSISTENCE_ALWAYS
 )
 @TopComponent.Registration(mode = "editor", openAtStartup = false)
-// @ActionID(category = "Window", id = "cz.lbenda.dbapp.rc.frm.FrnDbTableTopComponent")
-// @ActionReference(path = "Menu/Window" /*, position = 333 */)
 @Messages({
 })
 public final class FrmDbTableTopComponent extends TopComponent implements ExplorerManager.Provider {
@@ -90,10 +86,18 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
     Node rootNode = new AbstractNode(Children.create(new RowChildFactory(td), true));
     em.setRootContext(rootNode);
 
-    ic.add(addCookie);
-    ic.add(removeCookie);
-    ic.add(cancelCookie);
-    ic.add(reloadCookie);
+    ic.add((DBTableRowAddCookie) () -> {
+        ov.getOutline().getModel().addTableModelListener(tableModelListener);
+        td.createRow();
+        ov.getOutline().unsetQuickFilter();
+        ic.add(td);
+      });
+    ic.add((DBTableRowsRemoveCookie) () -> {
+      td.removeRows(ov.getOutline().getSelectedRows());
+      ic.add(td);
+    });
+    ic.add((DBTableCancelCookie) td::cancelChanges);
+    ic.add((DBTableReloadCookie) td::reloadRows);
     ic.add(em);
     ic.add(getActionMap());
     associateLookup(new AbstractLookup(ic));
@@ -151,38 +155,6 @@ public final class FrmDbTableTopComponent extends TopComponent implements Explor
         RowNode.Row row = new RowNode.Row(td, td.getRows().get(ov.getOutline().getSelectedRow()));
         ChosenTable.getDefault().setSelectedRowValues(row);
       }
-    }
-  };
-
-  private DBTableRowAddCookie addCookie = new DBTableRowAddCookie() {
-    @Override
-    public void addRow() {
-      ov.getOutline().getModel().addTableModelListener(tableModelListener);
-      td.createRow();
-      ov.getOutline().unsetQuickFilter();
-      ic.add(td);
-    }
-  };
-
-  private DBTableRowsRemoveCookie removeCookie = new DBTableRowsRemoveCookie() {
-    @Override
-    public void removeRows() {
-      td.removeRows(ov.getOutline().getSelectedRows());
-      ic.add(td);
-    }
-  };
-
-  private DBTableCancelCookie cancelCookie = new DBTableCancelCookie() {
-    @Override
-    public void cancelChanges() {
-      td.cancelChanges();
-    }
-  };
-
-  private DBTableReloadCookie reloadCookie = new DBTableReloadCookie() {
-    @Override
-    public void reloadTable() {
-      td.reloadRows();
     }
   };
 

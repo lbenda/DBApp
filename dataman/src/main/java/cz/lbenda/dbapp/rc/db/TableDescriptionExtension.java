@@ -19,7 +19,6 @@ import cz.lbenda.dbapp.rc.SessionConfiguration;
 import java.util.List;
 
 import cz.lbenda.schema.dbapp.exconf.*;
-import org.jdom2.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,9 +42,6 @@ public interface TableDescriptionExtension {
    * @param action action which was executed at the table
    */
   void tableWasChanged(TableDescription td, TableAction action);
-
-  /** Return element to which is this extension stored */
-  Element storeToElement();
 
   /** Columns which is extended by table extension
    * @return columns which is extended. If extension isn't for column then is empty list returned

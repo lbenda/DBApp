@@ -20,6 +20,7 @@ import cz.lbenda.dbapp.rc.frm.config.DBConfigurationOptionsPanelController;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.*;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -31,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import cz.lbenda.schema.dbapp.dataman.*;
 import cz.lbenda.schema.dbapp.exconf.*;
@@ -76,9 +78,7 @@ public class SessionConfiguration {
 
   public static List<String> getConfigurationIDs() {
     ArrayList<String> result = new ArrayList<>();
-    for (SessionConfiguration sc : getConfigurations()) {
-      result.add(sc.getId());
-    }
+    getConfigurations().forEach((sc) -> result.add(sc.getId()));
     return result;
   }
 
@@ -186,8 +186,6 @@ public class SessionConfiguration {
   private String extendedConfigurationPath; public final String getExtendedConfigurationPath() { return this.extendedConfigurationPath; }
   /** Showed schemas */
   private final Map<String, List<String>> shownSchemas = new HashMap<>();
-  /** Extended configuration of session */
-  private ExConfType exConf;
   /** Instance of DB reader for this session */
   private DbStructureReader reader; public final DbStructureReader getReader() { return reader; }
   /** Timeout when unused connection will be closed */
@@ -213,9 +211,8 @@ public class SessionConfiguration {
    * @return true if table is shown
    */
   public final boolean isShowTable(final TableDescription td) {
-    if (shownSchemas.isEmpty()) { return true; }
-    if (!shownSchemas.containsKey(td.getCatalog())) { return false; }
-    return shownSchemas.get(td.getCatalog()).contains(td.getSchema());
+    return shownSchemas.isEmpty() || shownSchemas.containsKey(td.getCatalog())
+        && shownSchemas.get(td.getCatalog()).contains(td.getSchema());
   }
 
   /** Inform if the catalog will be show.
@@ -223,9 +220,7 @@ public class SessionConfiguration {
    * @return catalog is show or not
    */
   public final boolean isShowCatalog(final String catalog) {
-    if (catalog == null) { return false; }
-    if (shownSchemas.isEmpty()) { return true; }
-    return shownSchemas.containsKey(catalog) && shownSchemas.size() > 1;
+    return catalog != null && (shownSchemas.isEmpty() || shownSchemas.containsKey(catalog) && shownSchemas.size() > 1);
   }
 
   /** Inform if the catalog will be show.
@@ -234,10 +229,8 @@ public class SessionConfiguration {
    * @return catalog is show or not
    */
   public final boolean isShowSchema(final String catalog, final String schema) {
-    if (schema == null) { return true; }
-    if (shownSchemas.isEmpty()) { return true; }
-    if (!shownSchemas.containsKey(catalog)) { return false; }
-    return shownSchemas.get(catalog).contains(schema) && shownSchemas.get(catalog).size() > 1;
+    return schema == null || shownSchemas.isEmpty() || shownSchemas.containsKey(catalog)
+        && shownSchemas.get(catalog).contains(schema) && shownSchemas.get(catalog).size() > 1;
   }
 
   /** List of shown table type (sorted)
@@ -247,15 +240,14 @@ public class SessionConfiguration {
    */
   public final List<TableDescription.TableType> shownTableType(final String catalog, final String schema) {
     Set<TableDescription.TableType> set = new HashSet<>(2);
-    for (TableDescription td : this.tableDescriptionsMap.get(catalog).get(schema).values()) {
-      if (isShowTable(td)) { set.add(td.getTableType()); }
-    }
-    for (TableDescription.TableType r : set) {
+    set.addAll(this.tableDescriptionsMap.get(catalog).get(schema).values().stream().filter(this::isShowTable)
+        .map(TableDescription::getTableType).collect(Collectors.toList()));
+    set.forEach(r -> {
       if (r == null) {
         set.remove(null);
         set.add(TableDescription.TableType.NULL);
       }
-    }
+    });
     List<TableDescription.TableType> result = new ArrayList<>(set);
     Collections.sort(result);
     return result;
@@ -287,14 +279,12 @@ public class SessionConfiguration {
   private void fromSessionType(final SessionType session) {
     setId(session.getId());
     if (session.getConnectionTimeout() != null) {
-      this.connectionTimeout = Integer.valueOf(session.getConnectionTimeout());
+      this.connectionTimeout = session.getConnectionTimeout();
     } else { connectionTimeout = -1; }
     loadJdbcConfiguration(session.getJdbc());
     this.librariesPaths.clear();
     if (session.getLibraries() != null) {
-      for (String lib : session.getLibraries().getLibrary()) {
-        this.librariesPaths.add(lib);
-      }
+      session.getLibraries().getLibrary().forEach(this.librariesPaths::add);
     }
 
     ExtendedConfigType ed = session.getExtendedConfig();
@@ -429,7 +419,6 @@ public class SessionConfiguration {
 
   private void loadExtendedConfiguration(Reader reader) {
     if (reader == null) {
-      this.exConf = null;
       loadSchemas(null);
       tableOfKeysSQLFromElement(null);
       readTableConf(null);
@@ -439,7 +428,7 @@ public class SessionConfiguration {
         Unmarshaller u = jc.createUnmarshaller();
         JAXBElement o = (JAXBElement) u.unmarshal(reader);
         if (o.getValue() instanceof ExConfType) {
-          this.exConf = (ExConfType) o.getValue();
+          ExConfType exConf = (ExConfType) o.getValue();
           loadSchemas(exConf.getSchemas());
           tableOfKeysSQLFromElement(exConf.getTableOfKeySQLs());
           readTableConf(exConf);
@@ -460,8 +449,7 @@ public class SessionConfiguration {
     this.tableDescriptionsMap.clear();
     this.tableDescriptions.clear();
 
-    reader = new DbStructureReader();
-    reader.setSessionConfiguration(this);
+    reader = new DbStructureReader(this);
     loadExtendedConfiguration();
     reader.generateStructure();
   }
@@ -492,20 +480,17 @@ public class SessionConfiguration {
   /** Return all table types in given catalog and schema */
   public Set<TableDescription.TableType> getTableTypes(String catalog, String schema) {
     Set<TableDescription.TableType> result = new HashSet<>();
-    for (TableDescription td : tableDescriptionsMap.get(catalog).get(schema).values()) {
-      result.add(td.getTableType());
-    }
+    tableDescriptionsMap.get(catalog).get(schema).values().forEach(td -> result.add(td.getTableType()));
     return result;
   }
 
   /** Return all tables of table type */
   public List<TableDescription> getTableDescriptions(String catalog, String schema, TableDescription.TableType tableType) {
     List<TableDescription> result = new ArrayList<>();
-    for (TableDescription td : tableDescriptionsMap.get(catalog).get(schema).values()) {
+    tableDescriptionsMap.get(catalog).get(schema).values().forEach(td -> {
       if (AbstractHelper.nullEquals(tableType, td.getTableType())) {
         result.add(td);
-      }
-    }
+      }});
     return result;
   }
 
@@ -530,23 +515,39 @@ public class SessionConfiguration {
     }
   }
 
-  /** Load session conf from File */
-  public void loadFromFile(File file) {
-    try (FileReader reader = new FileReader(file)) {
-      try {
-        JAXBContext jc = JAXBContext.newInstance(cz.lbenda.schema.dbapp.dataman.ObjectFactory.class);
-        Unmarshaller u = jc.createUnmarshaller();
-        JAXBElement<SessionType> element = (JAXBElement<SessionType>) u.unmarshal(reader);
-        if (element.getValue() instanceof SessionType) {
-          fromSessionType(element.getValue());
-        } else {
-          LOG.error("The file doesn't contains single session config");
-          throw new RuntimeException("The file doesn't contains single session config");
-        }
-      } catch (JAXBException e) {
-        LOG.error("Problem with read configuration from XML: " + e.toString(), e);
-        throw new RuntimeException("Problem with read configuration from XML: " + e.toString(), e);
+  /** Load configuration from given resource which is defined by URL */
+  public void load(URL resource) {
+    try (InputStream is = resource.openStream()) {
+      load(is);
+    } catch (IOException e) {
+      LOG.error("Problem with read configuration from XML: " + e.toString(), e);
+      throw new RuntimeException("Problem with read configuration from XML: " + e.toString(), e);
+    }
+  }
+
+  /** Load configuration from given resource from input stream */
+  @SuppressWarnings("unchecked")
+  public void load(InputStream inputStream) {
+    try {
+      JAXBContext jc = JAXBContext.newInstance(cz.lbenda.schema.dbapp.dataman.ObjectFactory.class);
+      Unmarshaller u = jc.createUnmarshaller();
+      JAXBElement<SessionType> element = (JAXBElement<SessionType>) u.unmarshal(inputStream);
+      if (element.getValue() instanceof SessionType) {
+        fromSessionType(element.getValue());
+      } else {
+        LOG.error("The file doesn't contains single session config");
+        throw new RuntimeException("The file doesn't contains single session config");
       }
+    } catch (JAXBException e) {
+      LOG.error("Problem with read configuration from XML: " + e.toString(), e);
+      throw new RuntimeException("Problem with read configuration from XML: " + e.toString(), e);
+    }
+  }
+
+  /** Load session conf from File */
+  public void load(File file) {
+    try (FileInputStream fis = new FileInputStream(file)) {
+      load(fis);
     } catch (IOException e) {
       LOG.error("File is unreadable: " + e.toString(), e);
       throw new RuntimeException("The file is unreadable: " + e.toString(), e);

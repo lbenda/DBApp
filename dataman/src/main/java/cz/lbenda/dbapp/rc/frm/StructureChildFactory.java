@@ -170,14 +170,9 @@ public class StructureChildFactory extends ChildFactory<Object> {
     }
     public RootNode(InstanceContent ic) {
       super(Children.create(new StructureChildFactory(new StrucHolder(null, null, null, null, StrucLevel.SC)), true),
-              new AbstractLookup(ic));
+          new AbstractLookup(ic));
       // super(Children.LEAF, new AbstractLookup(ic));
-      ic.add(new OpenCookie() {
-        @Override
-        public void open() {
-          throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-      });
+      ic.add((OpenCookie) () -> {throw new UnsupportedOperationException("Not supported yet.");}); //To change body of generated methods, choose Tools | Templates.
       ic.add((ImportCookie) () -> {
         JFileChooser chooser = new JFileChooser();
         FileNameExtensionFilter filter = new FileNameExtensionFilter(Bundle.FILES_XMLandDTM(), "XML", "DTM");
@@ -186,8 +181,8 @@ public class StructureChildFactory extends ChildFactory<Object> {
         int returnVal = chooser.showOpenDialog(WindowManager.getDefault().getMainWindow());
         if (returnVal == JFileChooser.APPROVE_OPTION) {
           SessionConfiguration sc = new SessionConfiguration();
-          sc.loadFromFile(chooser.getSelectedFile().getAbsoluteFile());
-          sc.registerNewConfiguration(sc);
+          sc.load(chooser.getSelectedFile().getAbsoluteFile());
+          SessionConfiguration.registerNewConfiguration(sc);
         }});
       setDisplayName("Sessions");
     }
@@ -208,7 +203,7 @@ public class StructureChildFactory extends ChildFactory<Object> {
     public ErrorNode(String message, final StructureChildFactory scf, InstanceContent ic) {
       super(Children.LEAF, new AbstractLookup(ic));
       setDisplayName(message);
-      ic.add(new ReloadCookie() { @Override public void reload() { scf.refresh(true); }});
+      ic.add((ReloadCookie) () -> scf.refresh(true));
     }
     @Override
     public Action[] getActions(boolean context) {
@@ -290,17 +285,13 @@ public class StructureChildFactory extends ChildFactory<Object> {
 
     public TableDescriptionNode(final TableDescription td, final InstanceContent ic) throws IntrospectionException {
       super(td, Children.LEAF, new AbstractLookup(ic));
-      ic.add(new OpenCookie() {
-        @Override
-        public void open() {
-          TopComponent tc = findTheTableComponent(td);
-          if (tc == null) {
-            // tc = new FrmTableGridTopComponent(td);
-            tc = new FrmDbTableTopComponent(td);
-            tc.open();
-          }
-          tc.requestActive();
+      ic.add((OpenCookie) () -> {
+        TopComponent tc = findTheTableComponent(td);
+        if (tc == null) {
+          tc = new FrmDbTableTopComponent(td);
+          tc.open();
         }
+        tc.requestActive();
       });
       setDisplayName(td.getName());
       setShortDescription(td.getComment());

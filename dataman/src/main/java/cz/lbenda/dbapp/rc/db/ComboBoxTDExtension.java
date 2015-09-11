@@ -21,7 +21,8 @@ import java.util.Collections;
 import java.util.List;
 
 import cz.lbenda.dbapp.rc.AbstractHelper;
-import org.jdom2.Element;
+import cz.lbenda.schema.dbapp.exconf.ComboBoxType;
+import cz.lbenda.schema.dbapp.exconf.ObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,13 +112,15 @@ public class ComboBoxTDExtension implements TableDescriptionExtension {
     }
   }
 
-  @Override
-  public final Element storeToElement() {
-    Element res = new Element("selectBox");
-    res.setAttribute("column", columnName).setAttribute("tableOfKeySQL", tableOfKeySQL)
-        .setAttribute("column_value", columnValue).setAttribute("column_choice", columnChoice)
-        .setAttribute("column_tooltip", columnTooltip);
-    return res;
+  public final ComboBoxType storeToComboBox() {
+    ObjectFactory of = new ObjectFactory();
+    ComboBoxType result = of.createComboBoxType();
+    result.setColumn(columnName);
+    result.setTableOfKeySQL(tableOfKeySQL);
+    result.setColumnValue(columnValue);
+    result.setColumnChoice(columnChoice);
+    result.setColumnTooltip(columnTooltip);
+    return result;
   }
 
   public final ComboBoxItem itemForValue(Object value) {

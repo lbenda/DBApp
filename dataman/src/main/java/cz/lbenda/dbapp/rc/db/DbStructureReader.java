@@ -15,6 +15,7 @@
  */
 package cz.lbenda.dbapp.rc.db;
 
+import cz.lbenda.common.Tuple2;
 import cz.lbenda.dbapp.rc.SessionConfiguration;
 import cz.lbenda.dbapp.rc.User;
 import cz.lbenda.dbapp.rc.UserImpl;
@@ -34,16 +35,18 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import javax.sql.DataSource;
 
+import cz.lbenda.gui.editor.SQLExecutor;
 import cz.lbenda.schema.dbapp.exconf.AuditType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Class for reading data structure from JDBC
+/** Class for reading data structure from JDBC. The first method which must be call is
  * @author Lukas Benda <lbenda at lbenda.cz>
  */
-public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExceptionListener {
+public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExceptionListener, SQLExecutor {
 
   private static final Logger LOG = LoggerFactory.getLogger(DbStructureReader.class);
 
@@ -61,6 +64,10 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   }
   @SuppressWarnings("unused")
   public final SessionConfiguration getSessionConfiguration() { return sessionConfiguration; }
+
+  public DbStructureReader(SessionConfiguration sessionConfiguration) {
+    this.setSessionConfiguration(sessionConfiguration);
+  }
 
   /** Inform if the reader is prepared for read data - the session configuration exist */
   public final boolean isPrepared() { return sessionConfiguration != null; }
@@ -154,6 +161,18 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
           }
           return result;
         }
+      }
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public ResultSet executeSQL(String sql) {
+    try (Connection conn = getConnection()) {
+      try (PreparedStatement ps = conn.prepareCall(sql)) { // FIXME auditing SQL
+        boolean isResultSet = ps.execute();
+        if (isResultSet) { return ps.getResultSet(); }
+        return null; // FIXME
       }
     } catch (SQLException e) {
       throw new RuntimeException(e);
@@ -408,6 +427,17 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
 
   @Override
   public void onDBAppDataSourceException(Exception e) {
+  }
+
+  @Override
+  public void onPreparedStatement(String sql, Consumer<Tuple2<PreparedStatement, SQLException>> consumer) {
+    try (Connection connection = getConnection()) {
+      try (PreparedStatement ps = connection.prepareCall(sql)) {
+        consumer.accept(new Tuple2<>(ps, null));
+      }
+    } catch (SQLException e) {
+      consumer.accept(new Tuple2<>(null, e));
+    }
   }
 
   public static class ForeignKey {
