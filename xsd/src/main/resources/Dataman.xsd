@@ -17,8 +17,8 @@
 
 <xsd:schema version="1.0"
             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-            xmlns:dmc="http://www.lbenda.cz/schema/dbapp/Dataman"
-            targetNamespace="http://www.lbenda.cz/schema/dbapp/Dataman"
+            xmlns:dmc="http://www.lbenda.cz/dataman/schema/Dataman"
+            targetNamespace="http://www.lbenda.cz/dataman/schema/Dataman"
             elementFormDefault="qualified">
 
   <xsd:element name="dataman" type="dmc:datamanType"/>

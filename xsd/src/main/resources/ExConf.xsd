@@ -17,8 +17,8 @@
 
 <xsd:schema version="1.0"
             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-            xmlns:ec="http://www.lbenda.cz/schema/dbapp/ExConf"
-            targetNamespace="http://www.lbenda.cz/schema/dbapp/ExConf"
+            xmlns:ec="http://www.lbenda.cz/dataman/schema/ExConf"
+            targetNamespace="http://www.lbenda.cz/dataman/schema/ExConf"
             elementFormDefault="qualified">
 
   <xsd:element name="exConf" type="ec:exConfType"/>
@@ -104,7 +104,7 @@
   </xsd:simpleType>
 
   <xsd:complexType name="tableOfKeySQLType">
-    <xsd:annotation><xsd:documentation>Predefined SQL command for getting values from table of keys. The SQL is value of tag</xsd:documentation></xsd:annotation>
+    <xsd:annotation><xsd:documentation>Predefined SQL command for getting oldValues from table of keys. The SQL is value of tag</xsd:documentation></xsd:annotation>
     <xsd:simpleContent>
       <xsd:extension base="xsd:string">
         <xsd:attribute name="id" type="xsd:ID" use="required">

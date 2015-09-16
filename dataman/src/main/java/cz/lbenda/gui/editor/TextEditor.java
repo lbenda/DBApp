@@ -40,7 +40,7 @@ public class TextEditor {
     if (highlighter == null) { changeHighlighter(new HighlighterPlain()); }
     return highlighter;
   }
-  private Scene scene;
+  private Scene scene; public void setScene(Scene scene) { this.scene = scene; } public Scene getScene() { return scene; }
 
   /** Change text in editor */
   public void changeText(String text) {
@@ -48,9 +48,9 @@ public class TextEditor {
   }
 
   /** Return text which is in code Area */
-  public String getText() {
-    return codeArea.getText();
-  }
+  public String getText() { return codeArea.getText(); }
+  /** Return selected Text */
+  public String getSelectedText() { return codeArea.getSelectedText(); }
 
   public void changeHighlighter(Highlighter highlighter) {
     this.highlighter = highlighter;

@@ -191,6 +191,8 @@
 .ribbon-item .label
 {
     -fx-padding: 0 5px 0 0;
+    -fx-min-height: 50;
+    -fx-min-width: 50;
 }
 
 

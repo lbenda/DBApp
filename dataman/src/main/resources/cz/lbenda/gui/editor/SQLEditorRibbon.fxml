@@ -16,7 +16,7 @@
 <?import cz.lbenda.rcp.ribbon.RibbonItem ?>
 <?import javafx.collections.*?>
 
-<BorderPane id="mainPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="514.0" prefWidth="410.0" styleClass="background" xmlns:fx="http://javafx.com/fxml" fx:controller="cz.lbenda.gui.editor.SQLRibbonController">
+<BorderPane id="mainPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="514.0" prefWidth="410.0" styleClass="background" xmlns:fx="http://javafx.com/fxml" fx:controller="cz.lbenda.rcp.ribbon.RibbonController">
   <top>
     <Ribbon>
       <tabs>
@@ -28,7 +28,7 @@
                   <graphic>
                     <ImageView>
                       <image>
-                        <Image url="@document-open24.png" />
+                        <Image url="@homeMenu/document-open24.png" />
                       </image>
                     </ImageView>
                   </graphic>
@@ -62,7 +62,7 @@
               <nodes>
                 <Button fx:id="sqlRun" contentDisplay="TOP" text="Run" wrapText="true" styleClass="big">
                   <graphic>
-                    <ImageView><image><Image url="@run-build24.png" /></image></ImageView>
+                    <ImageView><image><Image url="@../../dataman/db/handler/run-sql24.png" /></image></ImageView>
                   </graphic>
                 </Button>
               </nodes>

@@ -1,5 +1,6 @@
 package cz.lbenda.rcp.ribbon;
 
+import cz.lbenda.rcp.localization.MessageFactory;
 import cz.lbenda.rcp.ribbon.skin.RibbonSkin;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
@@ -24,8 +25,19 @@ public class Ribbon extends Control{
 
   private RibbonQuickAccessBar quickAccessBar;
 
+  private RibbonItemFactory itemFactory; public RibbonItemFactory getItemFactory() { return itemFactory; }
+  private MessageFactory messageFactory; public MessageFactory getMessageFactory() { return messageFactory; }
+  public void setMessageFactory(MessageFactory messageFactory) {
+    this.messageFactory = messageFactory;
+    itemFactory.setMessageFactory(messageFactory);
+  }
 
   public Ribbon() {
+    this(MessageFactory.getInstance());
+  }
+
+  public Ribbon(MessageFactory messageFactory) {
+    itemFactory = new RibbonItemFactory(this, messageFactory);
     quickAccessBar = new RibbonQuickAccessBar();
 
     tabTitles = FXCollections.observableArrayList();
@@ -35,8 +47,8 @@ public class Ribbon extends Control{
     tabTitles.addListener(new ListChangeListener<String>() {
       @Override
       public void onChanged(Change<? extends String> changed) {
-                tabTitlesChanged(changed);
-            }
+        tabTitlesChanged(changed);
+      }
     });
 
     getStyleClass().setAll(DEFAULT_STYLE_CLASS);
@@ -52,6 +64,10 @@ public class Ribbon extends Control{
           titleToRibbonTab.remove(title);
       }
     }
+  }
+
+  public RibbonTab tabByTitle(String title) {
+    return titleToRibbonTab.get(title);
   }
 
   private void updateAddedRibbonTabs(Collection<? extends String> ribbonTabTitles) {
@@ -70,10 +86,9 @@ public class Ribbon extends Control{
     return tabs;
   }
 
-  public RibbonQuickAccessBar getQuickAccessBar()
-    {
-        return quickAccessBar;
-    }
+  public RibbonQuickAccessBar getQuickAccessBar() {
+    return quickAccessBar;
+  }
   public void setQuickAccessBar(RibbonQuickAccessBar qAccessBar) {
     quickAccessBar = qAccessBar;
   }

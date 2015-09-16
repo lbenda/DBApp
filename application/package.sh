@@ -1,1 +1,0 @@
-mvn nbm:standalone-zip

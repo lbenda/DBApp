@@ -14,78 +14,58 @@ import javafx.scene.layout.VBox;
 
 import java.util.Collection;
 
-/**
- * Created by pedro_000 on 1/20/14.
- */
+/** Created by pedro_000 on 1/20/14.
+ * Skin for ribbon group */
 public class RibbonGroupSkin extends SkinBase<RibbonGroup> {
-    public static int CONTENT_HEIGHT = 112;
-    public static int DEFAULT_SPACING = 0;
+  public static int CONTENT_HEIGHT = 112;
+  public static int DEFAULT_SPACING = 0;
 
-    private HBox content;
-    private HBox container;
-    private LabeledText title;
+  private HBox content;
 
-    /**
-     * Constructor for all SkinBase instances.
-     *
-     * @param control The control for which this Skin should attach to.
-     */
-    public RibbonGroupSkin(RibbonGroup control) {
-        super(control);
+  /** Constructor for all SkinBase instances.
+   * @param control The control for which this Skin should attach to. */
+  public RibbonGroupSkin(RibbonGroup control) {
+    super(control);
 
-        content = new HBox();
-        content.setMinHeight(CONTENT_HEIGHT);
-        content.setAlignment(Pos.CENTER);
-        content.setSpacing(DEFAULT_SPACING);
+    content = new HBox();
+    content.setMinHeight(CONTENT_HEIGHT);
+    content.setAlignment(Pos.CENTER);
+    content.setSpacing(DEFAULT_SPACING);
 
-        Separator separator = new Separator(Orientation.VERTICAL);
+    Separator separator = new Separator(Orientation.VERTICAL);
 
-        container = new HBox();
+    HBox container = new HBox();
 
-        title = new LabeledText(control);
-        StackPane stackPane = new StackPane();
-        stackPane.getChildren().add(title);
+    LabeledText title = new LabeledText(control);
+    StackPane stackPane = new StackPane();
+    stackPane.getChildren().add(title);
 
-        title.textProperty().bind(control.titleProperty());
-        title.getStyleClass().setAll("title");
+    title.textProperty().bind(control.titleProperty());
+    title.getStyleClass().setAll("title");
 
-        control.getNodes().addListener(new ListChangeListener<Node>() {
-            @Override
-            public void onChanged(Change<? extends Node> changed) {
-                buttonsChanged(changed);
-            }
-        });
-        updateAddedButtons(control.getNodes());
+    control.getNodes().addListener(RibbonGroupSkin.this::buttonsChanged);
+    updateAddedButtons(control.getNodes());
 
-        VBox vBox = new VBox();
-        vBox.getChildren().addAll(content, stackPane);
-        container.getChildren().addAll(vBox, separator);
+    VBox vBox = new VBox();
+    vBox.getChildren().addAll(content, stackPane);
+    container.getChildren().addAll(vBox, separator);
 
-        getChildren().add(container);
+    getChildren().add(container);
 
-        content.getStyleClass().setAll("ribbon-group-content");
+    content.getStyleClass().setAll("ribbon-group-content");
+  }
 
+  private void updateAddedButtons(Collection<? extends Node> nodes) {
+    for (Node node : nodes)
+      content.getChildren().add(node);
+  }
+
+  private void buttonsChanged(ListChangeListener.Change<? extends Node> changed) {
+    while(changed.next()) {
+      if (changed.wasAdded()) { updateAddedButtons(changed.getAddedSubList()); }
+      else if (changed.wasRemoved()) {
+        for (Node node : changed.getRemoved()) { content.getChildren().remove(node); }
+      }
     }
-
-    private void updateAddedButtons(Collection<? extends Node> nodes) {
-        for (Node node : nodes)
-            content.getChildren().add(node);
-    }
-
-    private void buttonsChanged(ListChangeListener.Change<? extends Node> changed) {
-        while(changed.next())
-        {
-            if (changed.wasAdded())
-            {
-                updateAddedButtons(changed.getAddedSubList());
-            }
-            if(changed.wasRemoved())
-            {
-                for (Node node : changed.getRemoved())
-                    content.getChildren().remove(node);
-            }
-        }
-    }
-
-
+  }
 }
