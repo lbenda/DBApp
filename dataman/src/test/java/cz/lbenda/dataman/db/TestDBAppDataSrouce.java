@@ -30,7 +30,7 @@ public class TestDBAppDataSrouce {
 
   private static Logger LOG = LoggerFactory.getLogger(TestDBAppDataSrouce.class);
 
-  @Test
+  // @Test
   public final void testGetConnection() {
     DbConfig sc = new DbConfig();
     JDBCConfiguration jdbc = new JDBCConfiguration();
