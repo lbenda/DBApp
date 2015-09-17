@@ -10,12 +10,24 @@
 
   <name>dataman-parent</name>
 
+  <url>https://github.com/lbenda/Dataman/wiki</url>
+  <scm>
+    <connection>scm:git:https://github.com/lbenda/Dataman.git</connection>
+    <developerConnection>scm:git:https://github.com/lbenda/Dataman.git</developerConnection>
+    <url>https://github.com/lbenda/Dataman.git</url>
+  </scm>
+
+  <developers>
+    <developer>
+      <id>benzin</id>
+      <name>Lukáš Benda</name>
+      <email>lbenda@lbenda.cz</email>
+      <organization>Lukáš Benda</organization>
+      <organizationUrl>http://www.lbenda.cz</organizationUrl>
+    </developer>
+  </developers>
+
   <repositories>
-    <!--
-        Repository hosting NetBeans modules, especially APIs.
-        Versions are based on IDE releases, e.g.: RELEASE691
-        To create your own repository, use: nbm:populate-repository
-        -->
     <repository>
       <id>sonatype</id>
       <name>sonatypenetbeans</name>

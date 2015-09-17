@@ -29,3 +29,4 @@ application/target
 *.iml
 **/nbactions-netbeans-ide.xml
 **/nbactions.xml
+**/.directory
