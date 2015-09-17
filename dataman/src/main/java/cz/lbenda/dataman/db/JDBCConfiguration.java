@@ -15,10 +15,9 @@
  */
 package cz.lbenda.dataman.db;
 
+import cz.lbenda.common.Obfuscate;
 import cz.lbenda.dataman.db.dialect.SQLDialect;
 import cz.lbenda.dataman.db.dialect.SQLDialectsHelper;
-import java.util.ArrayList;
-import java.util.List;
 
 import cz.lbenda.dataman.schema.dataman.JdbcType;
 import cz.lbenda.dataman.schema.dataman.ObjectFactory;
@@ -50,7 +49,7 @@ public class JDBCConfiguration {
   }
 
   public final void load(JdbcType jdbc) {
-    setPassword(jdbc.getPassword() == null ? "" : jdbc.getPassword());
+    setPassword(jdbc.getPassword() == null ? "" : Obfuscate.deobfuscate(jdbc.getPassword()));
     setUsername(jdbc.getUser() == null ? "" : jdbc.getUser());
     setUrl(jdbc.getUrl() == null ? "" : jdbc.getUrl());
     setDriverClass(jdbc.getDriverClass() == null ? "" : jdbc.getDriverClass());
@@ -61,7 +60,7 @@ public class JDBCConfiguration {
     JdbcType jdbc = of.createJdbcType();
     jdbc.setDriverClass(driverClass);
     jdbc.setUser(getUsername());
-    jdbc.setPassword(getPassword());
+    jdbc.setPassword(Obfuscate.obfuscate(getPassword()));
     jdbc.setUrl(getUrl());
     return jdbc;
   }
