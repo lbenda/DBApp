@@ -56,7 +56,10 @@ public class DbConfigFactory {
   /** This method save configuration to file */
   public static void saveConfiguration() {
     ConfigurationRW.getInstance().writeConfig(CONFIG_FILE_NAME, storeToString());
+  }
 
+  public static void removeConfiguration(DbConfig config) {
+    configurations.remove(config);
   }
 
   public static ObservableList<DbConfig> getConfigurations() {

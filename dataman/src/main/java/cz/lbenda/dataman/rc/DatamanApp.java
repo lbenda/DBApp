@@ -157,6 +157,7 @@ public class DatamanApp extends Application {
     ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new ConnectDatabaseHandler(currentDbProperty));
     ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new EditDatabaseHandler(currentDbProperty));
     ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new CopyDatabaseHandler(currentDbProperty));
+    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new RemoveDatabaseHandler(currentDbProperty));
     ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new RemoveRowsHandler(tableViewObjectProperty));
     ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new AddRowHandler(tableViewObjectProperty));
     ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new ReloadTableHandler(tableViewObjectProperty));
