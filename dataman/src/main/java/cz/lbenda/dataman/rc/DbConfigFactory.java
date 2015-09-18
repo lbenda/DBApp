@@ -49,7 +49,7 @@ public class DbConfigFactory {
     configurationNotReadedYet = false;
     String config = ConfigurationRW.getInstance().readConfigAsString(CONFIG_FILE_NAME);
     if (config != null) {
-      loadFromString(config);
+      load(config);
     }
   }
 
@@ -78,7 +78,7 @@ public class DbConfigFactory {
     return null;
   }
 
-  public static void loadFromString(final String document) {
+  public static void load(final String document) {
     if (StringUtils.isBlank(document)) { return; }
     try {
       JAXBContext jc = JAXBContext.newInstance(cz.lbenda.dataman.schema.dataman.ObjectFactory.class);
@@ -93,7 +93,7 @@ public class DbConfigFactory {
           for (SessionType session : dc.getSessions().getSession()) {
             DbConfig sc = new DbConfig();
             configurations.add(sc);
-            sc.fromSessionType(session);
+            sc.fromSessionType(session, true);
           }
         }
       } else {

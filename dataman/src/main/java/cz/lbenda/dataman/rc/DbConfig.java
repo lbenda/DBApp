@@ -45,6 +45,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import javax.xml.bind.*;
 
 /** Object of this class define configuration of one database */
@@ -165,8 +166,8 @@ public class DbConfig {
     jdbcConfiguration.load(jdbcType);
   }
 
-  public void fromSessionType(final SessionType session) {
-    setId(session.getId());
+  public void fromSessionType(final SessionType session, boolean readId) {
+    if (readId) { setId(session.getId()); }
     if (session.getConnectionTimeout() != null) {
       this.connectionTimeout = session.getConnectionTimeout();
     } else { connectionTimeout = -1; }
@@ -382,21 +383,25 @@ public class DbConfig {
     return result;
   }
 
+  public void save(Writer writer) throws IOException {
+    cz.lbenda.dataman.schema.dataman.ObjectFactory of = new cz.lbenda.dataman.schema.dataman.ObjectFactory();
+    SessionType st = storeToSessionType();
+    try {
+      JAXBContext jc = JAXBContext.newInstance(cz.lbenda.dataman.schema.dataman.ObjectFactory.class);
+      Marshaller m = jc.createMarshaller();
+      m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+      m.marshal(of.createSession(st), writer);
+    } catch (JAXBException e) {
+      LOG.error("Problem with write configuration: " + e.toString(), e);
+      throw new RuntimeException("Problem with write configuration: " + e.toString(), e);
+    }
+  }
+
   /** Save session conf into File */
-  public void saveToFile(File file) {
-    if (StringUtils.isBlank(FilenameUtils.getExtension(file.getAbsolutePath()))) { file = new File(file.getAbsoluteFile() + ".dtm"); } // Appned .dtm extension to file which haven't any extension
+  public void save(File file) {
+    if (StringUtils.isBlank(FilenameUtils.getExtension(file.getAbsolutePath()))) { file = new File(file.getAbsoluteFile() + ".dtm"); } // Append .dtm extension to file which haven't any extension
     try (FileWriter fw = new FileWriter(file)) {
-      cz.lbenda.dataman.schema.dataman.ObjectFactory of = new cz.lbenda.dataman.schema.dataman.ObjectFactory();
-      SessionType st = storeToSessionType();
-      try {
-        JAXBContext jc = JAXBContext.newInstance(cz.lbenda.dataman.schema.dataman.ObjectFactory.class);
-        Marshaller m = jc.createMarshaller();
-        m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-        m.marshal(of.createSession(st), fw);
-      } catch (JAXBException e) {
-        LOG.error("Problem with write configuration: " + e.toString(), e);
-        throw new RuntimeException("Problem with write configuration: " + e.toString(), e);
-      }
+      save(fw);
     } catch (IOException e) {
       LOG.error("The file is unwritable: " + e.toString(), e);
       throw new RuntimeException("The file is unwritable: " + e.toString(), e);
@@ -416,12 +421,19 @@ public class DbConfig {
   /** Load configuration from given resource from input stream */
   @SuppressWarnings("unchecked")
   public void load(InputStream inputStream) {
+    load(new InputStreamReader(inputStream),  true);
+  }
+
+  /** Load configuration from given resource from input stream
+   * @param reader reader from which is read configuration
+   * @param readId flag which inform if newId will be reader from reader or is ignored */
+  public void load(@Nonnull Reader reader, boolean readId) {
     try {
       JAXBContext jc = JAXBContext.newInstance(cz.lbenda.dataman.schema.dataman.ObjectFactory.class);
       Unmarshaller u = jc.createUnmarshaller();
-      JAXBElement<SessionType> element = (JAXBElement<SessionType>) u.unmarshal(inputStream);
+      JAXBElement<SessionType> element = (JAXBElement<SessionType>) u.unmarshal(reader);
       if (element.getValue() instanceof SessionType) {
-        fromSessionType(element.getValue());
+        fromSessionType(element.getValue(), readId);
       } else {
         LOG.error("The file doesn't contains single session config");
         throw new RuntimeException("The file doesn't contains single session config");
@@ -434,8 +446,8 @@ public class DbConfig {
 
   /** Load session conf from File */
   public void load(File file) {
-    try (FileInputStream fis = new FileInputStream(file)) {
-      load(fis);
+    try (FileReader fis = new FileReader(file)) {
+      load(fis, true);
     } catch (IOException e) {
       LOG.error("File is unreadable: " + e.toString(), e);
       throw new RuntimeException("The file is unreadable: " + e.toString(), e);
@@ -444,4 +456,20 @@ public class DbConfig {
 
   @Override
   public String toString() { return id; }
+
+  /** Copy configuration of db config. It's not a clone, the connection and loaded data isn't copied.
+   * @return copied object */
+  public DbConfig copy() {
+    try {
+      StringWriter writer = new StringWriter();
+      this.save(writer);
+      DbConfig dbConfig = new DbConfig();
+      StringReader reader = new StringReader(writer.toString());
+      dbConfig.load(reader, false);
+      return dbConfig;
+    } catch (IOException e){
+      LOG.error("Problem with create copied version of db config", e);
+      throw new RuntimeException("Problem with create copied version of db config", e);
+    }
+  }
 }

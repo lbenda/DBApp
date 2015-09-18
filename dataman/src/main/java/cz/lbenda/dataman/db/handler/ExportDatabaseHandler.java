@@ -74,9 +74,9 @@ public class ExportDatabaseHandler extends AbstractAction {
         if ("".equals(FilenameUtils.getExtension(file.getName()))) {
           file = new File(file.getAbsoluteFile() + "." + Constants.CONFIG_EXTENSION);
           if (DialogHelper.getInstance().canBeOverwriteDialog(file)) {
-            dbConfig.saveToFile(file);
+            dbConfig.save(file);
           }
-        } else { dbConfig.saveToFile(file); }
+        } else { dbConfig.save(file); }
       }
     }
   }

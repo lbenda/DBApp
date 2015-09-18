@@ -34,6 +34,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -184,9 +185,11 @@ public class DbConfigFrmController implements Initializable {
           DbConfigFactory.getConfigurations().add(sc1);
         } else {
           tuple.get2().storeDataToSessionConfiguration(sc1);
-          int idx = DbConfigFactory.getConfigurations().indexOf(sc1);
-          DbConfigFactory.getConfigurations().remove(sc1);
-          DbConfigFactory.getConfigurations().add(idx, sc1);
+          if (DbConfigFactory.getConfigurations().contains(sc1)) { // The copied session isn't in list yet
+            int idx = DbConfigFactory.getConfigurations().indexOf(sc1);
+            DbConfigFactory.getConfigurations().remove(sc1);
+            DbConfigFactory.getConfigurations().add(idx, sc1);
+          } else { DbConfigFactory.getConfigurations().add(sc1); }
         }
         DbConfigFactory.saveConfiguration();
         return sc1;
