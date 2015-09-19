@@ -27,6 +27,8 @@ import javafx.scene.layout.VBox;
 import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 16.9.15.
  * Controller which tables which are connected with rows on curernt table. */
@@ -37,6 +39,7 @@ public class ConnectedTablesFrmController {
   private VBox vBox = new VBox();
   @Nonnull
   public ScrollPane getMainPane() { return mainPane; }
+  private Map<DbStructureReader.ForeignKey, Predicate<RowDesc>> filters = new ConcurrentHashMap<>();
 
   public ConnectedTablesFrmController(@Nonnull DataTableView masterTableView) {
     mainPane.setContent(vBox);
@@ -62,6 +65,8 @@ public class ConnectedTablesFrmController {
 
   private void selectRow(@Nonnull TableDesc masterTD, RowDesc row) {
     for (DbStructureReader.ForeignKey fk : masterTD.getForeignKeys()) {
+      Predicate<RowDesc> predicate = filters.get(fk);
+
       TableDesc mtd = fk.getMasterTable();
       TableDesc std = fk.getSlaveTable();
       TableDesc slaveTD = masterTD.equals(mtd) ? std : mtd;
@@ -69,8 +74,11 @@ public class ConnectedTablesFrmController {
       ColumnDesc masterCD = masterTD.equals(mtd) ? fk.getMasterColumn() : fk.getSlaveColumn();
 
       DataTableFrmController dtFrm = slaveDTFC.get(slaveTD);
-      dtFrm.getTabView().setFilterPredicate(fr ->
-          row != null && fr != null && AbstractHelper.nullEquals(row.getColumnValue(masterCD), fr.getColumnValue(slaveCD)));
+
+      if (predicate != null) { dtFrm.getTabView().filters().remove(predicate); }
+      predicate = fr -> row != null && fr != null && AbstractHelper.nullEquals(row.getColumnValue(masterCD), fr.getColumnValue(slaveCD));
+      dtFrm.getTabView().filters().add(predicate);
+      filters.put(fk, predicate);
     }
   }
 }
