@@ -38,7 +38,7 @@ public class ConnectedTablesFrmController {
   @Nonnull
   public ScrollPane getMainPane() { return mainPane; }
 
-  public ConnectedTablesFrmController(@Nonnull DataTableFrmController.DataTableView masterTableView) {
+  public ConnectedTablesFrmController(@Nonnull DataTableView masterTableView) {
     mainPane.setContent(vBox);
     prepareView(masterTableView.getTableDesc());
     masterTableView.getSelectionModel().selectedItemProperty().addListener((observableValue, oldValue, newValue) ->

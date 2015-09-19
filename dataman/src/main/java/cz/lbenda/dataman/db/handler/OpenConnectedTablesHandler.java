@@ -16,7 +16,7 @@
 package cz.lbenda.dataman.db.handler;
 
 import cz.lbenda.dataman.db.frm.ConnectedTablesFrmController;
-import cz.lbenda.dataman.db.frm.DataTableFrmController;
+import cz.lbenda.dataman.db.frm.DataTableView;
 import cz.lbenda.dataman.rc.DetailDescriptor;
 import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
- * open slaves tables */
+ * beforeOpenInit slaves tables */
 @ActionConfig(
     category = "/SQL/details",
     id = "cz.lbenda.dataman.db.handler.OpenSlaveTableHandler",
@@ -53,17 +53,17 @@ import java.util.function.Consumer;
 )
 public class OpenConnectedTablesHandler extends AbstractAction {
 
-  public Map<DataTableFrmController.DataTableView, Node> showedDetailTables = new WeakHashMap<>();
+  public Map<DataTableView, Node> showedDetailTables = new WeakHashMap<>();
 
   private static Logger LOG = LoggerFactory.getLogger(OpenConnectedTablesHandler.class);
 
   @Message
   private String msgDetailTitle = "Connected tables";
 
-  private ObjectProperty<DataTableFrmController.DataTableView> tableViewObjectProperty;
+  private ObjectProperty<DataTableView> tableViewObjectProperty;
   private Consumer<DetailDescriptor> detailAppender;
 
-  public OpenConnectedTablesHandler(ObjectProperty<DataTableFrmController.DataTableView> tableViewObjectProperty,
+  public OpenConnectedTablesHandler(ObjectProperty<DataTableView> tableViewObjectProperty,
                                     Consumer<DetailDescriptor> detailAppender) {
     MessageFactory.initializeMessages(this);
     this.tableViewObjectProperty = tableViewObjectProperty;
@@ -80,14 +80,14 @@ public class OpenConnectedTablesHandler extends AbstractAction {
     });
   }
 
-  public void openDetailView(DataTableFrmController.DataTableView dt) {
+  public void openDetailView(DataTableView dt) {
     if (!showedDetailTables.containsKey(dt)) {
       showedDetailTables.put(dt, (new ConnectedTablesFrmController(dt)).getMainPane());
     }
     detailAppender.accept(new DetailDescriptor(msgDetailTitle, showedDetailTables.get(dt), true));
   }
 
-  public void closeDetailView(DataTableFrmController.DataTableView dt) {
+  public void closeDetailView(DataTableView dt) {
     if (showedDetailTables.containsKey(dt)) {
       detailAppender.accept(new DetailDescriptor(msgDetailTitle, showedDetailTables.get(dt), true));
     }

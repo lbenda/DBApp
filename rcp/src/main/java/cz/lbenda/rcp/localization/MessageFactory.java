@@ -38,9 +38,13 @@ public class MessageFactory {
     return instance;
   }
 
-  /** Initialize given object with localized messages
+  /** Initialize given object or class with localized messages
    * @param o object which is initialized */
-  public static void initializeMessages(Object o)  {
+  public static <T> void initializeMessages(T o)  {
+    if (o == null) { return; }
+    final Class clazz;
+    if (o instanceof Class) { clazz = (Class) o; }
+    else { clazz = o.getClass(); }
     /*
     if (o == null) { return; }
     Class clazz = o.getClass();

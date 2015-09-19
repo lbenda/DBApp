@@ -33,7 +33,7 @@ import javafx.collections.ObservableList;
     gui = @ActionGUIConfig(
         /* iconBase = "database.png", */
         displayName = @Message(id="ChooseDbConfig", msg="Select db configuration"),
-        displayTooltip = @Message(id="ChooseDbConfig_tooltip", msg="Select database which you want open or edit.")
+        displayTooltip = @Message(id="ChooseDbConfig_tooltip", msg="Select database which you want beforeOpenInit or edit.")
     )
 )
 public class DbConfigMenuOptions implements MenuOptions<DbConfig> {

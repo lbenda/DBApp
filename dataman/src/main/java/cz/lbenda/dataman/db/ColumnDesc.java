@@ -15,6 +15,8 @@
  */
 package cz.lbenda.dataman.db;
 
+import javafx.util.StringConverter;
+
 import javax.annotation.Nonnull;
 import java.sql.*;
 import java.util.*;
@@ -99,6 +101,23 @@ public class ColumnDesc {
       case Types.BOOLEAN : return ColumnType.BOOLEAN;
       default : return ColumnType.OBJECT;
     }
+  }
+
+  /** Return string converter which is commonly used with date type which is hold by field in this column
+   * @return String convertor */
+  public StringConverter getStringConverter() {
+    return new StringConverter() {
+      @Override
+      public String toString(Object o) {
+        if (o == null) { return "<NULL>"; }
+        return String.valueOf(o); // TODO
+      }
+      @Override
+      public Object fromString(String s) {
+        if (s == null || "<NULL>".equals(s)) { return null; }
+        return null; // TODO
+      }
+    };
   }
 
   /** Return extensions which are defined for this column in tableDescriptor

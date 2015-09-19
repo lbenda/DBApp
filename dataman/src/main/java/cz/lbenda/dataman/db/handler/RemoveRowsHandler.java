@@ -16,7 +16,7 @@
 package cz.lbenda.dataman.db.handler;
 
 import cz.lbenda.dataman.db.RowDesc;
-import cz.lbenda.dataman.db.frm.DataTableFrmController;
+import cz.lbenda.dataman.db.frm.DataTableView;
 import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
@@ -39,9 +39,9 @@ import javafx.scene.control.TableView;
 )
 public class RemoveRowsHandler extends AbstractAction {
 
-  private ObjectProperty<DataTableFrmController.DataTableView> tableViewObjectProperty;
+  private ObjectProperty<DataTableView> tableViewObjectProperty;
 
-  public RemoveRowsHandler(ObjectProperty<DataTableFrmController.DataTableView> tableViewObjectProperty) {
+  public RemoveRowsHandler(ObjectProperty<DataTableView> tableViewObjectProperty) {
     this.tableViewObjectProperty = tableViewObjectProperty;
     setEnable(tableViewObjectProperty.getValue() != null && tableViewObjectProperty.getValue().isEditable());
     tableViewObjectProperty.addListener((observableValue, oldValue, newValue) -> {

@@ -15,7 +15,7 @@
  */
 package cz.lbenda.dataman.db.handler;
 
-import cz.lbenda.dataman.db.frm.DataTableFrmController;
+import cz.lbenda.dataman.db.frm.DataTableView;
 import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
@@ -37,9 +37,9 @@ import javafx.event.ActionEvent;
 )
 public class ReloadTableHandler extends AbstractAction {
 
-  private ObjectProperty<DataTableFrmController.DataTableView> tableViewObjectProperty;
+  private ObjectProperty<DataTableView> tableViewObjectProperty;
 
-  public ReloadTableHandler(ObjectProperty<DataTableFrmController.DataTableView> tableViewObjectProperty) {
+  public ReloadTableHandler(ObjectProperty<DataTableView> tableViewObjectProperty) {
     this.tableViewObjectProperty = tableViewObjectProperty;
     setEnable(tableViewObjectProperty.getValue() != null && tableViewObjectProperty.getValue().isEditable());
     tableViewObjectProperty.addListener((observableValue, oldValue, newValue) -> {
@@ -49,7 +49,7 @@ public class ReloadTableHandler extends AbstractAction {
 
   @Override
   public void handle(ActionEvent e) {
-    DataTableFrmController.DataTableView tableView = tableViewObjectProperty.getValue();
+    DataTableView tableView = tableViewObjectProperty.getValue();
     if (tableView != null && tableView.isEditable()) { tableView.getTableDesc().reloadRowsAction(); }
   }
 }

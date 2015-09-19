@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 public interface SQLExecutor {
 
   /** Execute operation on given prepared statement
-   * The method open prepared statement and close it.
+   * The method beforeOpenInit prepared statement and close it.
    * @param sql SQL which is used to create prepared statement
    * @param consumer Consumer which get prepared statement and can work with it or SQL exception if is problem with
    *                 execute SQL command */

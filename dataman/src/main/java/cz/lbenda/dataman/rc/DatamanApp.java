@@ -16,6 +16,7 @@
 package cz.lbenda.dataman.rc;
 
 import cz.lbenda.dataman.db.frm.DataTableFrmController;
+import cz.lbenda.dataman.db.frm.DataTableView;
 import cz.lbenda.dataman.db.frm.DbStructureFrmController;
 import cz.lbenda.dataman.db.handler.*;
 import cz.lbenda.rcp.ribbon.RibbonController;
@@ -68,7 +69,7 @@ public class DatamanApp extends Application {
   private RibbonController ribbonController;
   private SQLEditorController te;
   private ObjectProperty<DbConfig> currentDbProperty;
-  ObjectProperty<DataTableFrmController.DataTableView> tableViewObjectProperty = new SimpleObjectProperty<>();
+  ObjectProperty<DataTableView> tableViewObjectProperty = new SimpleObjectProperty<>();
   private TabPane centerTabs = new TabPane();
   private TabPane detailTabs = new TabPane();
 
@@ -104,7 +105,7 @@ public class DatamanApp extends Application {
 
     centerTabs.getSelectionModel().selectedItemProperty().addListener((observableValue, oldValue, newValue) -> {
       Node n = newValue.getContent();
-      if (n instanceof DataTableFrmController.DataTableView) { tableViewObjectProperty.setValue((DataTableFrmController.DataTableView) n); }
+      if (n instanceof DataTableView) { tableViewObjectProperty.setValue((DataTableView) n); }
       else { tableViewObjectProperty.setValue(null); }
     });
   }

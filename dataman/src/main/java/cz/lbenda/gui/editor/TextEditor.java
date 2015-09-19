@@ -31,7 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 6.9.15.
- * Class which open text editor for */
+ * Class which beforeOpenInit text editor for */
 public class TextEditor {
 
   private CodeArea codeArea;

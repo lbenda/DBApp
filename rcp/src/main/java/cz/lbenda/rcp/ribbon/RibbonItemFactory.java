@@ -15,6 +15,7 @@
  */
 package cz.lbenda.rcp.ribbon;
 
+import cz.lbenda.rcp.IconFactory;
 import cz.lbenda.rcp.action.Action;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
@@ -25,14 +26,7 @@ import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,21 +36,11 @@ import java.util.Map;
  * Factory which create action and holder from given action configuration */
 public class RibbonItemFactory<T> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(RibbonItemFactory.class);
-
   private Map<ActionConfig, Node> nodeForAction = new HashMap<>();
-
-  private enum IconSize {
-    SMALL(16), MEDIUM(24), LARGE(32), ;
-    int size;
-    IconSize(int size) { this.size = size; }
-    public int size() { return size; }
-  }
 
   private ObservableList<T> itemsHandler = FXCollections.observableArrayList(); public ObservableList<T> getItemsHandler() { return itemsHandler; }
   private Ribbon ribbon;
   private MessageFactory messageFactory; public void setMessageFactory(MessageFactory messageFactory) { this.messageFactory = messageFactory; }
-  private IconSize iconSize = IconSize.LARGE;
 
   public RibbonItemFactory(Ribbon ribbon, MessageFactory messageFactory) {
     this.messageFactory = messageFactory;
@@ -111,7 +95,7 @@ public class RibbonItemFactory<T> {
 
     RibbonItem ri = new RibbonItem();
     if (!"".equals(ac.gui()[0].iconBase())) {
-      ri.setGraphic(new ImageView(generateIcon(options.getClass(), ac.gui()[0].iconBase(), iconSize)));
+      ri.setGraphic(IconFactory.getInstance().imageView(options, ac.gui()[0].iconBase(), IconFactory.IconLocation.GLOBAL_TOOL_BAR));
     }
     ComboBox<F> cb = new ComboBox<>();
     cb.setId(itemId);
@@ -142,34 +126,10 @@ public class RibbonItemFactory<T> {
     button.setOnAction(event);
 
     actionGUIConfigToButton(ac.gui()[event.getConfig()], button, event);
-    event.addChangeActionConfigConsumer(i -> {
-      actionGUIConfigToButton(ac.gui()[i], button, event);
-    });
+    event.addChangeActionConfigConsumer(i -> actionGUIConfigToButton(ac.gui()[i], button, event));
     event.addEnableDisableConsumer(enabled -> button.setDisable(!enabled));
 
     putNodeToGroup(group, button, ac);
-  }
-
-  private String iconName(String base, IconSize iconSize) {
-    switch (iconSize) {
-      case SMALL : return base;
-      case MEDIUM:
-      case LARGE:
-        String ext = FilenameUtils.getExtension(base);
-        return FilenameUtils.removeExtension(base) + iconSize.size() + (StringUtils.isBlank(ext) ? "" : "." + ext);
-    }
-    return base;
-  }
-
-  private Image generateIcon(Class clazz, String base, IconSize iconSize) {
-    String iconName = iconName(base, iconSize);
-    InputStream is = clazz.getResourceAsStream(iconName);
-    if (is == null) {
-      String iconName2 = iconName("unknown.png", iconSize);
-      LOG.warn("Icon with name not exist '" + iconName + "' '" + iconName2 + "' used instead of.");
-      is = getClass().getResourceAsStream(iconName2);
-    }
-    return new Image(is);
   }
 
   private void actionGUIConfigToButton(ActionGUIConfig agc, Button button, Action event) {
@@ -177,7 +137,7 @@ public class RibbonItemFactory<T> {
     Tooltip tp = new Tooltip(messageFactory.getMessage(agc.displayTooltip()));
     button.setTooltip(tp);
     if (agc.iconBase() != null) {
-      button.setGraphic(new ImageView(generateIcon(event.getClass(), agc.iconBase(), iconSize)));
+      button.setGraphic(IconFactory.getInstance().imageView(event, agc.iconBase(), IconFactory.IconLocation.GLOBAL_TOOL_BAR));
     }
   }
 

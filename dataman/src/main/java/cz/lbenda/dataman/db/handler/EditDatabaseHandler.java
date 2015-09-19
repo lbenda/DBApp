@@ -33,9 +33,9 @@ import org.slf4j.LoggerFactory;
     id = "cz.lbenda.dataman.db.handler.EditDatabaseHandler",
     priority = 200,
     gui = @ActionGUIConfig(
-        iconBase = "database-open.png",
-        displayName = @Message(id="Open_database", msg="Edit"),
-        displayTooltip = @Message(id="Open_database_tooltip", msg="Edit database config")
+        iconBase = "database-edit.png",
+        displayName = @Message(id="Edit_database", msg="Edit"),
+        displayTooltip = @Message(id="Edit_database_tooltip", msg="Edit database config")
     )
 )
 public class EditDatabaseHandler extends AbstractAction {

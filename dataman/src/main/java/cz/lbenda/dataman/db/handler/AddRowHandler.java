@@ -16,15 +16,13 @@
 package cz.lbenda.dataman.db.handler;
 
 import cz.lbenda.dataman.db.RowDesc;
-import cz.lbenda.dataman.db.SQLQueryRows;
-import cz.lbenda.dataman.db.frm.DataTableFrmController;
+import cz.lbenda.dataman.db.frm.DataTableView;
 import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
 import cz.lbenda.rcp.localization.Message;
 import javafx.beans.property.ObjectProperty;
 import javafx.event.ActionEvent;
-import javafx.scene.control.TableView;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
  * add row to table */
@@ -40,9 +38,9 @@ import javafx.scene.control.TableView;
 )
 public class AddRowHandler extends AbstractAction {
 
-  private ObjectProperty<DataTableFrmController.DataTableView> tableViewObjectProperty;
+  private ObjectProperty<DataTableView> tableViewObjectProperty;
 
-  public AddRowHandler(ObjectProperty<DataTableFrmController.DataTableView> tableViewObjectProperty) {
+  public AddRowHandler(ObjectProperty<DataTableView> tableViewObjectProperty) {
     this.tableViewObjectProperty = tableViewObjectProperty;
     setEnable(tableViewObjectProperty.getValue() != null && tableViewObjectProperty.getValue().isEditable());
     tableViewObjectProperty.addListener((observableValue, oldValue, newValue) -> {
@@ -52,7 +50,7 @@ public class AddRowHandler extends AbstractAction {
 
   @Override
   public void handle(ActionEvent e) {
-    DataTableFrmController.DataTableView tableView = tableViewObjectProperty.getValue();
+    DataTableView tableView = tableViewObjectProperty.getValue();
     if (tableView != null && tableView.isEditable()) {
       RowDesc row = tableView.getTableDesc().addNewRowAction();
       tableView.getSelectionModel().select(row);
