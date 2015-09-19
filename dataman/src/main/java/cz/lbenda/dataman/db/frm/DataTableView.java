@@ -23,7 +23,6 @@ import cz.lbenda.rcp.tableView.FilterableTableColumn;
 import cz.lbenda.rcp.tableView.FilterableTableView;
 import javafx.beans.InvalidationListener;
 import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
@@ -31,12 +30,10 @@ import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
-import javafx.util.converter.IntegerStringConverter;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.WeakHashMap;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 18.9.15.
@@ -111,8 +108,8 @@ public class DataTableView extends FilterableTableView<RowDesc> {
     switch (columnDesc.getDataType()) {
       case BOOLEAN:
         return CheckBoxTableCell.forTableColumn(tc);
-      case INTEGER:
-        return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) TextFieldTableCell.forTableColumn(new IntegerStringConverter());
+      /*case INTEGER:
+        return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) TextFieldTableCell.forTableColumn(new IntegerStringConverter());*/
       case DATE:
         return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) DatePickerTableCell.forTableColumn();
       case TIME:
@@ -121,11 +118,6 @@ public class DataTableView extends FilterableTableView<RowDesc> {
       default:
         return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) TextFieldTableCell.forTableColumn();
     }
-  }
-
-  public void setFilterPredicate(Predicate<RowDesc> predicate) {
-    FilteredList<RowDesc> fl = (FilteredList<RowDesc>) getItems();
-    fl.setPredicate(predicate);
   }
 
   @Override

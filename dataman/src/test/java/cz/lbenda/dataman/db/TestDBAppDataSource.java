@@ -17,20 +17,18 @@ package cz.lbenda.dataman.db;
 
 import cz.lbenda.dataman.rc.DbConfig;
 import org.junit.Assert;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.Test;
 
-import java.sql.Connection;
+/** Created by Lukas Benda <lbenda @ lbenda.cz> on 9/24/14.
+ * Test if Data source can create connection */
+@Test
+public class TestDBAppDataSource {
 
-/**
- * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/24/14.
- */
-public class TestDBAppDataSrouce {
+  private static Logger LOG = LoggerFactory.getLogger(TestDBAppDataSource.class);
 
-  private static Logger LOG = LoggerFactory.getLogger(TestDBAppDataSrouce.class);
-
-  // @Test
+  @Test
   public final void testGetConnection() {
     DbConfig sc = new DbConfig();
     JDBCConfiguration jdbc = new JDBCConfiguration();
@@ -44,7 +42,7 @@ public class TestDBAppDataSrouce {
 
     DBAppDataSource ds = new DBAppDataSource(sc);
     try {
-      Connection con = ds.getConnection();
+      ds.getConnection();
     } catch (Exception e) {
       LOG.error("Problem with create connection", e);
       Assert.fail("Problem with create connection: " + e.toString());

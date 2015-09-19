@@ -22,10 +22,10 @@ import cz.lbenda.rcp.SimpleLocalTimeProperty;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
 import java.sql.Time;
@@ -160,7 +160,12 @@ public class RowDesc implements Observable {
         result = new SimpleBooleanProperty(newValues[columnDesc.getPosition()], null);
         break;
       case INTEGER:
-        result = new SimpleIntegerProperty(newValues[columnDesc.getPosition()], null);
+        // result = new javafx.beans.property.SimpleIntegerProperty(newValues[columnDesc.getPosition()], null);
+        if (newValues[columnDesc.getPosition()] == null) {
+          result = new SimpleStringProperty(null);
+        } else {
+          result = new SimpleStringProperty(String.valueOf(newValues[columnDesc.getPosition()]));
+        }
         break;
       case DATE:
         result = new SimpleLocalDateProperty((java.sql.Date) newValues[columnDesc.getPosition()]);
@@ -185,6 +190,12 @@ public class RowDesc implements Observable {
         newValues[columnDesc.getPosition()] = ((SimpleLocalDateTimeProperty) observable).getSQLTimestamp();
       } else if (observable instanceof SimpleLocalTimeProperty) {
         newValues[columnDesc.getPosition()] = ((SimpleLocalTimeProperty) observable).getSQLTime();
+      } else if (columnDesc.getDataType() == ColumnDesc.ColumnType.INTEGER)  {
+        if (StringUtils.isBlank(((SimpleStringProperty) newValue).getValue())) {
+          newValues[columnDesc.getPosition()] = null;
+        } else {
+          newValues[columnDesc.getPosition()] = Integer.valueOf(((SimpleStringProperty) newValue).getValue());
+        }
       } else { newValues[columnDesc.getPosition()] = newValue; }
       if (RowDescState.CHANGED.equals(state)) {
         if (AbstractHelper.nullEquals(newValues[columnDesc.getPosition()], oldValues[columnDesc.getPosition()])) {

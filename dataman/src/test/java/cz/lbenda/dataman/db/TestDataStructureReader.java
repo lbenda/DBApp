@@ -20,7 +20,6 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.Arrays;
 import java.util.Map;
 
 
@@ -40,6 +39,7 @@ public class TestDataStructureReader {
     };
   }
 
+  @SuppressWarnings("unused")
   private void writeStructure(DbConfig config) {
     for (Map.Entry<String, Map<String, Map<String, TableDesc>>> entry1 : config.getTableDescriptionsMap().entrySet()) {
       System.out.println(entry1.getKey());
@@ -56,17 +56,22 @@ public class TestDataStructureReader {
     }
   }
 
-  @Test(dataProvider = "databases")
-  public void readStructureFromDatabase(TestHelperPrepareDB.DBDriver driverClass, String url, String catalog) {
-    TestHelperPrepareDB.prepareSmallDb(driverClass, url);
-
+  public DbConfig createConfig(TestHelperPrepareDB.DBDriver driverClass, String url) {
     DbConfig config = new DbConfig();
     config.getJdbcConfiguration().setDriverClass(driverClass.getDriver());
     config.getJdbcConfiguration().setUrl(url);
     config.getJdbcConfiguration().setUsername(TestHelperPrepareDB.USERNAME);
     config.getJdbcConfiguration().setPassword(TestHelperPrepareDB.PASSWORD);
-    DbStructureReader reader = new DbStructureReader(config);
-    reader.generateStructure();
+    config.setReader(new DbStructureReader(config));
+    return config;
+  }
+
+  @Test(dataProvider = "databases")
+  public void readStructureFromDatabase(TestHelperPrepareDB.DBDriver driverClass, String url, String catalog) {
+    TestHelperPrepareDB.prepareSmallDb(driverClass, url);
+
+    DbConfig config = createConfig(driverClass, url);
+    config.getReader().generateStructure();
     // writeStructure(config); // Could be uncommented for seeing read struct
 
     Assert.assertNotNull(config.getSchemas(catalog));
@@ -83,9 +88,23 @@ public class TestDataStructureReader {
     Assert.assertFalse(config.getTableDescription(catalog, "test", "TABLE3").getColumn("ID2").isAutoincrement());
     Assert.assertTrue(config.getTableDescription(catalog, "test", "TABLE3").getColumn("ID2").isPK());
 
-
     Assert.assertEquals(config.getTableDescription(catalog, "test", "TABLE1").getPKColumns().size(), 1);
     Assert.assertEquals(config.getTableDescription(catalog, "test", "TABLE2").getPKColumns().size(), 1);
     Assert.assertEquals(config.getTableDescription(catalog, "test", "TABLE3").getPKColumns().size(), 2);
+  }
+
+  @Test(dataProvider = "databases", dependsOnMethods = { "readStructureFromDatabase" })
+  public void testPrimaryColumnReader(TestHelperPrepareDB.DBDriver driverClass, String url, String catalog) {
+    DbConfig config = createConfig(driverClass, url);
+    config.getReader().generateStructure();
+
+    TableDesc tableDesc = config.getTableDescription(catalog, "test", "TABLE1");
+    tableDesc.reloadRowsAction();
+    Assert.assertEquals(tableDesc.getRows().size(), 3, "In the database must be 3 rows.");
+    int i = driverClass == TestHelperPrepareDB.DBDriver.HSQL ? 0 : 1;
+    for (RowDesc row : tableDesc.getRows()) {
+      Assert.assertEquals(row.getColumnValue(tableDesc.getColumn("ID")), i);
+      i++;
+    }
   }
 }

@@ -75,7 +75,7 @@ public class DbConfig {
   /** Showed schemas */
   private final Map<String, List<String>> shownSchemas = new HashMap<>();
   /** Instance of DB reader for this session */
-  private DbStructureReader reader; public final DbStructureReader getReader() { return reader; }
+  private DbStructureReader reader; public final DbStructureReader getReader() { return reader; } public final void setReader(DbStructureReader reader) { this.reader = reader; }
   /** Timeout when unused connection will be closed */
   private int connectionTimeout; public int getConnectionTimeout() { return connectionTimeout; } public void setConnectionTimeout(int connectionTimeout) { this.connectionTimeout = connectionTimeout; }
 
@@ -207,6 +207,7 @@ public class DbConfig {
       case DATABASE:
         String extendConfiguration = null;
         try (Connection connection = reader.getConnection()) {
+          //noinspection SqlNoDataSourceInspection,SqlDialectInspection
           try (PreparedStatement ps = connection.prepareCall("select usr, exConf from "
               + extendedConfigurationPath + " where (usr = ? or usr is null or usr = '')")) {
             ps.setString(1, reader.getUser().getUsername());
@@ -345,6 +346,7 @@ public class DbConfig {
   }
 
   /** Close connection to database */
+  @SuppressWarnings("unused")
   public void close() {
     try {
       if (this.reader != null && this.reader.getConnection() != null && !this.reader.getConnection().isClosed()) {
@@ -367,6 +369,7 @@ public class DbConfig {
   }
 
   /** Return all table types in given catalog and schema */
+  @SuppressWarnings("unused")
   public Set<TableDesc.TableType> getTableTypes(String catalog, String schema) {
     Set<TableDesc.TableType> result = new HashSet<>();
     tableDescriptionsMap.get(catalog).get(schema).values().forEach(td -> result.add(td.getTableType()));
@@ -409,6 +412,7 @@ public class DbConfig {
   }
 
   /** Load configuration from given resource which is defined by URL */
+  @SuppressWarnings("unused")
   public void load(URL resource) {
     try (InputStream is = resource.openStream()) {
       load(is);
@@ -431,7 +435,9 @@ public class DbConfig {
     try {
       JAXBContext jc = JAXBContext.newInstance(cz.lbenda.dataman.schema.dataman.ObjectFactory.class);
       Unmarshaller u = jc.createUnmarshaller();
+      //noinspection unchecked
       JAXBElement<SessionType> element = (JAXBElement<SessionType>) u.unmarshal(reader);
+      //noinspection ConstantConditions
       if (element.getValue() instanceof SessionType) {
         fromSessionType(element.getValue(), readId);
       } else {
