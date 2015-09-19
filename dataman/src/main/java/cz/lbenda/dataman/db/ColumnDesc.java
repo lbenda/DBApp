@@ -44,7 +44,7 @@ public class ColumnDesc {
   private final ColumnType dataType; public final ColumnType getDataType() { return dataType; }
   private final Boolean nullable; @SuppressWarnings("unused") public final Boolean isNullable() { return nullable; }
   private int position; public final int getPosition() { return position; } public final void setPosition(int position) { this.position = position; }
-  private Boolean pk; public final Boolean isPK() { return pk; } public final void setPK(Boolean pk) { this.pk = pk; }
+  private boolean pk; public final boolean isPK() { return pk; }
   private final boolean autoincrement; public final boolean isAutoincrement() { return autoincrement; }
   private final Boolean generated; public final Boolean isGenerated() { return generated; }
   private final String label; public final String getLabel() { return label; }
@@ -74,8 +74,8 @@ public class ColumnDesc {
     generated = this.autoincrement ? Boolean.TRUE : null;
   }
 
-  public ColumnDesc(final TableDesc td, final String name, final String label, final int dataType, final int size, final boolean nullable,
-                    final boolean autoincrement, final boolean generated) {
+  public ColumnDesc(final TableDesc td, final String name, final String label, final int dataType, final int size,
+                    final boolean nullable, final boolean autoincrement, final boolean generated) {
     this.tableDescription = td;
     this.position = -1;
     this.catalog = td.getCatalog();
@@ -100,6 +100,15 @@ public class ColumnDesc {
       case Types.VARCHAR : return ColumnType.STRING;
       case Types.BOOLEAN : return ColumnType.BOOLEAN;
       default : return ColumnType.OBJECT;
+    }
+  }
+
+  /** Set primary key and add this column to set of primary column in to metadata */
+  public final void setPK(boolean pk) {
+    this.pk = pk;
+    if (tableDescription != null && tableDescription.getQueryRow() != null) {
+      if (pk) { tableDescription.getQueryRow().getMetaData().getPKColumns().add(this); }
+      else { tableDescription.getQueryRow().getMetaData().getPKColumns().remove(this); }
     }
   }
 

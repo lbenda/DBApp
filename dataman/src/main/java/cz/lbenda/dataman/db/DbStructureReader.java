@@ -368,9 +368,9 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
     SQLDialect di = this.dbConfig.getJdbcConfiguration().getDialect();
     try (ResultSet rsColumn  = dmd.getColumns(null, null, null, null)) {
       ResultSetMetaData rsmd = rsColumn.getMetaData();
-      for (int i = 1; i < rsmd.getColumnCount(); i++) {
+      /*for (int i = 1; i < rsmd.getColumnCount(); i++) {
         LOG.trace(String.format("%s: %s", rsmd.getColumnName(i), rsmd.getColumnType(i)));
-      }
+      }*/
       while (rsColumn.next()) {
         TableDesc td = dbConfig.getTableDescription(
                 rsColumn.getString(di.columnTableCatalog()), rsColumn.getString(di.columnTableSchema()),

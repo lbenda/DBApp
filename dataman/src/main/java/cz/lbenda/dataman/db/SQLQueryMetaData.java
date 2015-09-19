@@ -36,12 +36,12 @@ public class SQLQueryMetaData {
   public SQLQueryMetaData() {
     columns.addListener((ListChangeListener<ColumnDesc>) change -> {
       while (change.next()) {
-        if (change.wasAdded()) { change.getAddedSubList().stream()
-            .filter(column -> column != null && Boolean.TRUE.equals(column.isPK()))
-            .forEach(pks::add); }
-        if (change.wasRemoved()) { change.getRemoved().stream()
-            .filter(pks::contains)
-            .forEach(pks::remove); }
+        if (change.wasAdded()) {
+          change.getAddedSubList().stream()
+            .filter(column -> column != null && column.isPK()).forEach(pks::add);
+        } else if (change.wasRemoved()) {
+          change.getRemoved().stream().filter(pks::contains).forEach(pks::remove);
+        }
       }
     });
   }

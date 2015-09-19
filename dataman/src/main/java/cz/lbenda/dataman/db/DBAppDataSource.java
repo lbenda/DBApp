@@ -141,11 +141,20 @@ public class DBAppDataSource implements DataSource {
 
     try {
       URLClassLoader urlCl = new URLClassLoader(urls, System.class.getClassLoader());
-      if (sc.getJdbcConfiguration().getDriverClass() == null
-          || "".equals(sc.getJdbcConfiguration().getDriverClass())) {
-        sc.getJdbcConfiguration().setDriverClass("org.hsqldb.jdbcDriver");
+      if (StringUtils.isBlank(sc.getJdbcConfiguration().getDriverClass())) {
+        throw new IllegalStateException("The driver must point to class");
       }
-      Class driverCls = urlCl.loadClass(sc.getJdbcConfiguration().getDriverClass());
+      Class driverCls = null;
+      try {
+        driverCls = urlCl.loadClass(sc.getJdbcConfiguration().getDriverClass());
+      } catch (ClassNotFoundException ce) {
+        try {
+          driverCls = this.getClass().getClassLoader().loadClass(sc.getJdbcConfiguration().getDriverClass());
+          LOG.warn("The driver wasn't found in given libraries, but one is on classpath. The driver from classpath will be used.");
+        } catch (ClassNotFoundException cf) {
+          throw ce;
+        }
+      }
       driver = (Driver) driverCls.newInstance();
       drivers.put(sc, driver);
       return driver;
