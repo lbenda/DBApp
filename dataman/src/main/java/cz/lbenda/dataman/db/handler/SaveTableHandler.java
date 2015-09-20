@@ -27,7 +27,7 @@ import javafx.event.ActionEvent;
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
  * Action which save single table */
 @ActionConfig(
-    category = "/SQL/table",
+    category = "/Table/save",
     id = "cz.lbenda.dataman.db.handler.SaveTableHandler",
     priority = 10,
     gui = @ActionGUIConfig(

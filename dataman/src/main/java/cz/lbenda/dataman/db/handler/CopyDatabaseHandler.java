@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
  * Action which copy current database config */
 @ActionConfig(
-    category = "/SQL/sessions",
+    category = "/DbConfig/exportImport",
     id = "cz.lbenda.dataman.db.handler.CopyDatabaseHandler",
     priority = 400,
     gui = @ActionGUIConfig(

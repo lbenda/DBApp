@@ -27,10 +27,7 @@ import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
  * Factory which create action and holder from given action configuration */
@@ -59,30 +56,42 @@ public class RibbonItemFactory<T> {
     if (item instanceof MenuOptions) { addOptionsToMenu((MenuOptions) item); }
   }
 
+  /** Return title for given category */
+  public Integer actionCategoryPriority(String categoryId) {
+    String val = messageFactory.getMessage(categoryId + "|priority", null);
+    if (val == null) { return null; }
+    return Integer.valueOf(val);
+  }
+
   private RibbonGroup prepareGroup(ActionConfig ac) {
     if (ac == null || ac.category() == null || ac.id() == null) {
       throw new IllegalArgumentException("The event handler haven't defined ActionConfiguration or haven't specified all method of this annotation.");
     }
 
     String[] menuParts = ac.category().split("/");
-    if (menuParts.length < 3) { throw new IllegalArgumentException("The category have less then 3 parts."); }
+    if (menuParts.length < 3) { throw new IllegalArgumentException("The category have less then 3 parts.");
+    }
 
-    String groupId = "ribbonGroup_/" + menuParts[1] + "/" + menuParts[2];
+    String tabId = "ribbonCategory_/" + menuParts[1];
+    String groupId = tabId + "/" + menuParts[2];
 
-    RibbonTab tab = ribbon.tabByTitle(messageFactory.actionCategoryTitle("/" + menuParts[1]));
+    String tabTitle = messageFactory.getMessage(tabId);
+    RibbonTab tab = ribbon.tabById(tabId);
     RibbonGroup group = null;
 
     if (tab != null) {
       for (RibbonGroup rg : tab.getRibbonGroups()) { if (groupId.equals(rg.getId())) { group = rg; } }
     } else {
-      ribbon.getTabTitles().add(messageFactory.actionCategoryTitle("/" + menuParts[1]));
-      tab = ribbon.tabByTitle(messageFactory.actionCategoryTitle("/" + menuParts[1]));
-      // this.ribbon.getTabs().add(tab);
+      tab = new RibbonTab(tabTitle);
+      tab.setId(tabId);
+      tab.setPriority(actionCategoryPriority(tabId));
+      ribbon.tabsProperty().add(tab);
     }
     if (group == null) {
       group = new RibbonGroup();
       group.setId(groupId);
-      group.setTitle(messageFactory.actionCategoryTitle("/" + menuParts[1] + "/" + menuParts[2]));
+      group.setTitle(messageFactory.getMessage(groupId));
+      group.setPriority(actionCategoryPriority(groupId));
       tab.getRibbonGroups().add(group);
     }
     return group;

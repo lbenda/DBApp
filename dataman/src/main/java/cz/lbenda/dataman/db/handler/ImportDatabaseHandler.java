@@ -32,7 +32,7 @@ import java.io.File;
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
  * import db from file */
 @ActionConfig(
-    category = "/SQL/sessions",
+    category = "/DbConfig/exportImport",
     id = "cz.lbenda.dataman.db.handler.ImportDatabaseHandler",
     priority = 990,
     gui = @ActionGUIConfig(

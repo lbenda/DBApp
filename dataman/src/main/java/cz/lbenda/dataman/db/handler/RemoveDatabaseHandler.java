@@ -35,7 +35,7 @@ import java.util.Optional;
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
  * Action which copy current database config */
 @ActionConfig(
-    category = "/SQL/sessions",
+    category = "/DbConfig/sessions",
     id = "cz.lbenda.dataman.db.handler.RemoveDatabaseHandler",
     priority = 500,
     gui = @ActionGUIConfig(

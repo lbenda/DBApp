@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
  * Action which edit database */
 @ActionConfig(
-    category = "/SQL/sessions",
+    category = "/DbConfig/sessions",
     id = "cz.lbenda.dataman.db.handler.EditDatabaseHandler",
     priority = 200,
     gui = @ActionGUIConfig(

@@ -35,7 +35,7 @@ import java.util.function.Consumer;
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
  * beforeOpenInit slaves tables */
 @ActionConfig(
-    category = "/SQL/details",
+    category = "/Table/details",
     id = "cz.lbenda.dataman.db.handler.OpenSlaveTableHandler",
     priority = 300,
     gui = {
@@ -55,6 +55,7 @@ public class OpenConnectedTablesHandler extends AbstractAction {
 
   public Map<DataTableView, Node> showedDetailTables = new WeakHashMap<>();
 
+  @SuppressWarnings("unused")
   private static Logger LOG = LoggerFactory.getLogger(OpenConnectedTablesHandler.class);
 
   @Message

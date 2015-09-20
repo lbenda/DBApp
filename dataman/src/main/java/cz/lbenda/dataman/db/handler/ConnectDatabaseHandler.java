@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
  * Action which run SQL command */
 @ActionConfig(
-    category = "/SQL/sessions",
+    category = "/DbConfig/connect",
     id = "cz.lbenda.dataman.db.handler.ConnectDatabaseHandler",
     priority = 10,
     gui = {

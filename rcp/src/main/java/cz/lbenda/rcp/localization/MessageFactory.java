@@ -40,6 +40,7 @@ public class MessageFactory {
 
   /** Initialize given object or class with localized messages
    * @param o object which is initialized */
+  @SuppressWarnings({"unused", "UnusedAssignment"})
   public static <T> void initializeMessages(T o)  {
     if (o == null) { return; }
     final Class clazz;
@@ -74,7 +75,12 @@ public class MessageFactory {
   /** Return message by key
    * @param key return message by key. If isn't defined then return ??? key ???
    * @return localized message */
-  public String getMessage(String key) {
+  public String getMessage(String key) { return getMessage(key, "??? " + key + " ???"); }
+
+  /** Return message by key
+   * @param key return message by key. If isn't defined then return ??? key ???
+   * @return localized message */
+  public String getMessage(String key, String def) {
     String result = null;
     if (messages != null) {
       if (messages.containsKey(key)) {
@@ -83,7 +89,7 @@ public class MessageFactory {
         LOG.warn("The message with key: '" + key + "' wasn't found in messages.");
       }
     }
-    return result == null ? "??? " + key + " ???" : result;
+    return result == null ? def : result;
   }
 
   /** Return message which is defined in resource bundle for given ID or return default message or ??? message.id() ???
@@ -97,10 +103,5 @@ public class MessageFactory {
       }
     }
     return result == null ? (message.msg() == null ? "??? " + message.id() + " ???" : message.msg()) : result;
-  }
-
-  /** Return title for given category */
-  public String actionCategoryTitle(String category) {
-    return getMessage("ribbonCategory_" + category);
   }
 }

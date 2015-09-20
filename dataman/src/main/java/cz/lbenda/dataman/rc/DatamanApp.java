@@ -104,8 +104,9 @@ public class DatamanApp extends Application {
 
     centerTabs.getSelectionModel().selectedItemProperty().addListener((observableValue, oldValue, newValue) -> {
       Node n = newValue.getContent();
-      if (n instanceof DataTableView) { tableViewObjectProperty.setValue((DataTableView) n); }
-      else { tableViewObjectProperty.setValue(null); }
+      if (n instanceof DataTableView) {
+        tableViewObjectProperty.setValue((DataTableView) n);
+      } else { tableViewObjectProperty.setValue(null); }
     });
   }
 

@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
  * add new database handler */
 @ActionConfig(
-    category = "/SQL/sessions",
+    category = "/DbConfig/sessions",
     id = "cz.lbenda.dataman.db.handler.AddDatabaseHandler",
     priority = 300,
     gui = @ActionGUIConfig(

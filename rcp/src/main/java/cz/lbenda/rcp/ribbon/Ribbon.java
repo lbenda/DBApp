@@ -9,86 +9,49 @@ import javafx.collections.ObservableList;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 
-import java.util.Collection;
-import java.util.HashMap;
+import javax.annotation.Nonnull;
+import java.util.Collections;
 
-/**
- * Created by pedro_000 on 1/18/14.
- */
-public class Ribbon extends Control{
+/** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
+ * Implementation of ribbon menu. */
+public class Ribbon extends Control {
   public final static String DEFAULT_STYLE_CLASS = "ribbon";
 
-  private ObservableList<String> tabTitles;
-  private ObservableList<RibbonTab> tabs;
-
-  private HashMap<String, RibbonTab> titleToRibbonTab;
+  private final ObservableList<RibbonTab> tabs = FXCollections.observableArrayList();
 
   private RibbonQuickAccessBar quickAccessBar;
 
   private RibbonItemFactory itemFactory; public RibbonItemFactory getItemFactory() { return itemFactory; }
-  private MessageFactory messageFactory; public MessageFactory getMessageFactory() { return messageFactory; }
-  public void setMessageFactory(MessageFactory messageFactory) {
-    this.messageFactory = messageFactory;
-    itemFactory.setMessageFactory(messageFactory);
-  }
 
+  @SuppressWarnings("unused")
   public Ribbon() {
     this(MessageFactory.getInstance());
   }
 
   public Ribbon(MessageFactory messageFactory) {
-    itemFactory = new RibbonItemFactory(this, messageFactory);
-    quickAccessBar = new RibbonQuickAccessBar();
-
-    tabTitles = FXCollections.observableArrayList();
-    tabs = FXCollections.observableArrayList();
-    titleToRibbonTab = new HashMap<>();
-
-    tabTitles.addListener(new ListChangeListener<String>() {
-      @Override
-      public void onChanged(Change<? extends String> changed) {
-        tabTitlesChanged(changed);
+    tabs.addListener((ListChangeListener<RibbonTab>) change -> {
+      while (change.next()) {
+        if (change.wasAdded()) { Collections.sort(tabs, Prioritised.COMPARATOR); }
       }
     });
-
+    itemFactory = new RibbonItemFactory(this, messageFactory);
+    quickAccessBar = new RibbonQuickAccessBar();
     getStyleClass().setAll(DEFAULT_STYLE_CLASS);
   }
 
-  private void tabTitlesChanged(ListChangeListener.Change<? extends String> changed) {
-    while(changed.next()) {
-      if (changed.wasAdded()) {
-        updateAddedRibbonTabs(changed.getAddedSubList());
-      }
-      if(changed.wasRemoved()) {
-        for (String title : changed.getRemoved())
-          titleToRibbonTab.remove(title);
-      }
-    }
+  public RibbonTab tabById(@Nonnull String id) {
+    for (RibbonTab tab : this.tabsProperty()) { if (id.equals(tab.getId())) { return tab; }  }
+    return null;
   }
 
-  public RibbonTab tabByTitle(String title) {
-    return titleToRibbonTab.get(title);
-  }
-
-  private void updateAddedRibbonTabs(Collection<? extends String> ribbonTabTitles) {
-    for (String title : ribbonTabTitles) {
-      RibbonTab ribbonTab = new RibbonTab(title);
-      titleToRibbonTab.put(title, ribbonTab);
-      tabs.add(ribbonTab);
-    }
-  }
-
-  public ObservableList<String> getTabTitles() {
-    return tabTitles;
-  }
-
-  public ObservableList<RibbonTab> getTabs() {
+  public ObservableList<RibbonTab> tabsProperty() {
     return tabs;
   }
 
   public RibbonQuickAccessBar getQuickAccessBar() {
     return quickAccessBar;
   }
+  @SuppressWarnings("unused")
   public void setQuickAccessBar(RibbonQuickAccessBar qAccessBar) {
     quickAccessBar = qAccessBar;
   }
@@ -111,6 +74,7 @@ public class Ribbon extends Control{
   public SimpleObjectProperty selectedRibbonTabProperty() {
     return selectedRibbonTab;
   }
+  @SuppressWarnings("unused")
   public RibbonTab getSelectedRibbonTab() {
     return selectedRibbonTab.get();
   }

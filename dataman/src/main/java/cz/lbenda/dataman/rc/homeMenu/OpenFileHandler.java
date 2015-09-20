@@ -23,7 +23,7 @@ import javafx.event.ActionEvent;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15. */
 @ActionConfig(
-    category = "/HOME/Files",
+    category = "/SQL/Files",
     id = "cz.lbenda.dataman.rc.homeMenu.OpenFileHandler",
     priority = 100,
     gui = @ActionGUIConfig(

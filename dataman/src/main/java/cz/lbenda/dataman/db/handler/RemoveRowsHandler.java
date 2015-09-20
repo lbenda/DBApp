@@ -28,7 +28,7 @@ import javafx.scene.control.TableView;
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
  * remove rows from table */
 @ActionConfig(
-    category = "/SQL/table",
+    category = "/Table/table",
     id = "cz.lbenda.dataman.db.handler.RemoveRowsHandler",
     priority = 200,
     gui = @ActionGUIConfig(
@@ -53,6 +53,7 @@ public class RemoveRowsHandler extends AbstractAction {
   public void handle(ActionEvent e) {
     TableView tableView = tableViewObjectProperty.getValue();
     if (tableView != null && tableView.isEditable()) {
+      //noinspection unchecked
       tableView.getSelectionModel().getSelectedItems().forEach(item -> {
         if (item instanceof RowDesc) { ((RowDesc) item).setState(RowDesc.RowDescState.REMOVED); }
         else { tableView.getItems().remove(item); }

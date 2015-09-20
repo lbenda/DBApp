@@ -27,7 +27,7 @@ import javafx.collections.ObservableList;
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 12.9.15.
  * Menu options for select db configuration */
 @ActionConfig(
-    category = "/SQL/sessions",
+    category = "/DbConfig/connect",
     id = "cz.lbenda.dataman.db.homeMenu.SelectDbConfigMenuOptions",
     priority = 100,
     gui = @ActionGUIConfig(

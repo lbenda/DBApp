@@ -22,11 +22,12 @@ public class RibbonSkin extends SkinBase<Ribbon> {
     tabPane = new TabPane();
     VBox outerContainer = new VBox();
 
-    control.getTabs().addListener(this::tabsChanged);
-    updateAddedRibbonTabs(control.getTabs());
+    control.tabsProperty().addListener(this::tabsChanged);
+    updateAddedRibbonTabs(control.tabsProperty());
     outerContainer.getStyleClass().setAll("outer-container");
     outerContainer.getChildren().addAll(control.getQuickAccessBar(), tabPane);
     getChildren().add(outerContainer);
+    //noinspection unchecked
     control.selectedRibbonTabProperty().addListener((ChangeListener) (observable, oldValue, newValue) -> tabPane.getSelectionModel().select((RibbonTab)newValue));
     tabPane.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
       control.setSelectedRibbonTab((RibbonTab)tabPane.getSelectionModel().getSelectedItem());

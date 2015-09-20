@@ -27,7 +27,7 @@ import javafx.event.ActionEvent;
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
  * add row to table */
 @ActionConfig(
-    category = "/SQL/table",
+    category = "/Table/table",
     id = "cz.lbenda.dataman.db.handler.AddRowHandler",
     priority = 100,
     gui = @ActionGUIConfig(

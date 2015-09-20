@@ -9,45 +9,42 @@ import javafx.scene.Node;
 import javafx.scene.control.Labeled;
 import javafx.scene.control.Skin;
 
-/**
- * Created by pedro_000 on 1/20/14.
- */
-public class RibbonGroup extends Labeled {
-    public final static String DEFAULT_STYLE_CLASS = "ribbon-group";
+/** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
+ * Implementation of single group in ribbon menu. */
+public class RibbonGroup extends Labeled implements Prioritised {
 
-    private ObservableList<Node> nodes;
-    private SimpleStringProperty title;
+  public final static String DEFAULT_STYLE_CLASS = "ribbon-group";
+  /** Priority of tab in menu */
+  private Integer priority; public Integer getPriority() { return priority; } public void setPriority(Integer priority) { this.priority = priority; }
 
-    public RibbonGroup()
-    {
-        nodes = FXCollections.observableArrayList();
-        title = new SimpleStringProperty("");
+  private ObservableList<Node> nodes;
+  private SimpleStringProperty title;
 
-        getStyleClass().setAll(DEFAULT_STYLE_CLASS);
-    }
+  public RibbonGroup() {
+    nodes = FXCollections.observableArrayList();
+    title = new SimpleStringProperty("");
 
-    public ObservableList<Node> getNodes()
-    {
-        return nodes;
-    }
+    getStyleClass().setAll(DEFAULT_STYLE_CLASS);
+  }
 
-    public void setTitle(String title)
-    {
-        this.title.set(title);
-    }
+  public ObservableList<Node> getNodes() {
+    return nodes;
+  }
 
-    public String getTitle()
-    {
-        return title.get();
-    }
+  public void setTitle(String title) {
+    this.title.set(title);
+  }
 
-    public StringProperty titleProperty()
-    {
-        return title;
-    }
+  public String getTitle() {
+    return title.get();
+  }
 
-    @Override
-    protected Skin<?> createDefaultSkin() {
-        return new RibbonGroupSkin(this);
-    }
+  public StringProperty titleProperty() {
+    return title;
+  }
+
+  @Override
+  protected Skin<?> createDefaultSkin() {
+    return new RibbonGroupSkin(this);
+  }
 }

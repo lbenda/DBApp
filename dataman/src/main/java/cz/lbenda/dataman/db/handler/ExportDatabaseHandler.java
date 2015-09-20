@@ -34,7 +34,7 @@ import java.io.File;
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
  * Export current db configuration */
 @ActionConfig(
-    category = "/SQL/sessions",
+    category = "/DbConfig/exportImport",
     id = "cz.lbenda.dataman.db.handler.ExportDatabaseHandler",
     priority = 1000,
     gui = @ActionGUIConfig(
