@@ -18,6 +18,8 @@ package cz.lbenda.common;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
+import java.util.Base64;
+import java.util.Random;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -27,8 +29,6 @@ import javax.crypto.spec.PBEParameterSpec;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 17.9.15.
  * Obfuscate configurations */
@@ -36,18 +36,28 @@ public class Obfuscate {
   private static Logger LOG = LoggerFactory.getLogger(Obfuscate.class);
 
   private static final char[] PASSWORD = "[en/*fldsgbnlSHUJdl589sgm".toCharArray();
-  private static final byte[] SALT = {
-      (byte) 0xde, (byte) 0x33, (byte) 0x10, (byte) 0x12,
-      (byte) 0xde, (byte) 0x33, (byte) 0x10, (byte) 0x12,
-  };
+  private static final byte SALT_LENGTH = 8;
+
+  private static byte[] createSalt() {
+    byte[] result = new byte[SALT_LENGTH];
+    (new Random()).nextBytes(result);
+    return result;
+  }
 
   public static String obfuscate(String property) {
     try {
       SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("PBEWithMD5AndDES");
       SecretKey key = keyFactory.generateSecret(new PBEKeySpec(PASSWORD));
       Cipher pbeCipher = Cipher.getInstance("PBEWithMD5AndDES");
-      pbeCipher.init(Cipher.ENCRYPT_MODE, key, new PBEParameterSpec(SALT, 20));
-      return base64Encode(pbeCipher.doFinal(property.getBytes("UTF-8")));
+      byte[] salt = createSalt();
+      pbeCipher.init(Cipher.ENCRYPT_MODE, key, new PBEParameterSpec(salt, 20));
+
+      byte[] crypt = pbeCipher.doFinal(property.getBytes("UTF-8"));
+      byte[] saltedCrypt = new byte[salt.length + crypt.length];
+      System.arraycopy(salt, 0, saltedCrypt, 0, salt.length);
+      System.arraycopy(crypt, 0, saltedCrypt, salt.length, crypt.length);
+
+      return base64Encode(saltedCrypt);
     } catch (GeneralSecurityException | UnsupportedEncodingException e) {
       LOG.error("Problem with obfuscate", e);
       return property;
@@ -55,25 +65,30 @@ public class Obfuscate {
   }
 
   private static String base64Encode(byte[] bytes) {
-    // NB: This class is internal, and you probably should use another impl
-    return new BASE64Encoder().encode(bytes);
+    return Base64.getEncoder().encodeToString(bytes);
   }
 
   public static String deobfuscate(String property)  {
     try {
+      byte[] saltedCrypt = base64Decode(property);
+      byte[] salt = new byte[SALT_LENGTH];
+      byte[] crypt = new byte[saltedCrypt.length - SALT_LENGTH];
+
+      System.arraycopy(saltedCrypt, 0, salt, 0, SALT_LENGTH);
+      System.arraycopy(saltedCrypt, SALT_LENGTH, crypt, 0, saltedCrypt.length - SALT_LENGTH);
+
       SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("PBEWithMD5AndDES");
       SecretKey key = keyFactory.generateSecret(new PBEKeySpec(PASSWORD));
       Cipher pbeCipher = Cipher.getInstance("PBEWithMD5AndDES");
-      pbeCipher.init(Cipher.DECRYPT_MODE, key, new PBEParameterSpec(SALT, 20));
-      return new String(pbeCipher.doFinal(base64Decode(property)), "UTF-8");
+      pbeCipher.init(Cipher.DECRYPT_MODE, key, new PBEParameterSpec(salt, 20));
+      return new String(pbeCipher.doFinal(crypt), "UTF-8");
     } catch (GeneralSecurityException | IOException e) {
-      LOG.error("Problem with deobfuscate", e);
+      LOG.error("Problem with de-obfuscate", e);
       return property;
     }
   }
 
-  private static byte[] base64Decode(String property) throws IOException {
-    // NB: This class is internal, and you probably should use another impl
-    return new BASE64Decoder().decodeBuffer(property);
+  private static byte[] base64Decode(String property) {
+    return Base64.getDecoder().decode(property);
   }
 }

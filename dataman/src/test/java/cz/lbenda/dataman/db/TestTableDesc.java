@@ -15,32 +15,17 @@
  */
 package cz.lbenda.dataman.db;
 
-import cz.lbenda.common.Tuple3;
 import cz.lbenda.dataman.rc.DbConfig;
 import javafx.beans.property.SimpleStringProperty;
 import org.testng.Assert;
-import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 19.9.15.
  * Test of function inside the test table */
-public class TestTableDesc {
+public class TestTableDesc extends TestAbstractDB {
 
-  @DataProvider(name = "databases")
-  public Object[][] createData1() {
-    return TestHelperPrepareDB.databasesDataProvider();
-  }
-
-  @BeforeSuite
-  private void setUp() {
-    for (Tuple3<TestHelperPrepareDB.DBDriver, String, String> tuple3 : TestHelperPrepareDB.databases()) {
-      TestHelperPrepareDB.prepareSmallDb(tuple3.get1(), tuple3.get2());
-    }
-  }
-
-  @Test(dataProvider = "databases")
-  private void testDirtyState(TestHelperPrepareDB.DBDriver driverClass, String url, String catalog) {
+  @Test(dataProviderClass = TestAbstractDB.class, dataProvider = "databases", groups = "database")
+  public void testDirtyState(TestHelperPrepareDB.DBDriver driverClass, String url, String catalog) {
     DbConfig config = TestHelperPrepareDB.createConfig(driverClass, url);
     config.getReader().generateStructure();
     TableDesc tableDesc = config.getTableDescription(catalog, "test", "TABLE1");
