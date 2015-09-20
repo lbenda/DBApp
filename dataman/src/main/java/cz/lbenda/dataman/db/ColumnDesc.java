@@ -15,6 +15,7 @@
  */
 package cz.lbenda.dataman.db;
 
+import cz.lbenda.common.StringConverters;
 import javafx.util.StringConverter;
 
 import javax.annotation.Nonnull;
@@ -122,18 +123,16 @@ public class ColumnDesc {
   /** Return string converter which is commonly used with date type which is hold by field in this column
    * @return String convertor */
   public StringConverter getStringConverter() {
-    return new StringConverter() {
-      @Override
-      public String toString(Object o) {
-        if (o == null) { return "<NULL>"; }
-        return String.valueOf(o); // TODO
-      }
-      @Override
-      public Object fromString(String s) {
-        if (s == null || "<NULL>".equals(s)) { return null; }
-        return null; // TODO
-      }
-    };
+    switch (dataType) {
+      case INTEGER: return StringConverters.INT_CONVERTER;
+      case DATE: return StringConverters.SQL_DATE_CONVERTER;
+      case TIMESTAMP: return StringConverters.SQL_TIMESTAMP_CONVERTER;
+      case TIME: return StringConverters.SQL_TIME_CONVERTER;
+      case BOOLEAN: return StringConverters.BOOLEAN_CONVERTER;
+      case OBJECT: return StringConverters.OBJECT_CONVERTER;
+      case STRING: return StringConverters.STRING_CONVERTER;
+      default: return StringConverters.OBJECT_CONVERTER;
+    }
   }
 
   /** Return extensions which are defined for this column in tableDescriptor
@@ -142,10 +141,6 @@ public class ColumnDesc {
   public List<TableDescriptionExtension> getExtensions() {
     if (tableDescription == null) { return Collections.emptyList(); }
     return tableDescription.getColumnExtensions(this);
-  }
-
-  public String getColumnString(Map<ColumnDesc, Object> values) {
-    return String.valueOf(values.get(this)); // TODO inteligent convertor
   }
 
   @Override

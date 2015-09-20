@@ -15,7 +15,7 @@
  */
 package cz.lbenda.rcp.tableView;
 
-import cz.lbenda.rcp.localization.Message;
+import cz.lbenda.common.StringConverters;
 import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -26,39 +26,21 @@ import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
 import jfxtras.scene.control.LocalDateTimeTextField;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Date;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 13.9.15.
  * Create table column for editing date */
 public class DateTimePickerTableCell<S, T> extends TableCell<S, T> {
 
+  @SuppressWarnings("unused")
   private static final Logger LOG = LoggerFactory.getLogger(DateTimePickerTableCell.class);
 
-  private static DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-
-  private static final StringConverter<LocalDateTime> defaultStringConverter = new StringConverter<LocalDateTime>() {
-    public String toString(LocalDateTime var1) {
-      return var1 == null ? null : var1.format(DATE_TIME_FORMATTER);
-    }
-    public LocalDateTime fromString(String var1) {
-      if (StringUtils.isBlank(var1)) { return null; }
-      return LocalDateTime.parse(var1, DATE_TIME_FORMATTER);
-    }
-  };
-
   private final LocalDateTimeTextField localDatePicker;
-  private boolean showLabel;
-  private ObservableValue dateProperty;
   private ObjectProperty<StringConverter<T>> converter;
   private ObjectProperty<Callback<Integer, ObservableValue<LocalDateTime>>> selectedStateCallback;
-  @Message
-  private String confDateTimeFormat;
 
   @SuppressWarnings("unchecked")
   public static <S> Callback<TableColumn<S, LocalDateTime>, TableCell<S, LocalDateTime>> forTableColumn() {
@@ -68,7 +50,6 @@ public class DateTimePickerTableCell<S, T> extends TableCell<S, T> {
   @SuppressWarnings("unchecked")
   public DateTimePickerTableCell(Callback<Integer, ObservableValue<LocalDateTime>> selectedStateCallback, StringConverter<T> converter) {
     MessageFactory.initializeMessages(this);
-    if (confDateTimeFormat != null) { DateTimeFormatter.ofPattern(confDateTimeFormat); }
     this.converter = new SimpleObjectProperty(this, "converter") {
       protected void invalidated() {}
     };
@@ -96,7 +77,7 @@ public class DateTimePickerTableCell<S, T> extends TableCell<S, T> {
   public final ObjectProperty<StringConverter<T>> converterProperty() { return this.converter; }
   @SuppressWarnings("unchecked")
   public final void setConverter(StringConverter<T> var1) {
-    if (var1 == null) { this.converterProperty().set((StringConverter<T>) defaultStringConverter); }
+    if (var1 == null) { this.converterProperty().set((StringConverter<T>) StringConverters.LOCALDATETIME_CONVERTER); }
     else { this.converterProperty().set(var1); }
   }
 
@@ -109,11 +90,6 @@ public class DateTimePickerTableCell<S, T> extends TableCell<S, T> {
 
   public final void setSelectedStateCallback(Callback<Integer, ObservableValue<LocalDateTime>> callback) {
     this.selectedStateCallbackProperty().set(callback);
-  }
-
-  @SuppressWarnings("unchecked")
-  public final Callback<Integer, ObservableValue<Date>> getSelectedStateCallback() {
-    return (Callback) this.selectedStateCallbackProperty().get();
   }
 
   @Override
@@ -153,11 +129,6 @@ public class DateTimePickerTableCell<S, T> extends TableCell<S, T> {
       setText(getConverter().toString(getItem()));
       setGraphic(null);
     }
-  }
-
-  private ObservableValue<?> getSelectedProperty() {
-    return this.getSelectedStateCallback() != null ? (ObservableValue) this.getSelectedStateCallback().call(this.getIndex())
-        : this.getTableColumn().getCellObservableValue(this.getIndex());
   }
 }
 

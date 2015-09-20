@@ -15,6 +15,7 @@
  */
 package cz.lbenda.dataman;
 
+import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.stage.FileChooser.ExtensionFilter;
 
 import java.util.ArrayList;
@@ -36,4 +37,8 @@ public class Constants {
           new ExtensionFilter("Java libraries (jar, war, ear, zip)", "*.jar", "*.war", "*.ear", "*.zip"),
           new ExtensionFilter("All files", "*.*")
       }));
+
+  static {
+    MessageFactory.initializeMessages(Constants.class);
+  }
 }
