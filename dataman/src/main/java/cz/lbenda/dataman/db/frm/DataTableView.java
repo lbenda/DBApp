@@ -41,20 +41,24 @@ import java.util.stream.Stream;
  */
 public class DataTableView extends FilterableTableView<RowDesc> {
 
-  private final TableDesc tableDesc;
+  private final TableDesc tableDesc; public TableDesc getTableDesc() { return tableDesc; }
+  private final SQLQueryRows sqlQueryRows; public SQLQueryRows getSqlQueryRows() { return sqlQueryRows; }
   private final Map<TableColumn<RowDesc, ?>, ColumnDesc> columnColumns = new WeakHashMap<>();
 
-  public TableDesc getTableDesc() {
-    return tableDesc;
+  public DataTableView(@Nonnull TableDesc tableDesc) {
+    this(tableDesc, tableDesc.getQueryRow());
   }
 
-  public DataTableView(TableDesc tableDesc) {
+  public DataTableView(@Nonnull SQLQueryRows sqlQueryRows) {
+    this(null, sqlQueryRows);
+  }
+
+  private DataTableView(TableDesc tableDesc, @Nonnull SQLQueryRows sqlQueryRows) {
     super();
     this.tableDesc = tableDesc;
+    this.sqlQueryRows = sqlQueryRows;
     this.filters().add(row -> RowDesc.RowDescState.REMOVED != row.getState());
-    if (tableDesc != null) {
-      this.setEditable(true);
-    }
+    this.setEditable(false);
   }
 
   @SuppressWarnings("unchecked")

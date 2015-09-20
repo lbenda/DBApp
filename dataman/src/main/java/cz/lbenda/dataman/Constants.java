@@ -15,6 +15,7 @@
  */
 package cz.lbenda.dataman;
 
+import cz.lbenda.rcp.localization.Message;
 import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.stage.FileChooser.ExtensionFilter;
 
@@ -28,6 +29,13 @@ public class Constants {
 
   public static String CONFIG_EXTENSION = "dtm";
   public static String SQL_EXTENSION = "sql";
+  public static String XLSX_EXTENSION = "xlsx";
+  public static String CSV_EXTENSION = "csv";
+  public static String TXT_EXTENSION = "txt";
+  public static String EXPORT_SHEET_NAME = "Dataman";
+
+  @Message
+  public static final String CSV_NEW_LINE_SEPARATOR = "\n";
 
   public static List<ExtensionFilter> configFileFilter = new ArrayList<>(Arrays.asList(
       new ExtensionFilter[] {
@@ -42,6 +50,15 @@ public class Constants {
   public static List<ExtensionFilter> sqlFilter = new ArrayList<>(Arrays.asList(
       new ExtensionFilter[] {
           new ExtensionFilter("SQL files (sql, txt)", "*.sql", "*.txt"),
+          new ExtensionFilter("All files", "*.*")
+      }));
+  public static List<ExtensionFilter> spreadSheetFilter = new ArrayList<>(Arrays.asList(
+      new ExtensionFilter[] {
+          new ExtensionFilter("All spreadsheets (ODS, XLSX, XLS, CSV, TXT)", "*.ods", "*.xlsx", "*.xls", "*.csv", "*.txt"),
+          new ExtensionFilter("Open document format (ODS)", "*.ods"),
+          new ExtensionFilter("Excel XLSX files (XLSX)", "*.xlsx", "*.xls"),
+          new ExtensionFilter("Comma separated values (CSV)", "*.csv"),
+          new ExtensionFilter("Fixed length column (TXT)", "*.txt"),
           new ExtensionFilter("All files", "*.*")
       }));
 

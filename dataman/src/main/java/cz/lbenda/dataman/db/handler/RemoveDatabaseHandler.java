@@ -15,7 +15,6 @@
  */
 package cz.lbenda.dataman.db.handler;
 
-import cz.lbenda.dataman.db.frm.DbConfigFrmController;
 import cz.lbenda.dataman.rc.DbConfig;
 import cz.lbenda.dataman.rc.DbConfigFactory;
 import cz.lbenda.rcp.action.AbstractAction;
@@ -27,8 +26,6 @@ import javafx.beans.property.ObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
@@ -46,18 +43,19 @@ import java.util.Optional;
 )
 public class RemoveDatabaseHandler extends AbstractAction {
 
-  private static Logger LOG = LoggerFactory.getLogger(RemoveDatabaseHandler.class);
+  @Message
+  public static final String msgRemoveTitle = "Remove confirm";
+  @Message
+  public static final String msgRemoveContent = "The configuration '%s' will be removed.\nAre you sure, you want is?";
 
-  @Message
-  private String msgRemoveTitle = "Remove confirm";
-  @Message
-  private String msgRemoveContent = "The configuration '%s' will be removed.\nAre you sure, you want is?";
+  static {
+    MessageFactory.initializeMessages(RemoveDatabaseHandler.class);
+  }
 
   /** The holder to which is set session configuration values */
   private ObjectProperty<DbConfig> dbConfigObserver;
 
   public RemoveDatabaseHandler(ObjectProperty<DbConfig> dbConfigObserver) {
-    MessageFactory.initializeMessages(this);
     this.dbConfigObserver = dbConfigObserver;
     setEnable(dbConfigObserver.getValue() != null);
     dbConfigObserver.addListener(observable -> {

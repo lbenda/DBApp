@@ -51,7 +51,7 @@ public class DataTableFrmController {
   }
 
   public DataTableFrmController(SQLQueryResult sqlQueryResult) {
-    tableView = new DataTableView(null);
+    tableView = new DataTableView(sqlQueryResult.getSqlQueryRows());
     title.setValue(sqlQueryResult.getSql());
     this.tableView.setMetaData(sqlQueryResult.getSqlQueryRows().getMetaData());
     this.tableView.setRows(sqlQueryResult.getSqlQueryRows().getRows());

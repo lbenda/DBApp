@@ -15,6 +15,7 @@
  */
 package cz.lbenda.dataman.rc;
 
+import cz.lbenda.dataman.db.SQLQueryRows;
 import cz.lbenda.dataman.db.frm.DataTableFrmController;
 import cz.lbenda.dataman.db.frm.DataTableView;
 import cz.lbenda.dataman.db.frm.DbStructureFrmController;
@@ -67,9 +68,10 @@ public class DatamanApp extends Application {
   private StackPane centerPane = new StackPane();
   private RibbonController ribbonController;
   private SQLEditorController te;
-  ObjectProperty<DataTableView> tableViewObjectProperty = new SimpleObjectProperty<>();
+  private ObjectProperty<DataTableView> tableViewObjectProperty = new SimpleObjectProperty<>();
   private TabPane centerTabs = new TabPane();
   private TabPane detailTabs = new TabPane();
+  private ObjectProperty<SQLQueryRows> sqlQueryRowsObjectProperty = new SimpleObjectProperty<>();
 
   // TextEditor te  = new TextEditor();
 
@@ -101,11 +103,23 @@ public class DatamanApp extends Application {
 
     centerPane.getChildren().add(centerTabs);
 
-    centerTabs.getSelectionModel().selectedItemProperty().addListener((observableValue, oldValue, newValue) -> {
+    centerTabs.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
       Node n = newValue.getContent();
       if (n instanceof DataTableView) {
         tableViewObjectProperty.setValue((DataTableView) n);
-      } else { tableViewObjectProperty.setValue(null); }
+        sqlQueryRowsObjectProperty.setValue(((DataTableView) n).getSqlQueryRows());
+      } else {
+        tableViewObjectProperty.setValue(null);
+        sqlQueryRowsObjectProperty.setValue(null);
+      }
+    });
+    detailTabs.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+      Node n = newValue.getContent();
+      if (n instanceof DataTableView) {
+        sqlQueryRowsObjectProperty.setValue(((DataTableView) n).getSqlQueryRows());
+      } else {
+        sqlQueryRowsObjectProperty.setValue(null);
+      }
     });
   }
 
@@ -171,6 +185,7 @@ public class DatamanApp extends Application {
     ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new SaveTableHandler(tableViewObjectProperty));
     ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new OpenConnectedTablesHandler(tableViewObjectProperty,
         detailDescriptor -> addRemoveToDetail(detailDescriptor.getTitle(), detailDescriptor.getNode(), detailDescriptor.getClosable())));
+    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new ExportTableHandler(sqlQueryRowsObjectProperty));
 
     Scene scene = new Scene(mainPane);
     te = new SQLEditorController(ribbonController.getRibbon().getItemFactory(), scene, currentDbProperty,

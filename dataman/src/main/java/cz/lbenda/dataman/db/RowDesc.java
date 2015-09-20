@@ -116,6 +116,11 @@ public class RowDesc implements Observable {
   public Object getColumnValue(ColumnDesc column) {
     return getNewValues()[column.getPosition()];
   }
+  /** Return value of column in string */
+  public String getColumnValueStr(ColumnDesc column) {
+    //noinspection unchecked
+    return column.getStringConverter().toString(getNewValues()[column.getPosition()]);
+  }
 
   /** Return set value for given column */
   public void setColumnValue(ColumnDesc column, Object value) {

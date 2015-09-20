@@ -19,6 +19,7 @@ import cz.lbenda.rcp.localization.Message;
 import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.util.Optional;
@@ -57,6 +58,24 @@ public class DialogHelper {
     alert.setContentText(String.format(msgCanOverwriteContent, file.getName()));
     Optional<ButtonType> result = alert.showAndWait();
     return (result.isPresent()) && (result.get() == ButtonType.OK);
+  }
+
+  /** Ask user if file can be overwrite if file exist
+   * @param file file which is rewrite
+   * @param defaultExtension if file haven't extension then default is add
+   * @return file if user want rewrite it, or no file with this name exist
+   * */
+  public File canBeOverwriteDialog(File file, String defaultExtension) {
+    if (file == null) { return null; }
+    if ("".equals(FilenameUtils.getExtension(file.getName()))) {
+      file = new File(file.getAbsoluteFile() + "." + defaultExtension);
+    }
+    if (!file.exists()) { return file; }
+    Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+    alert.setTitle(msgCanOverwriteTitle);
+    alert.setContentText(String.format(msgCanOverwriteContent, file.getName()));
+    Optional<ButtonType> result = alert.showAndWait();
+    return (result.isPresent()) && (result.get() == ButtonType.OK) ? file : null;
   }
 
   /** Inform user about not existing file */

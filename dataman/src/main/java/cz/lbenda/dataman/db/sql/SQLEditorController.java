@@ -94,7 +94,8 @@ public class SQLEditorController {
   }
 
   @SuppressWarnings("unchecked")
-  public SQLEditorController(RibbonItemFactory actionFactory, Scene scene, ObjectProperty<DbConfig> dbConfigProperty,
+  public SQLEditorController(RibbonItemFactory actionFactory, Scene scene,
+                             ObjectProperty<DbConfig> dbConfigProperty,
                              Consumer<DetailDescriptor> detailAppender) {
     node.setMaxHeight(Double.MAX_VALUE);
     node.setMaxHeight(Double.MAX_VALUE);

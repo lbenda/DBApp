@@ -27,7 +27,6 @@ import javafx.beans.property.ObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
 import javafx.stage.FileChooser;
-import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 
@@ -49,10 +48,12 @@ public class ExportDatabaseHandler extends AbstractAction {
   private ObjectProperty<DbConfig> dbConfigProperty;
 
   @Message
-  private String msgFileChooseTitle = "Choose file for configuration save";
+  private static final String msgFileChooseTitle = "Choose file for configuration save";
+  static {
+    MessageFactory.initializeMessages(ExportDatabaseHandler.class);
+  }
 
   public ExportDatabaseHandler(ObjectProperty<DbConfig> dbConfigProperty) {
-    MessageFactory.initializeMessages(this);
     this.dbConfigProperty = dbConfigProperty;
     setEnable(dbConfigProperty.getValue() != null);
     this.dbConfigProperty.addListener(observable -> {
@@ -63,21 +64,16 @@ public class ExportDatabaseHandler extends AbstractAction {
 
   @Override
   public void handle(ActionEvent e) {
-    if (dbConfigProperty.getValue() != null) {
-      DbConfig dbConfig = dbConfigProperty.getValue();
-      FileChooser fileChooser = new FileChooser();
-      fileChooser.setTitle(msgFileChooseTitle);
-      Node node = (Node) e.getSource();
-      fileChooser.getExtensionFilters().addAll(Constants.configFileFilter);
-      File file = fileChooser.showSaveDialog(node.getScene().getWindow());
-      if (file != null) {
-        if ("".equals(FilenameUtils.getExtension(file.getName()))) {
-          file = new File(file.getAbsoluteFile() + "." + Constants.CONFIG_EXTENSION);
-          if (DialogHelper.getInstance().canBeOverwriteDialog(file)) {
-            dbConfig.save(file);
-          }
-        } else { dbConfig.save(file); }
-      }
-    }
+    if (dbConfigProperty.getValue() == null) { return; }
+    DbConfig dbConfig = dbConfigProperty.getValue();
+    FileChooser fileChooser = new FileChooser();
+    fileChooser.setTitle(msgFileChooseTitle);
+    Node node = (Node) e.getSource();
+    fileChooser.getExtensionFilters().addAll(Constants.configFileFilter);
+    File file = DialogHelper.getInstance().canBeOverwriteDialog(
+        fileChooser.showSaveDialog(node.getScene().getWindow()),
+        Constants.CONFIG_EXTENSION);
+    if (file == null) { return; }
+    dbConfig.save(file);
   }
 }

@@ -16,6 +16,7 @@
 package cz.lbenda.dataman.db.sql;
 
 import cz.lbenda.dataman.Constants;
+import cz.lbenda.rcp.DialogHelper;
 import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
@@ -61,9 +62,9 @@ public class SaveAsFileHandler extends AbstractAction {
     if (sqlEditorController.lastFile() != null) {
       fileChooser.setInitialDirectory(sqlEditorController.lastFile().getParentFile());
     }
-    File file = fileChooser.showSaveDialog(((Node) actionEvent.getSource()).getScene().getWindow());
-    if (file != null) {
-      sqlEditorController.saveToFile(file);
-    }
+    File file = DialogHelper.getInstance().canBeOverwriteDialog(
+        fileChooser.showSaveDialog(((Node) actionEvent.getSource()).getScene().getWindow()),
+        Constants.SQL_EXTENSION);
+    if (file != null) { sqlEditorController.saveToFile(file); }
   }
 }
