@@ -34,17 +34,17 @@ public class DataTableFrmController {
 
   public DataTableFrmController(TableDesc td) {
     tableView = new DataTableView(td);
-    td.dirtyStateProperty().addListener((observable, oldValue, newValue) -> {
+    td.dirtyProperty().addListener((observable, oldValue, newValue) -> {
       title.setValue(generateTitle(td));
     });
     title.setValue(generateTitle(td));
-    td.reloadRowsAction();
+    if (!td.isLoaded()) { td.reloadRowsAction(); }
     this.tableView.setMetaData(td.getQueryRow().getMetaData());
     this.tableView.setRows(td.getRows());
   }
 
   private String generateTitle(TableDesc td) {
-    if (Boolean.TRUE.equals(td.dirtyStateProperty().getValue())) {
+    if (Boolean.TRUE.equals(td.dirtyProperty().getValue())) {
       return "* " + td.getName();
     }
     return td.getName();

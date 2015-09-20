@@ -25,7 +25,6 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 
 import javax.annotation.Nonnull;
-import java.beans.PropertyChangeSupport;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -51,7 +50,9 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
   private final String schema; public final String getSchema() { return schema; }
   private final String catalog; public final String getCatalog() { return catalog; }
   private TableType tableType; public final TableType getTableType() { return tableType; } public final void setTableType(TableType tableType) { this.tableType = tableType; }
-  private String comment; public final String getComment() { return comment; }
+  private String comment;
+  @SuppressWarnings("unused")
+  public final String getComment() { return comment; }
   public final void setComment(String comment) { this.comment = comment; }
 
   /** List of all foreign keys in table */
@@ -69,10 +70,16 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
   private AuditType audit = TableDescriptionExtension.NONE_AUDIT; public final AuditType getAudit() { return audit; } public final void setAudit(AuditType audit) { this.audit = audit; }
 
   /** Inform about dirty state of table */
-  private ObjectProperty<Boolean> dirtyStateProperty = new SimpleObjectProperty<>(false);
-  public ObjectProperty<Boolean> dirtyStateProperty() { return dirtyStateProperty; }
+  private ObjectProperty<Boolean> dirty = new SimpleObjectProperty<>(false);
+  public ObjectProperty<Boolean> dirtyProperty() { return dirty; }
+  @SuppressWarnings("unused")
+  public boolean isDirty() { return Boolean.TRUE.equals(dirty.getValue()); }
 
-  private PropertyChangeSupport pch = new PropertyChangeSupport(this);
+  /** Inform if data in table is already loaded */
+  private ObjectProperty<Boolean> loaded = new SimpleObjectProperty<>(false);
+  @SuppressWarnings("unused")
+  public ObjectProperty<Boolean> loadedProperty() { return loaded; }
+  public boolean isLoaded() { return Boolean.TRUE.equals(loaded.getValue()); }
 
   public TableDesc(String catalog, String schema, String tableType, String name) {
     this.catalog = catalog;
@@ -85,20 +92,20 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
         if (change.wasAdded()) {
           change.getAddedSubList().forEach(row -> {
             if (row.getState() != RowDesc.RowDescState.LOADED) {
-              dirtyStateProperty.setValue(true);
+              dirty.setValue(true);
             }
             row.addListener((observable) -> {
               RowDesc currRow = (RowDesc) observable;
               if (currRow.getState() != RowDesc.RowDescState.LOADED) {
-                dirtyStateProperty.setValue(true);
+                dirty.setValue(true);
               } else {
-                dirtyStateProperty.setValue(!getRows().stream().allMatch(tr -> tr.getState() == RowDesc.RowDescState.LOADED));
+                dirty.setValue(!getRows().stream().allMatch(tr -> tr.getState() == RowDesc.RowDescState.LOADED));
               }
             });
           });
         } else if (change.wasRemoved()) {
           if (!change.getRemoved().stream().allMatch(row -> row.getState() == RowDesc.RowDescState.LOADED)) {
-            dirtyStateProperty.setValue(!getRows().stream().allMatch(row -> row.getState() == RowDesc.RowDescState.LOADED));
+            dirty.setValue(!getRows().stream().allMatch(row -> row.getState() == RowDesc.RowDescState.LOADED));
           }
         }
       }
@@ -169,10 +176,11 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
   /** Reload all data from database - remove changes as part of */
   public void reloadRowsAction() {
     getRows().clear();
-    dbConfig.getReader().readTableDate(this, -1, -1).forEach(values -> {
+    dbConfig.getReader().readTableData(this, -1, -1).forEach(values -> {
       RowDesc row = new RowDesc(null, values, RowDesc.RowDescState.LOADED);
       getRows().add(row);
     });
+    this.loaded.setValue(Boolean.TRUE);
   }
 
   /** Save all changes to database */

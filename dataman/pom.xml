@@ -115,6 +115,12 @@
       <artifactId>sqlite-jdbc</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>cz.lbenda.dataman</groupId>
+      <artifactId>rcp</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -34,7 +34,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import cz.lbenda.dataman.schema.exconf.AuditType;
@@ -112,7 +111,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
    * @param to last row where stop read
    * @return list of object from db
    */
-  public final List<Object[]> readTableDate(TableDesc td, int from, int to) {
+  public final List<Object[]> readTableData(TableDesc td, int from, int to) {
     try (Connection conn = getConnection()) {
       try (Statement st = conn.createStatement()) {
         ResultSet rs = st.executeQuery(String.format("SELECT * FROM \"%s\".\"%s\"", td.getSchema(), td.getName()));
@@ -138,6 +137,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
    * @param selectedRow all values of selected row
    * @return resul set or null
    */
+  @SuppressWarnings("unused")
   public final List<TableRow> getJoinedRows(final ForeignKey fk, final TableRow selectedRow) {
     final Object fkValue;
     final String tbSchema;
@@ -181,18 +181,6 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
     }
   }
 
-  public ResultSet executeSQL(String sql) {
-    try (Connection conn = getConnection()) {
-      try (PreparedStatement ps = conn.prepareCall(sql)) { // FIXME auditing SQL
-        boolean isResultSet = ps.execute();
-        if (isResultSet) { return ps.getResultSet(); }
-        return null; // FIXME
-      }
-    } catch (SQLException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   /** Return auditor object for given audit type with configuration
    * @param auditType audit configuration
    * @return auditor, never return null */
@@ -213,17 +201,15 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
     StringBuilder names = new StringBuilder();
     StringBuilder values = new StringBuilder();
     List<ColumnDesc> insertedColumns = new ArrayList<>();
-    for (ColumnDesc col : td.getColumns()) {
-      if (!col.isAutoincrement() && !col.isGenerated()) {
-        if (!insertedColumns.isEmpty()) {
-          names.append(", ");
-          values.append(", ");
-        }
-        insertedColumns.add(col);
-        names.append('"').append(col.getName()).append("\"");
-        values.append('?');
+    td.getColumns().stream().filter(col -> !col.isAutoincrement() && !col.isGenerated()).forEach(col -> {
+      if (!insertedColumns.isEmpty()) {
+        names.append(", ");
+        values.append(", ");
       }
-    }
+      insertedColumns.add(col);
+      names.append('"').append(col.getName()).append("\"");
+      values.append('?');
+    });
 
     String sql = String.format("insert into \"%s\".\"%s\" (%s) values (%s)", td.getSchema(), td.getName(), names, values);
     LOG.debug(sql);
@@ -246,6 +232,9 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
           RowDesc row = itt.next();
           for (int i = 1; i <= rsmd.getColumnCount(); i++) {
             ColumnDesc col = td.getColumn(rsmd.getColumnName(i));
+            if (col == null) {
+              throw new NullPointerException(String.format("The column with name %s not exist", rsmd.getColumnName(i)));
+            }
             row.getNewValues()[col.getPosition()] = rs.getObject(i);
           }
         }
@@ -367,8 +356,8 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   private void generateStructureColumns(DatabaseMetaData dmd) throws SQLException {
     SQLDialect di = this.dbConfig.getJdbcConfiguration().getDialect();
     try (ResultSet rsColumn  = dmd.getColumns(null, null, null, null)) {
-      ResultSetMetaData rsmd = rsColumn.getMetaData();
-      /*for (int i = 1; i < rsmd.getColumnCount(); i++) {
+      /*ResultSetMetaData rsmd = rsColumn.getMetaData();
+      for (int i = 1; i < rsmd.getColumnCount(); i++) {
         LOG.trace(String.format("%s: %s", rsmd.getColumnName(i), rsmd.getColumnType(i)));
       }*/
       while (rsColumn.next()) {
@@ -377,9 +366,9 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
                 rsColumn.getString(di.columnTableName()));
         ColumnDesc column = new ColumnDesc(td, rsColumn.getString(di.columnName()), rsColumn.getString("REMARKS"),
             rsColumn.getInt(di.columnDateType()),
-                rsColumn.getInt(di.columnSize()), "YES".equals(rsColumn.getString(di.columnNullable())),
-                "YES".equals(rsColumn.getString(di.columnAutoIncrement())),
-                di.columnGenerated() != null ? "YES".equals(rsColumn.getString(di.columnGenerated())) : false);
+            rsColumn.getInt(di.columnSize()), "YES".equals(rsColumn.getString(di.columnNullable())),
+            "YES".equals(rsColumn.getString(di.columnAutoIncrement())),
+            di.columnGenerated() != null && "YES".equals(rsColumn.getString(di.columnGenerated())));
         td.addColumn(column);
       }
     }

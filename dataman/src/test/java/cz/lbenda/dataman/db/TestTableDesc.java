@@ -17,7 +17,6 @@ package cz.lbenda.dataman.db;
 
 import cz.lbenda.common.Tuple3;
 import cz.lbenda.dataman.rc.DbConfig;
-import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
@@ -47,15 +46,15 @@ public class TestTableDesc {
     TableDesc tableDesc = config.getTableDescription(catalog, "test", "TABLE1");
 
     tableDesc.reloadRowsAction();
-    Assert.assertFalse(tableDesc.dirtyStateProperty().getValue());
+    Assert.assertFalse(tableDesc.dirtyProperty().getValue());
     RowDesc row = tableDesc.addNewRowAction();
-    Assert.assertTrue(tableDesc.dirtyStateProperty().getValue());
+    Assert.assertTrue(tableDesc.dirtyProperty().getValue());
     tableDesc.getRows().remove(row);
-    Assert.assertFalse(tableDesc.dirtyStateProperty().getValue());
+    Assert.assertFalse(tableDesc.dirtyProperty().getValue());
 
     tableDesc.addNewRowAction();
     tableDesc.reloadRowsAction();
-    Assert.assertFalse(tableDesc.dirtyStateProperty().getValue());
+    Assert.assertFalse(tableDesc.dirtyProperty().getValue());
 
     ColumnDesc columnDesc = tableDesc.getColumn("COL");
     row = tableDesc.getRows().get(0);
@@ -63,9 +62,9 @@ public class TestTableDesc {
     String puvodniHodnota = ((SimpleStringProperty) row.observableValueForColumn(columnDesc)).getValue();
     //noinspection unchecked,ConstantConditions
     ((SimpleStringProperty) row.observableValueForColumn(columnDesc)).setValue("Jina hodnota");
-    Assert.assertTrue(tableDesc.dirtyStateProperty().getValue());
+    Assert.assertTrue(tableDesc.dirtyProperty().getValue());
     ((SimpleStringProperty) row.observableValueForColumn(columnDesc)).setValue(puvodniHodnota);
     Assert.assertEquals(row.getState(), RowDesc.RowDescState.LOADED);
-    Assert.assertFalse(tableDesc.dirtyStateProperty().getValue());
+    Assert.assertFalse(tableDesc.dirtyProperty().getValue());
   }
 }

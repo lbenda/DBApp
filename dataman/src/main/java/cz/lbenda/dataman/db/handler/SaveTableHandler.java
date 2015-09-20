@@ -46,11 +46,11 @@ public class SaveTableHandler extends AbstractAction {
     setEnable(tableViewObjectProperty.getValue() != null && tableViewObjectProperty.getValue().isEditable());
     tableViewObjectProperty.addListener((observableValue, oldValue, newValue) -> {
       if (oldValue != null && oldValue.getTableDesc() != null) {
-        oldValue.getTableDesc().dirtyStateProperty().removeListener(dirtyListener);
+        oldValue.getTableDesc().dirtyProperty().removeListener(dirtyListener);
       }
       if (newValue != null && newValue.getTableDesc() != null) {
-        setEnable(newValue.getTableDesc().dirtyStateProperty().getValue());
-            newValue.getTableDesc().dirtyStateProperty().addListener(dirtyListener);
+        setEnable(newValue.getTableDesc().dirtyProperty().getValue());
+            newValue.getTableDesc().dirtyProperty().addListener(dirtyListener);
       } else { setEnable(false); }
     });
   }
