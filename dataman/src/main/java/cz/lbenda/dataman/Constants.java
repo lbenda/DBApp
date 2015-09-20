@@ -27,6 +27,8 @@ import java.util.List;
 public class Constants {
 
   public static String CONFIG_EXTENSION = "dtm";
+  public static String SQL_EXTENSION = "sql";
+
   public static List<ExtensionFilter> configFileFilter = new ArrayList<>(Arrays.asList(
       new ExtensionFilter[] {
           new ExtensionFilter("Dataman config file (DTM, XML)", "*.dtm", "*.xml"),
@@ -35,6 +37,11 @@ public class Constants {
   public static List<ExtensionFilter> librariesFilter = new ArrayList<>(Arrays.asList(
       new ExtensionFilter[] {
           new ExtensionFilter("Java libraries (jar, war, ear, zip)", "*.jar", "*.war", "*.ear", "*.zip"),
+          new ExtensionFilter("All files", "*.*")
+      }));
+  public static List<ExtensionFilter> sqlFilter = new ArrayList<>(Arrays.asList(
+      new ExtensionFilter[] {
+          new ExtensionFilter("SQL files (sql, txt)", "*.sql", "*.txt"),
           new ExtensionFilter("All files", "*.*")
       }));
 

@@ -20,8 +20,7 @@ import cz.lbenda.dataman.db.frm.DataTableView;
 import cz.lbenda.dataman.db.frm.DbStructureFrmController;
 import cz.lbenda.dataman.db.handler.*;
 import cz.lbenda.rcp.ribbon.RibbonController;
-import cz.lbenda.dataman.db.frm.SQLEditorController;
-import cz.lbenda.dataman.rc.homeMenu.OpenFileHandler;
+import cz.lbenda.dataman.db.sql.SQLEditorController;
 import cz.lbenda.rcp.config.ConfigurationRW;
 import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.application.Application;
@@ -158,7 +157,6 @@ public class DatamanApp extends Application {
     ObjectProperty<DbConfig> currentDbProperty = new SimpleObjectProperty<>();
 
     prepareMainPane();
-    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new OpenFileHandler());
     ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new AddDatabaseHandler());
     ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new ImportDatabaseHandler());
     ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new ExportDatabaseHandler(currentDbProperty));

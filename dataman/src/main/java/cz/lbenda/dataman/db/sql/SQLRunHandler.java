@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cz.lbenda.dataman.db.handler;
+package cz.lbenda.dataman.db.sql;
 
 import cz.lbenda.common.Tuple2;
 import cz.lbenda.dataman.db.*;
-import cz.lbenda.dataman.db.frm.SQLEditorController;
 import cz.lbenda.dataman.rc.DbConfig;
 import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
@@ -37,7 +36,7 @@ import java.sql.SQLException;
  * Action which run SQL command */
 @ActionConfig(
     category = "/SQL/sql",
-    id = "cz.lbenda.dataman.db.handler.SQLRunHandler",
+    id = "cz.lbenda.dataman.db.sql.SQLRunHandler",
     priority = 100,
     gui = @ActionGUIConfig(
       displayName = @Message(id="Run", msg="Run"),

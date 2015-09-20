@@ -34,7 +34,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -50,16 +49,17 @@ public class DbConfigFrmController implements Initializable {
   private static final String FXML_RESOURCE = "DbConfigFrm.fxml";
 
   @Message
-  private String msgDialogTitle = "Configure session";
+  public static final String msgDialogTitle = "Configure session";
   @Message
-  private String msgDialogHeader = "Choose libraries in which is driver which is used for connect to database.";
+  public static final String msgDialogHeader = "Choose libraries in which is driver which is used for connect to database.";
   @Message
-  private String msgLibraryChooseTitle = "Choose libraries";
+  public static final String msgLibraryChooseTitle = "Choose libraries";
   @Message
-  private String msgExtendConfigChooseTitle = "Choose path to extended configuration";
+  public static final String msgExtendConfigChooseTitle = "Choose path to extended configuration";
+  static {
+    MessageFactory.initializeMessages(DbConfigFrmController.class);
+  }
 
-  @FXML
-  private TabPane mainPane;
   @FXML
   private Button btnRemoveLibrary;
   @FXML
@@ -85,7 +85,7 @@ public class DbConfigFrmController implements Initializable {
   @FXML
   private ComboBox<ExtendedConfigTypeType> cbExtendConfigType;
 
-  public void laodDataFromSessionConfiguration(DbConfig dbConfig) {
+  public void loadDataFromSessionConfiguration(DbConfig dbConfig) {
     tfName.setText(StringUtils.defaultString(dbConfig.getId()));
     tfUrl.setText(StringUtils.defaultString(dbConfig.getJdbcConfiguration().getUrl()));
     tfDriverClass.setText(StringUtils.defaultString(dbConfig.getJdbcConfiguration().getDriverClass()));
@@ -104,7 +104,6 @@ public class DbConfigFrmController implements Initializable {
 
   @Override
   public void initialize(URL url, ResourceBundle resourceBundle) {
-    MessageFactory.initializeMessages(this);
     for (ExtendedConfigTypeType ectt : ExtendedConfigTypeType.values()) {
       cbExtendConfigType.getItems().add(ectt);
     }
@@ -165,9 +164,9 @@ public class DbConfigFrmController implements Initializable {
     Dialog<DbConfig> dialog = new Dialog<>();
     dialog.setResizable(false);
     final Tuple2<Parent, DbConfigFrmController> tuple = createNewInstance();
-    if (sc != null) { tuple.get2().laodDataFromSessionConfiguration(sc); }
-    dialog.setTitle(tuple.get2().msgDialogTitle);
-    dialog.setHeaderText(tuple.get2().msgDialogHeader);
+    if (sc != null) { tuple.get2().loadDataFromSessionConfiguration(sc); }
+    dialog.setTitle(msgDialogTitle);
+    dialog.setHeaderText(msgDialogHeader);
 
     dialog.getDialogPane().setContent(tuple.get1());
     ButtonType buttonTypeOk = ButtonType.OK;

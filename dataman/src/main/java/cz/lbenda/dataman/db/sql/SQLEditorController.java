@@ -13,21 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cz.lbenda.dataman.db.frm;
+package cz.lbenda.dataman.db.sql;
 
 import cz.lbenda.dataman.db.SQLQueryResult;
-import cz.lbenda.dataman.db.handler.SQLRunHandler;
+import cz.lbenda.dataman.db.frm.DataTableFrmController;
 import cz.lbenda.dataman.rc.DbConfig;
 import cz.lbenda.dataman.rc.DetailDescriptor;
 import cz.lbenda.gui.editor.HighlighterSQL;
 import cz.lbenda.gui.editor.TextEditor;
+import cz.lbenda.rcp.ExceptionMessageFrmController;
 import cz.lbenda.rcp.localization.Message;
+import cz.lbenda.rcp.localization.MessageFactory;
 import cz.lbenda.rcp.ribbon.RibbonItemFactory;
 import javafx.beans.property.ObjectProperty;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.Pane;
 import javafx.scene.web.WebView;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -35,8 +36,10 @@ import org.fxmisc.richtext.CodeArea;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.util.DoubleSummaryStatistics;
 import java.util.function.Consumer;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 6.9.15.
@@ -46,7 +49,8 @@ public class SQLEditorController {
   private static Logger LOG = LoggerFactory.getLogger(SQLEditorController.class);
   private static String HTML;
 
-  private static final String MAIN_PANE = "mainPane";
+  @Message
+  public final static String msgConsoleTitle = "Console";
 
   static {
     try {
@@ -55,21 +59,22 @@ public class SQLEditorController {
       LOG.error("Problem with read SQLConsoleHTML.html", e);
       HTML = "<html><head></head><body>%s</body></html>";
     }
+    MessageFactory.initializeMessages(SQLEditorController.class);
   }
 
-  @Message
-  private String msgConsoleTitle = "Console";
-
   private TextEditor textEditor = new TextEditor();
-  private WebView webView = new WebView(); public WebView getWebView() { return webView; }
+  private WebView webView = new WebView();
   private StringBuffer consoleMessages = new StringBuffer();
-  private ObjectProperty<DbConfig> dbConfigProperty;
   private Consumer<DetailDescriptor> detailAppender;
 
-  /** Change text in editor */
-  public void changeText(String text) { textEditor.changeText(text); }
   /** Return text which is in code Area */
   public String getText() { return textEditor.getText(); }
+  /** Set text to editor */
+  public void setText(String text) { textEditor.changeText(text); }
+
+  /** File which was read or saved */
+  private File lastFile; public File lastFile() { return lastFile; }
+
   /** Return text which will be executed. */
   public String[] getExecutedText() {
     String text = textEditor.getSelectedText();
@@ -88,13 +93,13 @@ public class SQLEditorController {
     return node;
   }
 
+  @SuppressWarnings("unchecked")
   public SQLEditorController(RibbonItemFactory actionFactory, Scene scene, ObjectProperty<DbConfig> dbConfigProperty,
                              Consumer<DetailDescriptor> detailAppender) {
     node.setMaxHeight(Double.MAX_VALUE);
     node.setMaxHeight(Double.MAX_VALUE);
 
     this.detailAppender = detailAppender;
-    this.dbConfigProperty = dbConfigProperty;
 
     textEditor.setScene(scene);
     textEditor.changeHighlighter(new HighlighterSQL());
@@ -110,6 +115,31 @@ public class SQLEditorController {
     node.getChildren().add(ca);
 
     actionFactory.getItemsHandler().add(new SQLRunHandler(dbConfigProperty, this));
+    actionFactory.getItemsHandler().add(new OpenFileHandler(this));
+    actionFactory.getItemsHandler().add(new SaveFileHandler(this));
+    actionFactory.getItemsHandler().add(new SaveAsFileHandler(this));
+  }
+
+  /** Load data SQL file */
+  public void loadFromFile(File file) {
+    try (FileReader fr = new FileReader(file)) {
+      setText(IOUtils.toString(fr));
+      this.lastFile = file;
+    } catch (IOException e) {
+      LOG.error("The file isn't openable", e);
+      ExceptionMessageFrmController.showException("The file isn't openable", e);
+    }
+  }
+
+  /** Save data to SQL file */
+  public void saveToFile(File file) {
+    try (FileWriter fr = new FileWriter(file)) {
+      IOUtils.write(getText(), fr);
+      this.lastFile = file;
+    } catch (IOException e) {
+      LOG.error("The file isn't writable", e);
+      ExceptionMessageFrmController.showException("The file isn't writable", e);
+    }
   }
 
   public void addQueryResult(SQLQueryResult result) {
