@@ -106,7 +106,7 @@ public class DbStructureFrmController {
     }
     dbConfig.getTableDescriptions(catalog, schema, tableType).stream().sorted(TableDesc::compareTo).forEach(td -> {
       if (dbConfig.isShowTable(td)) {
-        final TreeItem<TableDesc> tableItem;
+        final TreeItem<TableDesc> tableItem; // TODO apped tooltim from table comment
         if (image != null) { tableItem = new TreeItem<>(td, new ImageView(image)); }
         else { tableItem = new TreeItem<>(td); }
         item.getChildren().add(tableItem);

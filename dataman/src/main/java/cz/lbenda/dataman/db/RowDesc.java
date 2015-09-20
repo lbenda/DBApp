@@ -112,9 +112,24 @@ public class RowDesc implements Observable {
     invalidationListeners.forEach(listener -> listener.invalidated(this));
   }
 
-  /** Return value from CD */
-  public Object getColumnValue(ColumnDesc cd) {
-    return getNewValues()[cd.getPosition()];
+  /** Return value from column */
+  public Object getColumnValue(ColumnDesc column) {
+    return getNewValues()[column.getPosition()];
+  }
+
+  /** Return set value for given column */
+  public void setColumnValue(ColumnDesc column, Object value) {
+    getNewValues()[column.getPosition()] = value;
+    if (RowDescState.LOADED == state
+        && !AbstractHelper.nullEquals(value, getOldValues()[column.getPosition()])) {
+      this.setState(RowDescState.CHANGED);
+    } else if (state == RowDescState.CHANGED) {
+      boolean noChanged = true;
+      for (int i = 0; i < getOldValues().length; i++) {
+        noChanged = noChanged && AbstractHelper.nullEquals(getNewValues()[i], getOldValues()[i]);
+      }
+      if (noChanged) { setState(RowDescState.LOADED); }
+    }
   }
 
   @Override
@@ -185,26 +200,19 @@ public class RowDesc implements Observable {
     }
     result.addListener((observable, oldValue, newValue) -> {
       if (observable instanceof SimpleLocalDateProperty) {
-        newValues[columnDesc.getPosition()] = ((SimpleLocalDateProperty) observable).getSQLDate();
+        setColumnValue(columnDesc, ((SimpleLocalDateProperty) observable).getSQLDate());
       } else if (observable instanceof SimpleLocalDateTimeProperty) {
-        newValues[columnDesc.getPosition()] = ((SimpleLocalDateTimeProperty) observable).getSQLTimestamp();
+        setColumnValue(columnDesc, ((SimpleLocalDateTimeProperty) observable).getSQLTimestamp());
       } else if (observable instanceof SimpleLocalTimeProperty) {
-        newValues[columnDesc.getPosition()] = ((SimpleLocalTimeProperty) observable).getSQLTime();
+        setColumnValue(columnDesc, ((SimpleLocalTimeProperty) observable).getSQLTime());
       } else if (columnDesc.getDataType() == ColumnDesc.ColumnType.INTEGER)  {
         if (StringUtils.isBlank(((SimpleStringProperty) newValue).getValue())) {
-          newValues[columnDesc.getPosition()] = null;
+          setColumnValue(columnDesc, null);
         } else {
-          newValues[columnDesc.getPosition()] = Integer.valueOf(((SimpleStringProperty) newValue).getValue());
+          setColumnValue(columnDesc, Integer.valueOf(((SimpleStringProperty) newValue).getValue()));
         }
-      } else { newValues[columnDesc.getPosition()] = newValue; }
-      if (RowDescState.CHANGED.equals(state)) {
-        if (AbstractHelper.nullEquals(newValues[columnDesc.getPosition()], oldValues[columnDesc.getPosition()])) {
-          setState(RowDescState.LOADED);
-        }
-      } else if (RowDescState.LOADED.equals(state)) {
-        if (!AbstractHelper.nullEquals(newValues[columnDesc.getPosition()], oldValues[columnDesc.getPosition()])) {
-          setState(RowDescState.CHANGED);
-        }
+      } else {
+        setColumnValue(columnDesc, newValue);
       }
     });
     return result;

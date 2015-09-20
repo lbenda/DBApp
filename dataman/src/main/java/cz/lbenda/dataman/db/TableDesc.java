@@ -19,8 +19,12 @@ import cz.lbenda.common.AbstractHelper;
 import cz.lbenda.dataman.rc.DbConfig;
 import cz.lbenda.rcp.action.AbstractSavable;
 import cz.lbenda.dataman.schema.exconf.AuditType;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 
+import javax.annotation.Nonnull;
 import java.beans.PropertyChangeSupport;
 import java.io.IOException;
 import java.util.*;
@@ -47,13 +51,14 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
   private final String schema; public final String getSchema() { return schema; }
   private final String catalog; public final String getCatalog() { return catalog; }
   private TableType tableType; public final TableType getTableType() { return tableType; } public final void setTableType(TableType tableType) { this.tableType = tableType; }
-  private String comment; public final String getComment() { return comment; } public final void setComment(String comment) { this.comment = comment; }
+  private String comment; public final String getComment() { return comment; }
+  public final void setComment(String comment) { this.comment = comment; }
 
   /** List of all foreign keys in table */
   private final List<DbStructureReader.ForeignKey> foreignKeys = new ArrayList<>(); public final List<DbStructureReader.ForeignKey> getForeignKeys() { return foreignKeys; }
 
   /** All rows, loaded new added and removed etc. */
-  private SQLQueryRows rows = new SQLQueryRows(); public SQLQueryRows getQueryRow() { return rows; }
+  private SQLQueryRows rows; public SQLQueryRows getQueryRow() { return rows; }
   /** List of all columns in table */
   public final List<ColumnDesc> getColumns() { return rows.getMetaData().getColumns(); }
   /** All extension which extend the GUI feature of table */
@@ -63,6 +68,10 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
   /** Audit configuration for this table */
   private AuditType audit = TableDescriptionExtension.NONE_AUDIT; public final AuditType getAudit() { return audit; } public final void setAudit(AuditType audit) { this.audit = audit; }
 
+  /** Inform about dirty state of table */
+  private ObjectProperty<Boolean> dirtyStateProperty = new SimpleObjectProperty<>(false);
+  public ObjectProperty<Boolean> dirtyStateProperty() { return dirtyStateProperty; }
+
   private PropertyChangeSupport pch = new PropertyChangeSupport(this);
 
   public TableDesc(String catalog, String schema, String tableType, String name) {
@@ -71,6 +80,29 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
     this.name = name;
     if (tableType != null) { this.tableType = TableType.valueOf(tableType); }
     rows = new SQLQueryRows();
+    rows.getRows().addListener((ListChangeListener<RowDesc>) change -> {
+      while (change.next()) {
+        if (change.wasAdded()) {
+          change.getAddedSubList().forEach(row -> {
+            if (row.getState() != RowDesc.RowDescState.LOADED) {
+              dirtyStateProperty.setValue(true);
+            }
+            row.addListener((observable) -> {
+              RowDesc currRow = (RowDesc) observable;
+              if (currRow.getState() != RowDesc.RowDescState.LOADED) {
+                dirtyStateProperty.setValue(true);
+              } else {
+                dirtyStateProperty.setValue(!getRows().stream().allMatch(tr -> tr.getState() == RowDesc.RowDescState.LOADED));
+              }
+            });
+          });
+        } else if (change.wasRemoved()) {
+          if (!change.getRemoved().stream().allMatch(row -> row.getState() == RowDesc.RowDescState.LOADED)) {
+            dirtyStateProperty.setValue(!getRows().stream().allMatch(row -> row.getState() == RowDesc.RowDescState.LOADED));
+          }
+        }
+      }
+    });
   }
 
   public final void addForeignKey(DbStructureReader.ForeignKey foreignKey) {
@@ -99,16 +131,6 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
     return getColumns().size();
   }
 
-  /** Return string representation of value which is given in row
-   * @param colName Name of column which value is returned
-   * @param rowValue Value of row
-   */
-  public final String getColumnString(String colName, Map<ColumnDesc, Object> rowValue) {
-    ColumnDesc col = getColumn(colName);
-    if (col != null) { return col.getColumnString(rowValue); }
-    return null;
-  }
-
   /** Return list of extensions which are defined for one column
    * @param column column which extensions is requested
    * @return list of extensions (if extensions missing, then empty list is returned)
@@ -120,8 +142,7 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
   }
 
   @Override
-  public final int compareTo(TableDesc other) {
-    if (other == null) { throw new NullPointerException(); }
+  public final int compareTo(@Nonnull TableDesc other) {
     return AbstractHelper.compareArrayNull(new Comparable[]{catalog, schema, tableType, name},
         new Comparable[]{other.getCatalog(), other.getSchema(), other.getTableType(), other.getName()});
   }
@@ -135,12 +156,8 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
     return row;
   }
 
-  /** Remove rows on given position */
-  public void removeRowsAction(int[] poz) {
-    for (int po : poz) { rows.getRows().get(po).setState(RowDesc.RowDescState.REMOVED); }
-  }
-
   /** Cancel changes in all rows */
+  @SuppressWarnings("unused")
   public void cancelChangesAction() {
     for (Iterator<RowDesc> itt = getRows().iterator(); itt.hasNext(); ) {
       RowDesc rowDesc = itt.next();
@@ -194,6 +211,7 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
     final TableDesc other = (TableDesc) obj;
     if ((this.name == null) ? (other.name != null) : !this.name.equals(other.name)) { return false; }
     if ((this.schema == null) ? (other.schema != null) : !this.schema.equals(other.schema)) { return false; }
+    //noinspection SimplifiableIfStatement
     if ((this.catalog == null) ? (other.catalog != null) : !this.catalog.equals(other.catalog)) { return false; }
     return this.tableType == null ? (other.tableType == null) : this.tableType.equals(other.tableType);
   }

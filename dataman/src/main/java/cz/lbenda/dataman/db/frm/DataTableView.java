@@ -52,7 +52,9 @@ public class DataTableView extends FilterableTableView<RowDesc> {
     super();
     this.tableDesc = tableDesc;
     this.filters().add(row -> RowDesc.RowDescState.REMOVED != row.getState());
-    if (tableDesc != null) { this.setEditable(true); }
+    if (tableDesc != null) {
+      this.setEditable(true);
+    }
   }
 
   @SuppressWarnings("unchecked")

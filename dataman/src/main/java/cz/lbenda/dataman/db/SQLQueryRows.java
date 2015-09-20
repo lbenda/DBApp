@@ -19,7 +19,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 13.9.15.
- * Result from SQL query wchich return rows */
+ * Result from SQL query which return rows */
 public class SQLQueryRows {
   private SQLQueryMetaData metaData = new SQLQueryMetaData(); public SQLQueryMetaData getMetaData() { return metaData; }
   private ObservableList<RowDesc> rows = FXCollections.observableArrayList(); public ObservableList<RowDesc> getRows() { return rows; }

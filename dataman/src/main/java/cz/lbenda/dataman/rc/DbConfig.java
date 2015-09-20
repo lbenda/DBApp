@@ -213,7 +213,7 @@ public class DbConfig {
             ps.setString(1, reader.getUser().getUsername());
             try (ResultSet rs = ps.executeQuery()) {
               while (rs.next()) {
-                if (rs.getString(1) == null && extendConfiguration == null) { // The null user is used only if no specific user configuraiton is readed
+                if (rs.getString(1) == null && extendConfiguration == null) { // The null user is used only if no specific user configuration is read
                   extendConfiguration = rs.getString(2);
                 } else if (rs.getString(1) != null ) {
                   extendConfiguration = rs.getString(2);

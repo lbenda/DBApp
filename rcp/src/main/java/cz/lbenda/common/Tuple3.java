@@ -17,41 +17,46 @@ package cz.lbenda.common;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 8.9.15. */
 @SuppressWarnings("unused")
-public class Tuple2<T, F> {
+public class Tuple3<T, F, S> {
 
   private T o1; public T get1() { return o1; } public void set1(T o1) { this.o1 = o1; }
   private F o2; public F get2() { return o2; } public void set2(F o2) { this.o2 = o2; }
+  private S o3; public S get3() { return o3; } public void set3(S o3) { this.o3 = o3; }
 
-  public Tuple2() {}
+  public Tuple3() {}
 
-  public Tuple2(T o1, F o2) {
+  public Tuple3(T o1, F o2, S o3) {
     this.o1 = o1;
     this.o2 = o2;
+    this.o3 = o3;
   }
 
   @Override
   public String toString() {
-    return "Tuple2{" +
+    return "Tuple3{" +
         "o1=" + o1 +
         ", o2=" + o2 +
+        ", o3=" + o3 +
         '}';
   }
 
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof Tuple2)) return false;
+    if (!(o instanceof Tuple3)) return false;
 
-    Tuple2<?, ?> tuple2 = (Tuple2<?, ?>) o;
+    Tuple3<?, ?, ?> tuple3 = (Tuple3<?, ?, ?>) o;
 
-    return !(o1 != null ? !o1.equals(tuple2.o1) : tuple2.o1 != null)
-        && !(o2 != null ? !o2.equals(tuple2.o2) : tuple2.o2 != null);
+    return !(o1 != null ? !o1.equals(tuple3.o1) : tuple3.o1 != null)
+        && !(o2 != null ? !o2.equals(tuple3.o2) : tuple3.o2 != null)
+        && !(o3 != null ? !o3.equals(tuple3.o3) : tuple3.o3 != null);
   }
 
   @Override
   public int hashCode() {
     int result = o1 != null ? o1.hashCode() : 0;
     result = 31 * result + (o2 != null ? o2.hashCode() : 0);
+    result = 31 * result + (o3 != null ? o3.hashCode() : 0);
     return result;
   }
 }

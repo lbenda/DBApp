@@ -15,11 +15,16 @@
  */
 package cz.lbenda.dataman.db;
 
+import cz.lbenda.common.Tuple3;
+import cz.lbenda.dataman.rc.DbConfig;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 19.9.15.
@@ -28,6 +33,36 @@ public class TestHelperPrepareDB {
 
   public static String USERNAME = "SA";
   public static String PASSWORD = "SA";
+
+  public static DbConfig createConfig(DBDriver driverClass, String url) {
+    DbConfig config = new DbConfig();
+    config.getJdbcConfiguration().setDriverClass(driverClass.getDriver());
+    config.getJdbcConfiguration().setUrl(url);
+    config.getJdbcConfiguration().setUsername(USERNAME);
+    config.getJdbcConfiguration().setPassword(PASSWORD);
+    config.setReader(new DbStructureReader(config));
+    return config;
+  }
+
+  public static List<Tuple3<DBDriver, String, String>> databases() {
+    //noinspection ArraysAsListWithZeroOrOneArgument
+    return Arrays.asList(
+        new Tuple3<>(DBDriver.HSQL, "jdbc:hsqldb:mem:smallTest", "PUBLIC") //,
+        //new Tuple3<>(DBDriver.H2, "jdbc:h2:mem:smallTest;DB_CLOSE_DELAY=-1", "SMALLTEST"),
+        //new Tuple3<>(DBDriver.DERBY, "jdbc:derby:memory:smallTest;create=true", "" )
+    );
+  }
+
+  public static Object[][] databasesDataProvider() {
+    Object[][] result = new Object[TestHelperPrepareDB.databases().size()][];
+    int i = 0;
+    for (Tuple3<TestHelperPrepareDB.DBDriver, String, String> tuple3 : TestHelperPrepareDB.databases()) {
+      result[i] = new Object[] { tuple3.get1(), tuple3.get2(), tuple3.get3() };
+      i++;
+    }
+    return result;
+  }
+
   public enum DBDriver {
     H2("org.h2.Driver"), HSQL("org.hsqldb.jdbcDriver"), DERBY("org.apache.derby.jdbc.EmbeddedDriver"), SQLITE("org.sqlite.JDBC") ;
     private String driver;

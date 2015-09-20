@@ -15,8 +15,10 @@
  */
 package cz.lbenda.dataman.db;
 
+import cz.lbenda.common.Tuple3;
 import cz.lbenda.dataman.rc.DbConfig;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -24,19 +26,21 @@ import java.util.Map;
 
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 19.9.15.
- * Testing implementatin of data structure reader
+ * Testing implementation of data structure reader
  */
 @SuppressWarnings("ConstantConditions")
 public class TestDataStructureReader {
 
   @DataProvider(name = "databases")
   public Object[][] createData1() {
-    return new Object[][] {
-        {TestHelperPrepareDB.DBDriver.HSQL, "jdbc:hsqldb:mem:smallTest", "PUBLIC"},
-        {TestHelperPrepareDB.DBDriver.H2, "jdbc:h2:mem:smallTest;DB_CLOSE_DELAY=-1", "SMALLTEST" },
-        {TestHelperPrepareDB.DBDriver.DERBY, "jdbc:derby:memory:smallTest;create=true", "" }
-        /* {TestHelperPrepareDB.DBDriver.SQLITE, "jdbc:sqlite::memory:smallTest", "" } */ // FIXME the sqlite not avoid memory
-    };
+    return TestHelperPrepareDB.databasesDataProvider();
+  }
+
+  @BeforeClass
+  private void setUp() {
+    for (Tuple3<TestHelperPrepareDB.DBDriver, String, String> tuple3 : TestHelperPrepareDB.databases()) {
+      TestHelperPrepareDB.prepareSmallDb(tuple3.get1(), tuple3.get2());
+    }
   }
 
   @SuppressWarnings("unused")
@@ -56,21 +60,9 @@ public class TestDataStructureReader {
     }
   }
 
-  public DbConfig createConfig(TestHelperPrepareDB.DBDriver driverClass, String url) {
-    DbConfig config = new DbConfig();
-    config.getJdbcConfiguration().setDriverClass(driverClass.getDriver());
-    config.getJdbcConfiguration().setUrl(url);
-    config.getJdbcConfiguration().setUsername(TestHelperPrepareDB.USERNAME);
-    config.getJdbcConfiguration().setPassword(TestHelperPrepareDB.PASSWORD);
-    config.setReader(new DbStructureReader(config));
-    return config;
-  }
-
   @Test(dataProvider = "databases")
   public void readStructureFromDatabase(TestHelperPrepareDB.DBDriver driverClass, String url, String catalog) {
-    TestHelperPrepareDB.prepareSmallDb(driverClass, url);
-
-    DbConfig config = createConfig(driverClass, url);
+    DbConfig config = TestHelperPrepareDB.createConfig(driverClass, url);
     config.getReader().generateStructure();
     // writeStructure(config); // Could be uncommented for seeing read struct
 
@@ -95,7 +87,7 @@ public class TestDataStructureReader {
 
   @Test(dataProvider = "databases", dependsOnMethods = { "readStructureFromDatabase" })
   public void testPrimaryColumnReader(TestHelperPrepareDB.DBDriver driverClass, String url, String catalog) {
-    DbConfig config = createConfig(driverClass, url);
+    DbConfig config = TestHelperPrepareDB.createConfig(driverClass, url);
     config.getReader().generateStructure();
 
     TableDesc tableDesc = config.getTableDescription(catalog, "test", "TABLE1");

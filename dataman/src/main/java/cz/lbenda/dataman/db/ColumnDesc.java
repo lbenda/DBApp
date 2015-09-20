@@ -32,10 +32,13 @@ public class ColumnDesc {
     TIMESTAMP(Timestamp.class), TIME(Time.class), OBJECT(Object.class);
     private final Class clazz;
     ColumnType(Class clazz) { this.clazz = clazz; }
+    @SuppressWarnings("unused")
     public Class getDataType() { return clazz; }
   }
 
-  private TableDesc tableDescription; public final TableDesc getTableDescription() { return tableDescription; }
+  private TableDesc tableDescription;
+  @SuppressWarnings("unused")
+  public final TableDesc getTableDescription() { return tableDescription; }
   private final String catalog; public String getCatalog() { return catalog; }
   private final String schema; public String getSchema() { return schema; }
   private final String table; public String getTable() { return table; }
@@ -48,8 +51,12 @@ public class ColumnDesc {
   private final boolean autoincrement; public final boolean isAutoincrement() { return autoincrement; }
   private final Boolean generated; public final Boolean isGenerated() { return generated; }
   private final String label; public final String getLabel() { return label; }
-  private String columnTypeName; public String getColumnTypeName() { return columnTypeName; }
-  private String javaClassName; public String getJavaClassName() { return javaClassName; }
+  private String columnTypeName;
+  @SuppressWarnings("unused")
+  public String getColumnTypeName() { return columnTypeName; }
+  private String javaClassName;
+  @SuppressWarnings("unused")
+  public String getJavaClassName() { return javaClassName; }
 
   /** Create SQL Query by data from result set metadata
    * @param mtd Metadata which hold information about column
@@ -96,7 +103,7 @@ public class ColumnDesc {
       case Types.TIME : return ColumnType.TIME;
       case Types.DATE : return ColumnType.DATE;
       case Types.INTEGER : return ColumnType.INTEGER;
-      case Types.CHAR : return ColumnType.STRING;
+      case Types.CHAR :
       case Types.VARCHAR : return ColumnType.STRING;
       case Types.BOOLEAN : return ColumnType.BOOLEAN;
       default : return ColumnType.OBJECT;
@@ -148,14 +155,9 @@ public class ColumnDesc {
 
     ColumnDesc column = (ColumnDesc) o;
 
-    if (autoincrement != column.autoincrement) return false;
-    if (generated != column.generated) return false;
-    if (nullable != column.nullable) return false;
-    if (pk != column.pk) return false;
-    if (position != column.position) return false;
-    if (displaySize != column.displaySize) return false;
-    if (dataType != column.dataType) return false;
-    return !(name != null ? !name.equals(column.name) : column.name != null);
+    return autoincrement == column.autoincrement && generated == column.generated && nullable == column.nullable
+        && pk == column.pk && position == column.position && displaySize == column.displaySize
+        && dataType == column.dataType && !(name != null ? !name.equals(column.name) : column.name != null);
   }
 
   @Override

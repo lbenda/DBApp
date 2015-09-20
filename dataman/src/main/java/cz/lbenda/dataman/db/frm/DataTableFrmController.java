@@ -17,29 +17,42 @@ package cz.lbenda.dataman.db.frm;
 
 import cz.lbenda.dataman.db.*;
 
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.*;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 10.9.15.
  * Controller for showing data in table */
 public class DataTableFrmController {
 
+  @SuppressWarnings("unused")
   private static final Logger LOG = LoggerFactory.getLogger(DataTableFrmController.class);
-  private DataTableView tableView;
 
-  private static Map<TableDesc, DataTableFrmController> controllers = new HashMap<>();
+  private DataTableView tableView;
+  private final ObjectProperty<String> title = new SimpleObjectProperty<>();
 
   public DataTableFrmController(TableDesc td) {
     tableView = new DataTableView(td);
+    td.dirtyStateProperty().addListener((observable, oldValue, newValue) -> {
+      title.setValue(generateTitle(td));
+    });
+    title.setValue(generateTitle(td));
     td.reloadRowsAction();
     this.tableView.setMetaData(td.getQueryRow().getMetaData());
     this.tableView.setRows(td.getRows());
   }
 
+  private String generateTitle(TableDesc td) {
+    if (Boolean.TRUE.equals(td.dirtyStateProperty().getValue())) {
+      return "* " + td.getName();
+    }
+    return td.getName();
+  }
+
   public DataTableFrmController(SQLQueryResult sqlQueryResult) {
     tableView = new DataTableView(null);
+    title.setValue(sqlQueryResult.getSql());
     this.tableView.setMetaData(sqlQueryResult.getSqlQueryRows().getMetaData());
     this.tableView.setRows(sqlQueryResult.getSqlQueryRows().getRows());
   }
@@ -49,4 +62,5 @@ public class DataTableFrmController {
     return tableView;
   }
 
+  public ObjectProperty<String> titleProperty() { return title; }
 }

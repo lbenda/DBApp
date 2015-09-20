@@ -63,12 +63,11 @@ public class DatamanApp extends Application {
     launch(args);
   }
 
-  private BorderPane mainPane; public BorderPane getMainPane() { return mainPane; }
+  private BorderPane mainPane;
   private StackPane leftPane = new StackPane();
   private StackPane centerPane = new StackPane();
   private RibbonController ribbonController;
   private SQLEditorController te;
-  private ObjectProperty<DbConfig> currentDbProperty;
   ObjectProperty<DataTableView> tableViewObjectProperty = new SimpleObjectProperty<>();
   private TabPane centerTabs = new TabPane();
   private TabPane detailTabs = new TabPane();
@@ -120,6 +119,13 @@ public class DatamanApp extends Application {
   }
 
   /** Add node to center pane */
+  public Tab addToCenter(ObjectProperty<String> title, Node node, boolean closable) {
+    Tab tab = addToCenter(title.getValue(), node, closable);
+    title.addListener((observable, oldValue, newValue) -> tab.setText(newValue));
+    return tab;
+  }
+
+  /** Add node to center pane */
   public void addRemoveToDetail(@Nonnull String title, @Nonnull Node node, boolean closable) {
     boolean removed = false;
     for (Iterator<Tab> itt = detailTabs.getTabs().iterator(); itt.hasNext(); ) {
@@ -137,6 +143,7 @@ public class DatamanApp extends Application {
     }
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public void start(Stage primaryStage) throws Exception {
     primaryStage.getIcons().add(new Image(this.getClass().getResourceAsStream("dataman_16.png")));
@@ -147,7 +154,7 @@ public class DatamanApp extends Application {
     primaryStage.setTitle(MessageFactory.getInstance().getMessage("app.name"));
 
     DbConfigFactory.reloadConfiguration();
-    currentDbProperty = new SimpleObjectProperty<>();
+    ObjectProperty<DbConfig> currentDbProperty = new SimpleObjectProperty<>();
 
     prepareMainPane();
     ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new OpenFileHandler());
@@ -174,7 +181,7 @@ public class DatamanApp extends Application {
 
     DbStructureFrmController dfc = new DbStructureFrmController(currentDbProperty, td -> {
       DataTableFrmController controller = new DataTableFrmController(td);
-      addToCenter(td.getName(), controller.getTabView(), true);
+      addToCenter(controller.titleProperty(), controller.getTabView(), true);
     });
     leftPane.getChildren().add(dfc.getControlledNode());
 
@@ -182,6 +189,7 @@ public class DatamanApp extends Application {
     primaryStage.setScene(scene);
     primaryStage.show();
 
+    /*
     try {
       // AquaFx.style();
       // FlatterFX.style();
@@ -189,9 +197,7 @@ public class DatamanApp extends Application {
     } catch (Exception e) {
       LOG.error("Problem with switch to AquaFx style", e);
     }
-
-    // te.getWebView().getEngine().loadContent("<html><head></head><body><h1>Hello world</h1></body></html>");
-    // te.getWebView().getEngine().load("http://www.facebook.com");
+    */
   }
 
   @Override

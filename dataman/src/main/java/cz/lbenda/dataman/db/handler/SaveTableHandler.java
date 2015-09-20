@@ -21,6 +21,7 @@ import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
 import cz.lbenda.rcp.localization.Message;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.event.ActionEvent;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
@@ -38,12 +39,19 @@ import javafx.event.ActionEvent;
 public class SaveTableHandler extends AbstractAction {
 
   private ObjectProperty<DataTableView> tableViewObjectProperty;
+  private ChangeListener<Boolean> dirtyListener = (observableValue, oldValue, newValue) -> setEnable(newValue);
 
   public SaveTableHandler(ObjectProperty<DataTableView> tableViewObjectProperty) {
     this.tableViewObjectProperty = tableViewObjectProperty;
     setEnable(tableViewObjectProperty.getValue() != null && tableViewObjectProperty.getValue().isEditable());
     tableViewObjectProperty.addListener((observableValue, oldValue, newValue) -> {
-      setEnable(newValue != null && newValue.isEditable());
+      if (oldValue != null && oldValue.getTableDesc() != null) {
+        oldValue.getTableDesc().dirtyStateProperty().removeListener(dirtyListener);
+      }
+      if (newValue != null && newValue.getTableDesc() != null) {
+        setEnable(newValue.getTableDesc().dirtyStateProperty().getValue());
+            newValue.getTableDesc().dirtyStateProperty().addListener(dirtyListener);
+      } else { setEnable(false); }
     });
   }
 
