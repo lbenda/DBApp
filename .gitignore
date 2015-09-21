@@ -30,3 +30,6 @@ application/target
 **/nbactions-netbeans-ide.xml
 **/nbactions.xml
 **/.directory
+wiki/
+pages/
+release.sh

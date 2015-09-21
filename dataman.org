@@ -1,0 +1,57 @@
+#+TITLE: Dataman
+
+* Úkoly
+  - [ ] Načítat cizí klíče spojené z více kolonek
+  - [ ] Detailní view k řádkům pro vlastní SQL dotazy
+  - [ ] Skrývání některých spojených tabulek
+  - [ ] Po přidání řádku na něho zascroolovat
+  - [ ] Podpora savable (upozornění před uzavíráním objektů před save)
+  - [ ] Maximální výška jedné buňky
+  - [ ] Zjišťování primárních klíčů asi není úplně dobře
+  - [ ] Upozornit při mazání a update v tabulce, která nemá definovaný primární klíč
+  - [ ] Navigovat po editaci buněk pomocí kurzorových kláves, TAB a Enter, jako v Excelu
+  - [ ] Vytvořit "excelovský" editační řádek
+
+* Specifikace
+Specifikace aplikace Dataman
+
+** Desing
+   Obrazovka je rozdělena na několik částí.
+   1) V levé části okna je formulář pro nadefinování nového připojení k databázi a i k prohlídce struktury databáze.
+
+** Obrazovky
+*** Konfigurace sezení
+    Konfigurace sezení je obhospodařována třídou /cz.lbenda.dbapp.rc.SessinConfiguration/
+
+* Quick Star
+  1) Přidání nového sezení: Tools -> Options na záložce DBApp a DB Configuration.
+
+* Rozšířená konfigurace
+** schemas
+*** schema
+    - catalog
+    - schema
+** tableOfKeySQLs
+   SQL dotazy, které slouží k získání čáselníkových hodnot
+*** tableOfKeySQL
+    - id: Identifikátor SQL dotazu
+    - text value: SQL dotaz
+** tableDescriptionExtensions
+   Rozšířená konfigurace tabulek
+*** tableDescriptionExtension
+    Rozšířená konfigurace jedné tabulky
+    - catalog: Katalog ve kterém je rozšiřovaná tabulka
+    - schema: Schéma ve kterém je rozšiřovaná tabulka
+    - table: Jméno rozšiřované tabulky
+**** comboBox
+     Popisuje editační prvek kolonky, kterým je combo box
+     - column: Kolonka tabulky kde má být combo box
+     - tableOfKeySQL: Identifikátor tableOfKeySQL, který obsahuje SQL dotaz pro získání hodnot pro combo box
+     - column_value: Hodnota, která má být uložena do kolonky
+     - column_choice: Hodnota, která má být zobrazena uživateli
+     - column_tooltip: Tooltip k hodnotě, která je zobrazena uživateli
+***** reloadOn
+      Popisuje při změně které tabulky má dojít k znovunačtení hodnot pro combo box
+      - catalog: Katalog ve kterém je tabulka
+      - schema: Schéma ve kterém je tabulka
+      - table: Tabulka, která při změně vyvolá znovunačtení hodnot combo boxu
