@@ -24,6 +24,8 @@ import org.fxmisc.richtext.PlainTextChange;
 import org.fxmisc.richtext.StyleSpans;
 import org.reactfx.EventStream;
 import org.reactfx.util.Try;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -34,17 +36,24 @@ import java.util.concurrent.Executors;
  * Class which beforeOpenInit text editor for */
 public class TextEditor {
 
+  @SuppressWarnings("unused")
+  private static final Logger LOG = LoggerFactory.getLogger(TextEditor.class);
+
   private CodeArea codeArea;
   private ExecutorService executor;
   private Highlighter highlighter; public Highlighter getHighlighter() {
     if (highlighter == null) { changeHighlighter(new HighlighterPlain()); }
     return highlighter;
   }
-  private Scene scene; public void setScene(Scene scene) { this.scene = scene; } public Scene getScene() { return scene; }
+  private Scene scene; public void setScene(Scene scene) { this.scene = scene; }
+  public Scene getScene() {
+    return scene == null ? codeArea != null ? codeArea.getScene() : null : scene;
+  }
 
   /** Change text in editor */
   public void changeText(String text) {
-    codeArea.replaceText(0, 0, text);
+    if (text == null) { codeArea.replaceText(0, 0, ""); }
+    else { codeArea.replaceText(0, 0, text); }
   }
 
   /** Return text which is in code Area */
@@ -54,14 +63,17 @@ public class TextEditor {
 
   public void changeHighlighter(Highlighter highlighter) {
     this.highlighter = highlighter;
-    if (scene != null) {
-      scene.getStylesheets().clear();
-      if (highlighter != null) {
-        scene.getStylesheets().add(highlighter.stylesheetPath());
-      }
+    getScene().getStylesheets().clear();
+    if (highlighter != null) { getScene().getStylesheets().add(highlighter.stylesheetPath()); }
+    if (codeArea != null) {
+      computeHighlightingAsync().setOnSucceeded(event -> {
+        //noinspection unchecked
+        applyHighlighting(((Task<StyleSpans<Collection<String>>>) event.getSource()).getValue());
+      });
     }
   }
 
+  @SuppressWarnings("unused")
   public Scene createScene() {
     createCodeArea();
     scene = new Scene(new StackPane(codeArea), 600, 400);
@@ -80,6 +92,7 @@ public class TextEditor {
         .awaitLatest(textChanges)
         .map(Try::get)
         .subscribe(this::applyHighlighting);
+    scene = codeArea.getScene();
     return codeArea;
   }
 

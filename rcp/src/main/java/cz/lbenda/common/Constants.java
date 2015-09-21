@@ -35,6 +35,9 @@ public class Constants {
   @Message
   public static String CONF_TIME_FORMAT;
 
+  public static double TextAreaWindowsHeight = 500;
+  public static double TextAreaWindowsWeight = 800;
+
   public static DateTimeFormatter LOCAL_DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
   public static ThreadLocal<DateFormat> DATE_FORMATTER = new ThreadLocal<DateFormat>() {
     @Override

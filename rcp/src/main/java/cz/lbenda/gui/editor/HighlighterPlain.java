@@ -20,7 +20,6 @@ import org.fxmisc.richtext.StyleSpansBuilder;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.regex.Pattern;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 6.9.15.
  * Plain text - nothing to do */

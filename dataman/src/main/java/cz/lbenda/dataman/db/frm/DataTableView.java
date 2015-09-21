@@ -17,10 +17,7 @@ package cz.lbenda.dataman.db.frm;
 
 import cz.lbenda.dataman.db.*;
 import cz.lbenda.dataman.rc.ComboBoxItemTableCell;
-import cz.lbenda.rcp.tableView.DatePickerTableCell;
-import cz.lbenda.rcp.tableView.DateTimePickerTableCell;
-import cz.lbenda.rcp.tableView.FilterableTableColumn;
-import cz.lbenda.rcp.tableView.FilterableTableView;
+import cz.lbenda.gui.tableView.*;
 import javafx.beans.InvalidationListener;
 import javafx.collections.ObservableList;
 import javafx.scene.canvas.Canvas;
@@ -122,6 +119,13 @@ public class DataTableView extends FilterableTableView<RowDesc> {
       case TIME:
       case TIMESTAMP:
         return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) DateTimePickerTableCell.forTableColumn();
+      case STRING:
+        return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) TextAreaTableCell.forTableColumn(
+            columnDesc.getLabel() != null
+                ? columnDesc.getLabel() + " (" + columnDesc.getSchema() + "." + columnDesc.getTable() + "." + columnDesc.getName() + ")"
+                : columnDesc.getSchema() + "." + columnDesc.getTable() + "." + columnDesc.getName(),
+            columnDesc.getDisplaySize() <= 100);
+        // return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) TextFieldTableCell.forTableColumn();
       default:
         return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) TextFieldTableCell.forTableColumn();
     }
@@ -130,26 +134,8 @@ public class DataTableView extends FilterableTableView<RowDesc> {
   @Override
   public void setRows(ObservableList<RowDesc> rows) {
     super.setRows(rows);
-    InvalidationListener il = observable -> {
-      refilter();
-      // getItems().filtered(REMOVE_PREDICATE);
-      // getItems().remove(observable);
-    };
+    InvalidationListener il = observable -> refilter();
     rows.forEach(row -> row.addListener(il));
-    /*
-    rows.addListener((ListChangeListener<RowDesc>) change -> {
-      while (change.next()) {
-        if (change.wasAdded()) {
-          getItems().addAll(change.getAddedSubList());
-          change.getAddedSubList().forEach(row -> row.addListener(il));
-        }
-        if (change.wasRemoved()) {
-          getItems().removeAll(change.getRemoved());
-        }
-      }
-    });
-    getItems().addAll(rows);
-    */
   }
 
   @Override

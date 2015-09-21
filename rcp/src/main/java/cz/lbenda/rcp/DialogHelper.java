@@ -17,8 +17,11 @@ package cz.lbenda.rcp;
 
 import cz.lbenda.rcp.localization.Message;
 import cz.lbenda.rcp.localization.MessageFactory;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.layout.Pane;
+import javafx.stage.Stage;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
@@ -50,6 +53,7 @@ public class DialogHelper {
   }
 
   /** Ask user if file can be overwrite if file exist */
+  @SuppressWarnings("unused")
   public boolean canBeOverwriteDialog(File file) {
     if (file == null) { return false; }
     if (!file.exists()) { return true; }
@@ -85,5 +89,15 @@ public class DialogHelper {
     alert.setHeaderText(String.format(msgFileNotExistHeader, file.getName()));
     alert.setContentText(msgFileNotExistContent);
     alert.show();
+  }
+
+  public void openWindowInCenterOfStage(Stage parentStage, Pane pane, String title) {
+    Stage stage = new Stage();
+    stage.setTitle(title);
+    stage.setScene(new Scene(pane, pane.getPrefWidth(), pane.getPrefHeight()));
+    stage.getIcons().addAll(parentStage.getIcons());
+    stage.show();
+    stage.setX(parentStage.getX() + (parentStage.getWidth() - stage.getWidth()) / 2);
+    stage.setY(parentStage.getY() + (parentStage.getHeight() - stage.getHeight()) / 2);
   }
 }

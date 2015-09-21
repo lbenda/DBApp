@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cz.lbenda.rcp.tableView;
+package cz.lbenda.gui.tableView;
 
 import cz.lbenda.rcp.IconFactory;
 import cz.lbenda.rcp.localization.Message;
@@ -31,17 +31,16 @@ import javafx.event.Event;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 18.9.15.
  * Menu item which show list box */
@@ -314,8 +313,7 @@ public class FilterMenuItem extends MenuItem {
     }
 
     @Override
-    public int compareTo(Item o) {
-      if (o == null) { throw new NullPointerException("The compared object mustn't be null"); }
+    public int compareTo(@Nonnull Item o) {
       if (!this.getClass().equals(o.getClass())) { throw new ClassCastException("The compared object must be same. Expected: "
           + getClass().getName() + " but compared object is: " + o.getClass().getName()); }
       if (o.getName() == null) {

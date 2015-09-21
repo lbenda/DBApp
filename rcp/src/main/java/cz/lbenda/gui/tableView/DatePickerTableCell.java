@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cz.lbenda.rcp.tableView;
+package cz.lbenda.gui.tableView;
 
 import cz.lbenda.common.StringConverters;
 import cz.lbenda.rcp.localization.MessageFactory;

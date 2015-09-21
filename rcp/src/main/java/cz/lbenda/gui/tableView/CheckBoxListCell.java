@@ -13,19 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cz.lbenda.rcp.tableView;
+package cz.lbenda.gui.tableView;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
+import javafx.event.Event;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
-import javafx.scene.input.MouseEvent;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
 
@@ -38,48 +37,25 @@ public class CheckBoxListCell<T> extends ListCell<T> {
   private ObjectProperty<StringConverter<T>> converter;
   private ObjectProperty<Callback<T, ObservableValue<Boolean>>> selectedStateCallback;
 
-  private final StringConverter<T> defaultStringConverter = new StringConverter() {
-    public String toString(Object var1) {
-      return var1 == null?null:var1.toString();
-    }
-
-    public Object fromString(String var1) {
-      return var1;
-    }
-  };
-
   public static <T> Callback<ListView<T>, ListCell<T>> forListView(Callback<T, ObservableValue<Boolean>> var0) {
     return forListView(var0, null);
   }
 
   public static <T> Callback<ListView<T>, ListCell<T>> forListView(Callback<T, ObservableValue<Boolean>> var0, StringConverter<T> var1) {
-    return (var2) -> {
-      return new CheckBoxListCell(var0, var1);
-    };
-  }
-
-  public CheckBoxListCell() {
-    this((Callback)null);
-  }
-
-  public CheckBoxListCell(Callback<T, ObservableValue<Boolean>> var1) {
-    this(var1, null);
+    return var2 -> new CheckBoxListCell<>(var0, var1);
   }
 
   public CheckBoxListCell(Callback<T, ObservableValue<Boolean>> var1, StringConverter<T> var2) {
-    if (var2 == null) {
-      var2 = defaultStringConverter;
-    }
-    this.converter = new SimpleObjectProperty(this, "converter");
-    this.selectedStateCallback = new SimpleObjectProperty(this, "selectedStateCallback");
+    this.converter = new SimpleObjectProperty<>(this, "converter");
+    this.selectedStateCallback = new SimpleObjectProperty<>(this, "selectedStateCallback");
     this.getStyleClass().add("check-box-list-cell");
     this.setSelectedStateCallback(var1);
     this.setConverter(var2);
     this.checkBox = new CheckBox();
     this.setAlignment(Pos.CENTER_LEFT);
     this.setContentDisplay(ContentDisplay.LEFT);
-    this.setGraphic((Node) null);
-    this.checkBox.setOnAction(event -> event.consume());
+    this.setGraphic(null);
+    this.checkBox.setOnAction(Event::consume);
   }
 
   public final ObjectProperty<StringConverter<T>> converterProperty() {
@@ -91,7 +67,8 @@ public class CheckBoxListCell<T> extends ListCell<T> {
   }
 
   public final StringConverter<T> getConverter() {
-    return (StringConverter)this.converterProperty().get();
+    //noinspection unchecked
+    return (StringConverter) this.converterProperty().get();
   }
 
   public final ObjectProperty<Callback<T, ObservableValue<Boolean>>> selectedStateCallbackProperty() {
@@ -103,31 +80,33 @@ public class CheckBoxListCell<T> extends ListCell<T> {
   }
 
   public final Callback<T, ObservableValue<Boolean>> getSelectedStateCallback() {
-    return (Callback)this.selectedStateCallbackProperty().get();
+    //noinspection unchecked
+    return (Callback) this.selectedStateCallbackProperty().get();
   }
 
   public void updateItem(T var1, boolean var2) {
     super.updateItem(var1, var2);
     if(!var2) {
-      StringConverter var3 = this.getConverter();
+      StringConverter<T> var3 = this.getConverter();
       Callback var4 = this.getSelectedStateCallback();
-      if(var4 == null) {
+      if (var4 == null) {
         throw new NullPointerException("The CheckBoxListCell selectedStateCallbackProperty can not be null");
       }
 
       this.setGraphic(this.checkBox);
-      this.setText(var3 != null?var3.toString(var1):(var1 == null?"":var1.toString()));
+      this.setText(var3 != null ? var3.toString(var1) : (var1 == null?"":var1.toString()));
       if(this.booleanProperty != null) {
         this.checkBox.selectedProperty().unbindBidirectional((BooleanProperty)this.booleanProperty);
       }
 
-      this.booleanProperty = (ObservableValue)var4.call(var1);
+      //noinspection unchecked
+      this.booleanProperty = (ObservableValue<Boolean>) var4.call(var1);
       if(this.booleanProperty != null) {
         this.checkBox.selectedProperty().bindBidirectional((BooleanProperty)this.booleanProperty);
       }
     } else {
-      this.setGraphic((Node)null);
-      this.setText((String)null);
+      this.setGraphic(null);
+      this.setText(null);
     }
 
   }
