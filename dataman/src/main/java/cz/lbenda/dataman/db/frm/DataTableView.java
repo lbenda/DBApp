@@ -58,7 +58,8 @@ public class DataTableView extends FilterableTableView<RowDesc> {
     this.tableDesc = tableDesc;
     this.sqlQueryRows = sqlQueryRows;
     this.filters().add(row -> RowDesc.RowDescState.REMOVED != row.getState());
-    this.setEditable(false);
+    this.setEditable(tableDesc != null
+        && TableDesc.TableType.TABLE.equals(tableDesc.getTableType()));
   }
 
   @SuppressWarnings("unchecked")
