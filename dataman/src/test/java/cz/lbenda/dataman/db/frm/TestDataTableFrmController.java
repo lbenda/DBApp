@@ -18,8 +18,8 @@ package cz.lbenda.dataman.db.frm;
 import cz.lbenda.dataman.db.SQLQueryRows;
 import cz.lbenda.dataman.db.TableDesc;
 import cz.lbenda.test.JavaFXInitializer;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -36,7 +36,7 @@ public class TestDataTableFrmController {
   @Test
   public void contstructor() {
     TableDesc td = mock(TableDesc.class);
-    ObjectProperty<Boolean> dirty = new SimpleObjectProperty<>(false);
+    BooleanProperty dirty = new SimpleBooleanProperty(false);
     SQLQueryRows sqlRows = new SQLQueryRows();
     when(td.dirtyProperty()).thenReturn(dirty);
     when(td.getQueryRow()).thenReturn(sqlRows);
@@ -44,12 +44,12 @@ public class TestDataTableFrmController {
     when(td.isLoaded()).thenReturn(false);
 
     // TableDesc td = new TableDesc("catalog", "schema", "TABLE", "table1");
-    DataTableFrmController controller1 = new DataTableFrmController(td);
+    new DataTableFrmController(td);
     verify(td, times(1)).isLoaded();
     verify(td, times(1)).reloadRowsAction();
     when(td.isLoaded()).thenReturn(true);
 
-    DataTableFrmController controller2 = new DataTableFrmController(td);
+    new DataTableFrmController(td);
     verify(td, times(2)).isLoaded();
     verify(td, times(1)).reloadRowsAction();
   }

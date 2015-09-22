@@ -78,7 +78,6 @@ public class DbConfig {
   private DbStructureReader reader; public final DbStructureReader getReader() { return reader; } public final void setReader(DbStructureReader reader) { this.reader = reader; }
   /** Timeout when unused connection will be closed */
   private int connectionTimeout; public int getConnectionTimeout() { return connectionTimeout; } public void setConnectionTimeout(int connectionTimeout) { this.connectionTimeout = connectionTimeout; }
-
   /** Table description map */
   private final Map<String, Map<String, Map<String, TableDesc>>> tableDescriptionsMap = new HashMap<>(); public  Map<String, Map<String, Map<String, TableDesc>>> getTableDescriptionsMap() { return tableDescriptionsMap; }
 

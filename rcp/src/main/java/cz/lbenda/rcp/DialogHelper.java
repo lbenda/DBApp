@@ -15,17 +15,27 @@
  */
 package cz.lbenda.rcp;
 
+import cz.lbenda.rcp.action.Savable;
+import cz.lbenda.rcp.action.SavableRegistry;
 import cz.lbenda.rcp.localization.Message;
 import cz.lbenda.rcp.localization.MessageFactory;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.CheckBoxListCell;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import org.apache.commons.io.FilenameUtils;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 13.9.15.
  * Class which help with creating dialog */
@@ -47,6 +57,17 @@ public class DialogHelper {
   public String msgFileNotExistHeader = "The file '%s' not exist.";
   @Message
   public String msgFileNotExistContent = "For importing configuration from file, the file must exist.";
+  @Message
+  public String msgNotSavedObjectsTitle = "Some object wasn't saved.";
+  @Message
+  public String msgNotSavedObjectsHeader = "Some object aren't saved. You can choose if changes will be saved or not.";
+
+  @Message
+  public String button_cancel = "Cancel";
+  @Message
+  public String button_saveAndClose = "Save and close";
+  @Message
+  public String button_closeWithoutSave = "Close without save";
 
   private DialogHelper() {
     MessageFactory.initializeMessages(this);
@@ -99,5 +120,95 @@ public class DialogHelper {
     stage.show();
     stage.setX(parentStage.getX() + (parentStage.getWidth() - stage.getWidth()) / 2);
     stage.setY(parentStage.getY() + (parentStage.getHeight() - stage.getHeight()) / 2);
+  }
+
+  public void openModalWindowInCenterOfStage(Stage parentStage, Pane pane, String title) {
+    Stage stage = new Stage();
+    stage.setTitle(title);
+    stage.setScene(new Scene(pane, pane.getPrefWidth(), pane.getPrefHeight()));
+    stage.getIcons().addAll(parentStage.getIcons());
+    // stage.show();
+    stage.setX(parentStage.getX() + (parentStage.getWidth() - stage.getWidth()) / 2);
+    stage.setY(parentStage.getY() + (parentStage.getHeight() - stage.getHeight()) / 2);
+    stage.showAndWait();
+  }
+
+  /** Show unsaved object if aren't saved. if user want cancel the closing then return false, elserwhere return true
+   * @param parentStage stage which will be close
+   * @param savableRegistry register which hold unsaved data
+   * @return true if window/object can be closed */
+  public boolean showUnsavedObjectDialog(Stage parentStage, SavableRegistry savableRegistry) {
+    Set<Savable> savables = savableRegistry.dirtySavables();
+    if (savables.size() == 0) { return true; }
+    Dialog<?> dialog = new Dialog<>();
+    dialog.setResizable(false);
+    dialog.setTitle(msgNotSavedObjectsTitle);
+    dialog.setHeaderText(msgNotSavedObjectsHeader);
+
+    BorderPane pane = new BorderPane();
+    pane.setPrefHeight(400);
+    pane.setPrefWidth(300);
+    ListView<DialogHelper.Item> listView = new ListView<>();
+    listView.getItems().addAll(
+        savables.stream().map(savable -> new Item(savable, true)).collect(Collectors.toList()));
+    listView.setCellFactory(CheckBoxListCell.forListView(DialogHelper.Item::onProperty));
+    pane.setCenter(listView);
+
+    dialog.getDialogPane().setContent(pane);
+
+    ButtonType btCancel = new ButtonType(button_cancel, ButtonBar.ButtonData.CANCEL_CLOSE);
+    ButtonType btSaveClose = new ButtonType(button_saveAndClose, ButtonBar.ButtonData.OK_DONE);
+    ButtonType btClose = new ButtonType(button_closeWithoutSave);
+
+    dialog.getDialogPane().getButtonTypes().addAll(btClose, btSaveClose, btCancel);
+
+    Optional<?> result = dialog.showAndWait();
+    if (result.isPresent()) {
+      if (btCancel == result.get()) { return false; }
+      if (btSaveClose == result.get()) {
+        listView.getItems().stream().filter(Item::isOn).forEach(item -> item.getSavable().save());
+      }
+    } else { return false; }
+    return true;
+  }
+
+  public static class Item implements Comparable<Item> {
+    private final Savable savable;
+    private final BooleanProperty onProperty = new SimpleBooleanProperty();
+
+    public Item(@Nonnull Savable savable, boolean on) {
+      this.savable = savable;
+      setOn(on);
+    }
+
+    public final @Nonnull Savable getSavable() { return savable; }
+    public final BooleanProperty onProperty() { return this.onProperty; }
+    public final boolean isOn() { return this.onProperty().get(); }
+    public final void setOn(final boolean on) { this.onProperty().set(on); }
+
+    @Override
+    public String toString() {
+      return savable.displayName();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof Item)) return false;
+      Item item = (Item) o;
+      return getSavable().equals(item.getSavable());
+    }
+
+    @Override
+    public int hashCode() {
+      return getSavable().hashCode();
+    }
+
+    @Override
+    public int compareTo(@Nonnull Item o) {
+      if (!this.getClass().equals(o.getClass())) { throw new ClassCastException("The compared object must be same. Expected: "
+          + getClass().getName() + " but compared object is: " + o.getClass().getName()); }
+      return getSavable().displayName().compareTo(o.getSavable().displayName());
+    }
   }
 }

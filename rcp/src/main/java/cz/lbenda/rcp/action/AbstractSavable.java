@@ -15,62 +15,39 @@
  */
 package cz.lbenda.rcp.action;
 
-import java.io.IOException;
-
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
  * Implementation of savable interface */
+@SuppressWarnings("JavaDoc")
 public abstract class AbstractSavable implements Savable {
 
-  @Override
-  public final void save() throws IOException {
-    // TODO
-    /*
-    Template<AbstractSavable> t = new Template<AbstractSavable>(AbstractSavable.class, null, this);
-    for (Savable s : Savable.REGISTRY.lookup(t).allInstances()) {
-      if (s == this) {
-        handleSave();
-        unregister();
-        return;
-      }
-    }
-    /* LOG.log(Level.WARNING, "Savable {0} is not in Savable.REGISTRY! " // NOI18N
-        + "Have not you forgotten to call register() in constructor?", getClass()); // NOI18N
-        */
+  /** Savable register for current savable object. The default is global savable register. */
+  public SavableRegistry savableRegistry = SavableRegistry.getInstance();
+
+  /** Set savable register for object */
+  public void setSavableRegister(SavableRegistry savableRegister) {
+    this.savableRegistry = savableRegister;
   }
 
-  /** Tells the system to register this {@link Savable} into {@link Savable#REGISTRY}.
+  /** Tells the system to register this {@link Savable} into {@link SavableRegistry#registry}.
    * Only one {@link Savable} (according to {@link #equals(java.lang.Object)} and
-   * {@link #hashCode()}) can be in the registry. New call to {@link #register()}
+   * {@link #hashCode()}) can be in the registry. New call to {@link AbstractSavable#register()}
    * replaces any previously registered and equal {@link Savable}s. After this call
-   * the {@link Savable#REGISTRY} holds a strong reference to <code>this</code>
+   * the {@link SavableRegistry#registry} holds a strong reference to <code>this</code>
    * which prevents <code>this</code> object to be garbage collected until it
    * is {@link #unregister() unregistered} or {@link #register() replaced by
    * equal one}.
    */
   protected final void register() {
-    // SavableRegistry.register(this); // TODO
+    savableRegistry.register(this);
   }
 
-  /** Removes this {@link Savable} from the {@link Savable#REGISTRY} (if it
+  /** Removes this {@link Savable} from the {@link SavableRegistry#registry} (if it
    * is present there, by relying on {@link #equals(java.lang.Object)}
    * and {@link #hashCode()}).
    */
   protected final void unregister() {
-    // SavableRegistry.unregister(this); // todo
+    savableRegistry.unregister(this);
   }
-
-  /** Finds suitable display name for the object this {@link Savable}
-   * represents.
-   * @return human readable, localized short string name
-   */
-  protected abstract String findDisplayName();
-
-  /** To be overriden by subclasses to handle the actual save of
-   * the object.
-   *
-   * @throws IOException
-   */
-  protected abstract void handleSave() throws IOException;
 
   /** Equals and {@link #hashCode} need to be properly implemented
    * by subclasses to correctly implement equality contract.
@@ -87,7 +64,7 @@ public abstract class AbstractSavable implements Savable {
 
   /** HashCode and {@link #equals} need to be properly implemented
    * by subclasses, so two {@link Savable}s representing the same object
-   * beneath are really equal and have the same {@link #hashCode()}.
+   * beneath are really equal and have the same {@link Object#hashCode()}.
    * @return integer hash
    * @see #equals(java.lang.Object)
    */

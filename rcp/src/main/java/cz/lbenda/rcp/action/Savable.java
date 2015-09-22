@@ -15,13 +15,20 @@
  */
 package cz.lbenda.rcp.action;
 
-import java.io.IOException;
+import javafx.beans.property.BooleanProperty;
+
+import javax.annotation.Nonnull;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
  * Interface for object which can be saved */
 public interface Savable {
 
-  /** Invoke the save operation.
-   * @throws IOException if the object could not be saved */
-  void save() throws IOException;
+  /** Invoke the save operation. */
+  void save();
+
+  /** Inform if the object is dirty */
+  @Nonnull BooleanProperty dirtyProperty();
+
+  /** String which represent savable object in list, of un-savable objects */
+  @Nonnull String displayName();
 }

@@ -107,7 +107,8 @@ public class FilterMenuItem extends MenuItem {
     this.getStyleClass().add("listview-menu-item");
 
     SortedList<Item> sortedList = new SortedList<>(filteredList, Item::compareTo);
-    ListView<Item> listView = new ListView<>(); listView.setItems(sortedList);
+    ListView<Item> listView = new ListView<>();
+    listView.setItems(sortedList);
     listView.setCellFactory(CheckBoxListCell.forListView(Item::onProperty));
 
     TextField textField = new TextField();

@@ -44,7 +44,7 @@ public class DbStructureFrmController {
     treeView.setOnMouseClicked(event -> {
       if (event.getClickCount() == 2) {
         TreeItem<TableDesc> item = (TreeItem<TableDesc>) treeView.getSelectionModel().getSelectedItem();
-        tableShower.accept(item.getValue());
+        tableShower.accept(item.getValue()); // FIXME Exception in thread "JavaFX Application Thread" java.lang.ClassCastException: java.lang.String cannot be cast to cz.lbenda.dataman.db.TableDesc
       }
     });
     dbConfigProperty.addListener(observable -> {

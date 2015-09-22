@@ -38,6 +38,8 @@ import java.util.function.Consumer;
 
 import cz.lbenda.dataman.schema.exconf.AuditType;
 import cz.lbenda.rcp.ExceptionMessageFrmController;
+import cz.lbenda.rcp.action.SavableRegistry;
+import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +55,8 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
 
   private DBAppDataSource dataSource = null;
   private boolean connected = false;
+  /** Savable register for whole db config. */
+  private SavableRegistry savableRegistry; public SavableRegistry getSavableRegistry() { return savableRegistry; }
 
   public final void setDbConfig(DbConfig dbConfig) {
     this.dbConfig = dbConfig;
@@ -81,7 +85,11 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   }
 
   /** Close all connections */
-  public void close() {
+  public void close(Stage stage) {
+    if (this.savableRegistry != null) {
+      if (!this.savableRegistry.close(stage)) { return; }
+      this.savableRegistry = null;
+    }
     if (dataSource != null) {
       try {
         dataSource.closeAllConnections();
@@ -89,7 +97,9 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
       } catch (SQLException e) {
         LOG.error("The connection isn't close.", e);
       }
-    } else { this.connected = false; }
+    } else {
+      this.connected = false;
+    }
   }
 
   public Connection getConnection() throws RuntimeException {
@@ -331,6 +341,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   }
 
   public void generateStructure() {
+    if (this.savableRegistry == null) { this.savableRegistry = SavableRegistry.getInstance(); }
     try (Connection conn = getConnection()) {
       DatabaseMetaData dmd = conn.getMetaData();
       SQLDialect dialect = this.dbConfig.getJdbcConfiguration().getDialect();
@@ -341,6 +352,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
         while (tabs.next()) {
           TableDesc td = this.dbConfig.getOrCreateTableDescription(tabs.getString(dialect.tableCatalog()),
               tabs.getString(dialect.tableSchema()), tabs.getString(dialect.tableName()));
+          td.setSavableRegister(savableRegistry);
           td.setTableType(TableDesc.TableType.fromJDBC(tabs.getString(dialect.tableType())));
           td.setComment(dialect.tableRemarks());
         }

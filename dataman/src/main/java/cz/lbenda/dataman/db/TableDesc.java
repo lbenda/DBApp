@@ -19,19 +19,19 @@ import cz.lbenda.common.AbstractHelper;
 import cz.lbenda.dataman.rc.DbConfig;
 import cz.lbenda.rcp.action.AbstractSavable;
 import cz.lbenda.dataman.schema.exconf.AuditType;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /** Main object which hold all information about database table structure
- * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/16/14.
- */
+ * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/16/14. */
 public class TableDesc extends AbstractSavable implements Comparable<TableDesc> {
 
   public enum TableType {
@@ -70,8 +70,8 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
   private AuditType audit = TableDescriptionExtension.NONE_AUDIT; public final AuditType getAudit() { return audit; } public final void setAudit(AuditType audit) { this.audit = audit; }
 
   /** Inform about dirty state of table */
-  private ObjectProperty<Boolean> dirty = new SimpleObjectProperty<>(false);
-  public ObjectProperty<Boolean> dirtyProperty() { return dirty; }
+  private BooleanProperty dirty = new SimpleBooleanProperty(false);
+  public @Nonnull BooleanProperty dirtyProperty() { return dirty; }
   @SuppressWarnings("unused")
   public boolean isDirty() { return Boolean.TRUE.equals(dirty.getValue()); }
 
@@ -109,6 +109,10 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
           }
         }
       }
+    });
+    loaded.addListener((observable, oldValue, newValue) -> {
+      if (newValue) { register(); }
+      else { unregister(); }
     });
   }
 
@@ -202,14 +206,15 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
   }
 
   @Override
-  protected String findDisplayName() {
-    return String.format("%s: %s.%s.%s", getDbConfig().getId(),
-        getCatalog(), getSchema(), getName());
+  public @Nonnull String displayName() {
+    return String.format("%s: %s.%s.%s", getDbConfig().getId(), getCatalog(), getSchema(), getName());
   }
 
   @Override
-  protected void handleSave() throws IOException {
-    this.saveChangesAction();
+  public void save() {
+    if (Boolean.TRUE.equals(dirtyProperty().getValue())) {
+      this.saveChangesAction();
+    }
   }
 
   @Override

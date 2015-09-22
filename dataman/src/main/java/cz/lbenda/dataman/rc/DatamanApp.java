@@ -20,6 +20,8 @@ import cz.lbenda.dataman.db.frm.DataTableFrmController;
 import cz.lbenda.dataman.db.frm.DataTableView;
 import cz.lbenda.dataman.db.frm.DbStructureFrmController;
 import cz.lbenda.dataman.db.handler.*;
+import cz.lbenda.rcp.DialogHelper;
+import cz.lbenda.rcp.action.SavableRegistry;
 import cz.lbenda.rcp.ribbon.RibbonController;
 import cz.lbenda.dataman.db.sql.SQLEditorController;
 import cz.lbenda.rcp.config.ConfigurationRW;
@@ -183,6 +185,7 @@ public class DatamanApp extends Application {
     ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new AddRowHandler(tableViewObjectProperty));
     ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new ReloadTableHandler(tableViewObjectProperty));
     ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new SaveTableHandler(tableViewObjectProperty));
+    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new SaveAllTableHandler(currentDbProperty));
     ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new OpenConnectedTablesHandler(tableViewObjectProperty,
         detailDescriptor -> addRemoveToDetail(detailDescriptor.getTitle(), detailDescriptor.getNode(), detailDescriptor.getClosable())));
     ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new ExportTableHandler(sqlQueryRowsObjectProperty));
@@ -201,8 +204,12 @@ public class DatamanApp extends Application {
 
     // Scene scene = te.createScene();
     primaryStage.setScene(scene);
+    primaryStage.setOnCloseRequest(event -> {
+      if (!DialogHelper.getInstance().showUnsavedObjectDialog(primaryStage, SavableRegistry.getInstance())) {
+        event.consume();
+      }
+    });
     primaryStage.show();
-
     /*
     try {
       // AquaFx.style();

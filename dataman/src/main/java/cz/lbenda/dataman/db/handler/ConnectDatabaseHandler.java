@@ -22,6 +22,8 @@ import cz.lbenda.rcp.action.ActionGUIConfig;
 import cz.lbenda.rcp.localization.Message;
 import javafx.beans.property.ObjectProperty;
 import javafx.event.ActionEvent;
+import javafx.scene.Node;
+import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +47,7 @@ import org.slf4j.LoggerFactory;
 )
 public class ConnectDatabaseHandler extends AbstractAction {
 
+  @SuppressWarnings("unused")
   private static Logger LOG = LoggerFactory.getLogger(ConnectDatabaseHandler.class);
 
   /** The holder to which is set session configuration values */
@@ -73,10 +76,17 @@ public class ConnectDatabaseHandler extends AbstractAction {
   public void handle(ActionEvent e) {
     if (dbConfigProperty.getValue() != null) {
       DbConfig dbConfig = dbConfigProperty.getValue();
-      if (dbConfig.getReader() == null || !dbConfig.getReader().isConnected()) { dbConfig.reloadStructure(); }
-      else { dbConfig.getReader().close(); }
-      dbConfigProperty.setValue(null);
-      dbConfigProperty.setValue(dbConfig);
+      if (dbConfig.getReader() == null || !dbConfig.getReader().isConnected()) {
+        dbConfig.reloadStructure();
+        dbConfigProperty.setValue(null);
+        dbConfigProperty.setValue(dbConfig);
+      } else {
+        dbConfig.getReader().close((Stage) ((Node) e.getSource()).getScene().getWindow());
+        if (!dbConfig.getReader().isConnected()) {
+          dbConfigProperty.setValue(null);
+          dbConfigProperty.setValue(dbConfig);
+        }
+      }
     }
   }
 }
