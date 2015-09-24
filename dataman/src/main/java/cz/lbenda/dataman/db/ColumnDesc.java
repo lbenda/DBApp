@@ -34,7 +34,7 @@ public class ColumnDesc {
     private final Class clazz;
     ColumnType(Class clazz) { this.clazz = clazz; }
     @SuppressWarnings("unused")
-    public Class getDataType() { return clazz; }
+    public Class getJavaClass() { return clazz; }
   }
 
   private TableDesc tableDescription;

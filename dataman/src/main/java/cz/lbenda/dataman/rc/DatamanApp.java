@@ -19,6 +19,7 @@ import cz.lbenda.dataman.db.SQLQueryRows;
 import cz.lbenda.dataman.db.frm.DataTableFrmController;
 import cz.lbenda.dataman.db.frm.DataTableView;
 import cz.lbenda.dataman.db.frm.DbStructureFrmController;
+import cz.lbenda.dataman.db.frm.RowEditorFrmController;
 import cz.lbenda.dataman.db.handler.*;
 import cz.lbenda.rcp.DialogHelper;
 import cz.lbenda.rcp.action.SavableRegistry;
@@ -32,9 +33,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.SplitPane;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
@@ -73,6 +72,7 @@ public class DatamanApp extends Application {
   private ObjectProperty<DataTableView> tableViewObjectProperty = new SimpleObjectProperty<>();
   private TabPane centerTabs = new TabPane();
   private TabPane detailTabs = new TabPane();
+  private Accordion rightPane = new Accordion();
   private ObjectProperty<SQLQueryRows> sqlQueryRowsObjectProperty = new SimpleObjectProperty<>();
 
   // TextEditor te  = new TextEditor();
@@ -96,8 +96,8 @@ public class DatamanApp extends Application {
     SplitPane spVertical = new SplitPane();
     spVertical.setOrientation(Orientation.VERTICAL);
 
-    spHorizontal.getItems().addAll(leftPane, spVertical);
-    spHorizontal.setDividerPositions(0.2f, 0.8f);
+    spHorizontal.getItems().addAll(leftPane, spVertical, rightPane);
+    spHorizontal.setDividerPositions(0.1f, 0.8f, 0.1f);
     spVertical.getItems().addAll(centerPane, detailTabs);
     spVertical.setDividerPositions(0.8f, 0.2f);
 
@@ -139,6 +139,15 @@ public class DatamanApp extends Application {
     Tab tab = addToCenter(title.getValue(), node, closable);
     title.addListener((observable, oldValue, newValue) -> tab.setText(newValue));
     return tab;
+  }
+
+  /** Add new pane to right */
+  public TitledPane addToRight(String title, Node node) {
+    TitledPane titlePane = new TitledPane();
+    titlePane.setContent(node);
+    titlePane.setText(title);
+    rightPane.getPanes().add(titlePane);
+    return titlePane;
   }
 
   /** Add node to center pane */
@@ -201,6 +210,10 @@ public class DatamanApp extends Application {
       addToCenter(controller.titleProperty(), controller.getTabView(), true);
     });
     leftPane.getChildren().add(dfc.getControlledNode());
+
+    RowEditorFrmController rowEditorFrmController = new RowEditorFrmController(tableViewObjectProperty);
+    addToRight(RowEditorFrmController.WINDOW_TITLE, rowEditorFrmController.getPane());
+
 
     // Scene scene = te.createScene();
     primaryStage.setScene(scene);

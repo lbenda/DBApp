@@ -18,14 +18,11 @@ package cz.lbenda.dataman.rc;
 import cz.lbenda.dataman.db.ComboBoxTDExtension;
 import cz.lbenda.dataman.db.ComboBoxTDExtension.ComboBoxItem;
 import cz.lbenda.dataman.db.RowDesc;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ObservableList;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.Tooltip;
-import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
 import org.slf4j.Logger;
@@ -40,19 +37,18 @@ public class ComboBoxItemTableCell extends TableCell<RowDesc, Object> {
 
   private final ObservableList<ComboBoxItem> items;
   private ComboBox<ComboBoxItem> comboBox;
-  private ObjectProperty<StringConverter<Object>> converter;
   private ComboBoxTDExtension cbtde;
+  private StringConverter stringConverter;
 
   public static Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>> forTableColumn(@Nonnull ComboBoxTDExtension cbtde) {
     return (var2) -> new ComboBoxItemTableCell(cbtde);
   }
 
   public ComboBoxItemTableCell(@Nonnull ComboBoxTDExtension cbtde) {
-    this.converter = new SimpleObjectProperty(this, "converter");
+    this.items = cbtde.getItems();
     this.cbtde = cbtde;
     this.getStyleClass().add("combo-box-table-cell");
-    this.items = cbtde.getItems();
-    this.setConverter(new StringConverter<Object>() {
+    this.stringConverter = new StringConverter<Object>() {
       public String toString(Object value) {
         if (value == null) {
           return null;
@@ -73,7 +69,7 @@ public class ComboBoxItemTableCell extends TableCell<RowDesc, Object> {
         }
         return cbe;
       }
-    });
+    };
     this.itemProperty().addListener((observable, oldValue, newValue) -> {
       if (!isEditing()) {
         ComboBoxItem cbi = cbtde.itemForValue(newValue);
@@ -81,7 +77,8 @@ public class ComboBoxItemTableCell extends TableCell<RowDesc, Object> {
           Tooltip tooltip = new Tooltip(cbi.getTooltip());
           this.setTooltip(tooltip);
         }
-        setText(getConverter().toString(newValue));
+        //noinspection unchecked
+        setText(stringConverter.toString(newValue));
       }
     });
     this.comboBox = new ComboBox<>(getItems());
@@ -91,19 +88,6 @@ public class ComboBoxItemTableCell extends TableCell<RowDesc, Object> {
       else { commitEdit(newValue.getValue()); }
     });
     this.setGraphic(null);
-  }
-
-  public final ObjectProperty<StringConverter<Object>> converterProperty() {
-    return this.converter;
-  }
-
-  public final void setConverter(StringConverter<Object> var1) {
-    this.converterProperty().set(var1);
-  }
-
-  @SuppressWarnings("unchecked")
-  public final StringConverter<Object> getConverter() {
-    return (StringConverter) this.converterProperty().get();
   }
 
   public ObservableList<ComboBoxItem> getItems() {
@@ -130,7 +114,8 @@ public class ComboBoxItemTableCell extends TableCell<RowDesc, Object> {
   @Override
   public void cancelEdit() {
     super.cancelEdit();
-    this.setText(this.getConverter().toString(this.getItem()));
+    //noinspection unchecked
+    this.setText(stringConverter.toString(this.getItem()));
     this.setGraphic(null);
   }
 }

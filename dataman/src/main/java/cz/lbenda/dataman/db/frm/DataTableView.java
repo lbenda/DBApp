@@ -15,6 +15,7 @@
  */
 package cz.lbenda.dataman.db.frm;
 
+import cz.lbenda.common.Constants;
 import cz.lbenda.dataman.db.*;
 import cz.lbenda.dataman.rc.ComboBoxItemTableCell;
 import cz.lbenda.gui.tableView.*;
@@ -124,7 +125,7 @@ public class DataTableView extends FilterableTableView<RowDesc> {
             columnDesc.getLabel() != null
                 ? columnDesc.getLabel() + " (" + columnDesc.getSchema() + "." + columnDesc.getTable() + "." + columnDesc.getName() + ")"
                 : columnDesc.getSchema() + "." + columnDesc.getTable() + "." + columnDesc.getName(),
-            columnDesc.getDisplaySize() <= 100);
+            columnDesc.getDisplaySize() <= Constants.MIN_SIZE_FOR_TEXT_AREA);
         // return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) TextFieldTableCell.forTableColumn();
       default:
         return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) TextFieldTableCell.forTableColumn();

@@ -93,4 +93,18 @@ public class StringConverters {
     @Override public String toString(Object value) { return value == null ? null : value.toString(); }
     @Override public Object fromString(String s) { throw new UnsupportedOperationException(); }
   };
+
+  @SuppressWarnings("unchecked")
+  public static <T> StringConverter<T> converterForClass(Class<T> clazz) {
+    if (Integer.class.isAssignableFrom(clazz)) { return (StringConverter<T>) INT_CONVERTER; }
+    if (String.class.isAssignableFrom(clazz)) { return (StringConverter<T>) STRING_CONVERTER; }
+    if (Boolean.class.isAssignableFrom(clazz)) { return (StringConverter<T>) BOOLEAN_CONVERTER; }
+    if (java.sql.Date.class.isAssignableFrom(clazz)) { return (StringConverter<T>) SQL_DATE_CONVERTER; }
+    if (java.sql.Time.class.isAssignableFrom(clazz)) { return (StringConverter<T>) SQL_TIME_CONVERTER; }
+    if (java.sql.Timestamp.class.isAssignableFrom(clazz)) { return (StringConverter<T>) SQL_TIMESTAMP_CONVERTER; }
+    if (LocalDate.class.isAssignableFrom(clazz)) { return (StringConverter<T>) LOCALDATE_CONVERTER; }
+    if (LocalDateTime.class.isAssignableFrom(clazz)) { return (StringConverter<T>) LOCALDATETIME_CONVERTER; }
+    if (LocalTime.class.isAssignableFrom(clazz)) { return (StringConverter<T>) LOCALTIME_CONVERTER; }
+    return (StringConverter<T>) OBJECT_CONVERTER;
+  }
 }

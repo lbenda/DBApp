@@ -25,6 +25,7 @@ import java.util.List;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 13.9.15.
  * Constants for application dataman */
+@SuppressWarnings("unused")
 public class Constants {
 
   public static String CONFIG_EXTENSION = "dtm";

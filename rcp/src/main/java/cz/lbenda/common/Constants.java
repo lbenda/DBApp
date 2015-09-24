@@ -69,6 +69,11 @@ public class Constants {
     }
   };
 
+  /** If field have this size, then can be showed text area instead of text field */
+  public static int MIN_SIZE_FOR_TEXT_AREA = 100;
+  /** Prefer height of text area */
+  public static double TEXT_AREA_PREF_HIGH = 50.0;
+
   static {
     MessageFactory.initializeMessages(Constants.class);
     if (CONF_DATE_FORMAT != null) { LOCAL_DATE_FORMATTER = DateTimeFormatter.ofPattern(CONF_DATE_FORMAT); }
