@@ -6,6 +6,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.SkinBase;
 import javafx.scene.control.TabPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.util.Collection;
@@ -21,11 +22,13 @@ public class RibbonSkin extends SkinBase<Ribbon> {
     super(control);
     tabPane = new TabPane();
     VBox outerContainer = new VBox();
+    HBox title = new HBox();
 
     control.tabsProperty().addListener(this::tabsChanged);
     updateAddedRibbonTabs(control.tabsProperty());
     outerContainer.getStyleClass().setAll("outer-container");
-    outerContainer.getChildren().addAll(control.getQuickAccessBar(), tabPane);
+    title.getChildren().addAll(control.getMainButton(), control.getQuickAccessBar());
+    outerContainer.getChildren().addAll(title, tabPane);
     getChildren().add(outerContainer);
     //noinspection unchecked
     control.selectedRibbonTabProperty().addListener((ChangeListener) (observable, oldValue, newValue) -> tabPane.getSelectionModel().select((RibbonTab)newValue));

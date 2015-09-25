@@ -9,19 +9,14 @@ import javafx.scene.layout.HBox;
 
 import java.util.Collection;
 
-/**
- * Created by pedro_000 on 2/19/14.
- */
+/** Created by pedro_000 on 2/19/14. */
 public class RibbonQuickAccessBarSkin extends SkinBase<RibbonQuickAccessBar> {
   BorderPane outerContainer;
   HBox buttonContainer;
   HBox rightButtons;
 
-  /**
-   * Constructor for all SkinBase instances.
-   *
-   * @param control The control for which this Skin should attach to.
-   */
+  /** Constructor for all SkinBase instances.
+   * @param control The control for which this Skin should attach to. */
   public RibbonQuickAccessBarSkin(RibbonQuickAccessBar control) {
     super(control);
     buttonContainer = new HBox();

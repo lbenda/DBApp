@@ -7,14 +7,12 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 
-/**
- * Created by pedro_000 on 2/19/14.
- */
+/** Created by pedro_000 on 2/19/14. */
 public class RibbonQuickAccessBar extends Control {
   public final static String DEFAULT_STYLE_CLASS = "quick-access-bar";
 
-  ObservableList<Button> buttons;
-  ObservableList<Button> rightButtons;
+  private ObservableList<Button> buttons;
+  private ObservableList<Button> rightButtons;
 
   public RibbonQuickAccessBar() {
     buttons = FXCollections.observableArrayList();
@@ -24,8 +22,8 @@ public class RibbonQuickAccessBar extends Control {
   }
 
   public ObservableList<Button> getButtons(){
-        return buttons;
-    }
+    return buttons;
+  }
 
   public ObservableList<Button> getRightButtons()
     {

@@ -992,3 +992,13 @@
     -fx-background-color: #d9d9d9, #eaeaea;
     -fx-text-fill: #adadad;
 }
+
+.main-button {
+  -fx-border-width: 0, 0;
+  -fx-border-color: transparent, transparent;
+}
+
+.main-button .button {
+  -fx-border-width: 0, 0;
+  -fx-border-color: transparent, transparent;
+}

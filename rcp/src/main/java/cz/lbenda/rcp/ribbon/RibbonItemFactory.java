@@ -37,10 +37,9 @@ public class RibbonItemFactory<T> {
 
   private ObservableList<T> itemsHandler = FXCollections.observableArrayList(); public ObservableList<T> getItemsHandler() { return itemsHandler; }
   private Ribbon ribbon;
-  private MessageFactory messageFactory; public void setMessageFactory(MessageFactory messageFactory) { this.messageFactory = messageFactory; }
+  private MessageFactory messageFactory = MessageFactory.getInstance();
 
-  public RibbonItemFactory(Ribbon ribbon, MessageFactory messageFactory) {
-    this.messageFactory = messageFactory;
+  public RibbonItemFactory(Ribbon ribbon) {
     this.ribbon = ribbon;
     itemsHandler.addListener((ListChangeListener<T>) change -> {
       while (change.next()) {

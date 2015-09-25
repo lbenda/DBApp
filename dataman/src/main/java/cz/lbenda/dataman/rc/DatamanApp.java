@@ -22,8 +22,9 @@ import cz.lbenda.dataman.db.frm.DbStructureFrmController;
 import cz.lbenda.dataman.db.frm.RowEditorFrmController;
 import cz.lbenda.dataman.db.handler.*;
 import cz.lbenda.rcp.DialogHelper;
+import cz.lbenda.rcp.IconFactory;
 import cz.lbenda.rcp.action.SavableRegistry;
-import cz.lbenda.rcp.ribbon.RibbonController;
+import cz.lbenda.rcp.ribbon.Ribbon;
 import cz.lbenda.dataman.db.sql.SQLEditorController;
 import cz.lbenda.rcp.config.ConfigurationRW;
 import cz.lbenda.rcp.localization.MessageFactory;
@@ -67,7 +68,7 @@ public class DatamanApp extends Application {
   private BorderPane mainPane;
   private StackPane leftPane = new StackPane();
   private StackPane centerPane = new StackPane();
-  private RibbonController ribbonController;
+  private Ribbon ribbon;
   private SQLEditorController te;
   private ObjectProperty<DataTableView> tableViewObjectProperty = new SimpleObjectProperty<>();
   private TabPane centerTabs = new TabPane();
@@ -88,8 +89,7 @@ public class DatamanApp extends Application {
     mainPane.setPrefWidth(1024.0);
     mainPane.getStyleClass().add("background");
 
-    ribbonController = new RibbonController(MessageFactory.getInstance());
-    mainPane.setTop(ribbonController.getRibbon());
+    mainPane.setTop(ribbon);
 
     SplitPane spHorizontal = new SplitPane();
     spHorizontal.setOrientation(Orientation.HORIZONTAL);
@@ -171,36 +171,40 @@ public class DatamanApp extends Application {
   @SuppressWarnings("unchecked")
   @Override
   public void start(Stage primaryStage) throws Exception {
-    primaryStage.getIcons().add(new Image(this.getClass().getResourceAsStream("dataman_16.png")));
-    primaryStage.getIcons().add(new Image(this.getClass().getResourceAsStream("dataman_32.png")));
-    primaryStage.getIcons().add(new Image(this.getClass().getResourceAsStream("dataman_48.png")));
-    primaryStage.getIcons().add(new Image(this.getClass().getResourceAsStream("dataman_64.png")));
-    primaryStage.getIcons().add(new Image(this.getClass().getResourceAsStream("dataman_128.png")));
+    ribbon = new Ribbon(primaryStage,
+        MessageFactory.getInstance().getMessage("app.name"),
+        IconFactory.getInstance().image(this, "dataman.png", IconFactory.IconLocation.APP_ICON));
+
+    primaryStage.getIcons().add(new Image(this.getClass().getResourceAsStream("dataman16.png")));
+    primaryStage.getIcons().add(new Image(this.getClass().getResourceAsStream("dataman32.png")));
+    primaryStage.getIcons().add(new Image(this.getClass().getResourceAsStream("dataman48.png")));
+    primaryStage.getIcons().add(new Image(this.getClass().getResourceAsStream("dataman64.png")));
+    primaryStage.getIcons().add(new Image(this.getClass().getResourceAsStream("dataman128.png")));
     primaryStage.setTitle(MessageFactory.getInstance().getMessage("app.name"));
 
     DbConfigFactory.reloadConfiguration();
     ObjectProperty<DbConfig> currentDbProperty = new SimpleObjectProperty<>();
 
     prepareMainPane();
-    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new AddDatabaseHandler());
-    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new ImportDatabaseHandler());
-    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new ExportDatabaseHandler(currentDbProperty));
-    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new DbConfigMenuOptions(currentDbProperty));
-    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new ConnectDatabaseHandler(currentDbProperty));
-    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new EditDatabaseHandler(currentDbProperty));
-    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new CopyDatabaseHandler(currentDbProperty));
-    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new RemoveDatabaseHandler(currentDbProperty));
-    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new RemoveRowsHandler(tableViewObjectProperty));
-    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new AddRowHandler(tableViewObjectProperty));
-    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new ReloadTableHandler(tableViewObjectProperty));
-    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new SaveTableHandler(tableViewObjectProperty));
-    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new SaveAllTableHandler(currentDbProperty));
-    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new OpenConnectedTablesHandler(tableViewObjectProperty,
+    ribbon.getItemFactory().getItemsHandler().add(new AddDatabaseHandler());
+    ribbon.getItemFactory().getItemsHandler().add(new ImportDatabaseHandler());
+    ribbon.getItemFactory().getItemsHandler().add(new ExportDatabaseHandler(currentDbProperty));
+    ribbon.getItemFactory().getItemsHandler().add(new DbConfigMenuOptions(currentDbProperty));
+    ribbon.getItemFactory().getItemsHandler().add(new ConnectDatabaseHandler(currentDbProperty));
+    ribbon.getItemFactory().getItemsHandler().add(new EditDatabaseHandler(currentDbProperty));
+    ribbon.getItemFactory().getItemsHandler().add(new CopyDatabaseHandler(currentDbProperty));
+    ribbon.getItemFactory().getItemsHandler().add(new RemoveDatabaseHandler(currentDbProperty));
+    ribbon.getItemFactory().getItemsHandler().add(new RemoveRowsHandler(tableViewObjectProperty));
+    ribbon.getItemFactory().getItemsHandler().add(new AddRowHandler(tableViewObjectProperty));
+    ribbon.getItemFactory().getItemsHandler().add(new ReloadTableHandler(tableViewObjectProperty));
+    ribbon.getItemFactory().getItemsHandler().add(new SaveTableHandler(tableViewObjectProperty));
+    ribbon.getItemFactory().getItemsHandler().add(new SaveAllTableHandler(currentDbProperty));
+    ribbon.getItemFactory().getItemsHandler().add(new OpenConnectedTablesHandler(tableViewObjectProperty,
         detailDescriptor -> addRemoveToDetail(detailDescriptor.getTitle(), detailDescriptor.getNode(), detailDescriptor.getClosable())));
-    ribbonController.getRibbon().getItemFactory().getItemsHandler().add(new ExportTableHandler(sqlQueryRowsObjectProperty));
+    ribbon.getItemFactory().getItemsHandler().add(new ExportTableHandler(sqlQueryRowsObjectProperty));
 
     Scene scene = new Scene(mainPane);
-    te = new SQLEditorController(ribbonController.getRibbon().getItemFactory(), scene, currentDbProperty,
+    te = new SQLEditorController(ribbon.getItemFactory(), scene, currentDbProperty,
       detailDescriptor -> addRemoveToDetail(detailDescriptor.getTitle(), detailDescriptor.getNode(), detailDescriptor.getClosable()));
 
     addToCenter("SQL", te.getNode(), false);
