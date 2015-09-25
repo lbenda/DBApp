@@ -51,6 +51,8 @@ public class StringPropertyEditor implements PropertyEditor<Object> {
   @SuppressWarnings("unchecked")
   public StringPropertyEditor(PropertySheet.Item item) {
     this.item = item;
+    RowPropertyItem rpi = null;
+    if (item instanceof RowPropertyItem) { rpi = (RowPropertyItem) item; }
     converter = StringConverters.converterForClass(item.getType());
     if (java.sql.Date.class.isAssignableFrom(item.getType())
         || java.util.Date.class.isAssignableFrom(item.getType())
@@ -61,8 +63,6 @@ public class StringPropertyEditor implements PropertyEditor<Object> {
       checkBox = new CheckBox();
       checkBox.focusedProperty().addListener(focusLostListener);
     } else {
-      RowPropertyItem rpi = null;
-      if (item instanceof RowPropertyItem) { rpi = (RowPropertyItem) item; }
       if (rpi != null) {
         ColumnDesc columnDesc = rpi.getColumnDesc();
         if (!columnDesc.getExtensions().isEmpty()) {
@@ -80,13 +80,11 @@ public class StringPropertyEditor implements PropertyEditor<Object> {
                 ? rpi.getColumnDesc().getLabel() + " (" + rpi.getColumnDesc().getSchema() + "." + rpi.getColumnDesc().getTable() + "." + rpi.getColumnDesc().getName() + ")"
                 : rpi.getColumnDesc().getSchema() + "." + rpi.getColumnDesc().getTable() + "." + rpi.getColumnDesc().getName();
         textFieldArea = new TextFieldArea(windowTitle, editField);
+        textFieldArea.textProperty().addListener((observable, oldValue, newValue) -> item.setValue(newValue));
       }
     }
-    if (item instanceof RowPropertyItem) {
-      RowPropertyItem rpi = (RowPropertyItem) item;
-      if (rpi.valueProperty() != null) {
-        rpi.valueProperty().addListener((observable, oldValue, newValue) -> setValue(newValue));
-      }
+    if (rpi.valueProperty() != null) {
+      rpi.valueProperty().addListener((observable, oldValue, newValue) -> setValue(newValue));
     }
   }
 

@@ -54,7 +54,9 @@ public class TextAreaTableCell<S> extends TableCell<S, String> {
     this.getStyleClass().add("text-area-table-cell");
     this.setGraphic(null);
     this.setSelectedStateCallback(selectedStateCallback);
-    textFieldArea.textProperty().bindBidirectional(itemProperty());
+    textFieldArea.textProperty().addListener((observable, oldValue, newValue) -> {
+      commitEdit(newValue);
+    });
   }
 
   public final ObjectProperty<Callback<Integer, ObservableValue<LocalDate>>> selectedStateCallbackProperty() {

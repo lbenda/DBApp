@@ -50,8 +50,6 @@ public class TextFieldArea {
   /** Flag which configure what to do when textInputControl lost focus (and no edit window is open). If cancel will be called, or commit. */
   private final BooleanProperty cancelOnFocusLost = new SimpleBooleanProperty(false);
 
-
-
   /** Construct of text field
    * @param windowTitle title of window if is open
    * @param useTextField use text field instead of text area */
@@ -79,11 +77,8 @@ public class TextFieldArea {
     });
     this.textInputControl.focusedProperty().addListener((observable, oldValue, newValue) -> {
       if (!newValue) {
-        if (isCancelOnFocusLost()) {
-          cancelEdit();
-        } else {
-          commitEdit(textInputControl.getText());
-        }
+        if (isCancelOnFocusLost()) { cancelEdit(); }
+        else { commitEdit(textInputControl.getText()); }
       }
     });
     btOpenTextEditor.setOnAction(event -> {
