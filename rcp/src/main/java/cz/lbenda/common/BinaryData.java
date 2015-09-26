@@ -27,6 +27,7 @@ public interface BinaryData {
   Reader getReader();
   boolean isText();
   long size();
+  boolean isLazyLoading();
   /** Return information if object represent null or not */
   boolean isNull();
 }

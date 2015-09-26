@@ -367,18 +367,23 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
     }
   }
 
+  private void writeColumnNames(ResultSetMetaData metaData) throws SQLException {
+    for (int i = 1; i <= metaData.getColumnCount(); i++) {
+      System.out.print(metaData.getColumnName(i));
+      System.out.print(" : ");
+      System.out.println(metaData.getColumnLabel(i));
+    }
+  }
+
   private void generateStructureColumns(DatabaseMetaData dmd) throws SQLException {
-    SQLDialect di = this.dbConfig.getJdbcConfiguration().getDialect();
+    SQLDialect dialect = this.dbConfig.getJdbcConfiguration().getDialect();
     try (ResultSet rsColumn  = dmd.getColumns(null, null, null, null)) {
+      writeColumnNames(rsColumn.getMetaData());
       while (rsColumn.next()) {
         TableDesc td = dbConfig.getTableDescription(
-                rsColumn.getString(di.columnTableCatalog()), rsColumn.getString(di.columnTableSchema()),
-                rsColumn.getString(di.columnTableName()));
-        ColumnDesc column = new ColumnDesc(td, rsColumn.getString(di.columnName()), rsColumn.getString("REMARKS"),
-            rsColumn.getInt(di.columnDateType()),
-            rsColumn.getInt(di.columnSize()), "YES".equals(rsColumn.getString(di.columnNullable())),
-            "YES".equals(rsColumn.getString(di.columnAutoIncrement())),
-            di.columnGenerated() != null && "YES".equals(rsColumn.getString(di.columnGenerated())));
+                rsColumn.getString(dialect.columnTableCatalog()), rsColumn.getString(dialect.columnTableSchema()),
+                rsColumn.getString(dialect.columnTableName()));
+        ColumnDesc column = new ColumnDesc(td, rsColumn, dialect);
         td.addColumn(column);
       }
     }

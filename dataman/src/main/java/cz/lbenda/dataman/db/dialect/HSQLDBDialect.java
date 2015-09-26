@@ -1,7 +1,17 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright 2014 Lukas Benda <lbenda at lbenda.cz>.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package cz.lbenda.dataman.db.dialect;
 
@@ -17,128 +27,6 @@ public class HSQLDBDialect implements SQLDialect {
 
   @Override
   public boolean isForDriver(String driver) {
-    if (driver == null) { return false; }
-    return driver.startsWith("org.hsqldb");
+    return driver != null && driver.startsWith("org.hsqldb");
   }
-
-  @Override
-  public String tableCatalog() {
-    return "TABLE_CAT";
-  }
-
-  @Override
-  public String tableSchema() {
-    return "TABLE_SCHEM";
-  }
-
-  @Override
-  public String tableName() {
-    return "TABLE_NAME";
-  }
-
-  @Override
-  public String tableType() {
-    return "TABLE_TYPE";
-  }
-
-  @Override
-  public String tableRemarks() {
-    return "REMARKS";
-  }
-
-  @Override
-  public String columnTableCatalog() {
-    return "TABLE_CAT";
-  }
-
-  @Override
-  public String columnTableSchema() {
-    return "TABLE_SCHEM";
-  }
-
-  @Override
-  public String columnTableName() {
-    return "TABLE_NAME";
-  }
-
-  @Override
-  public String columnName() {
-    return "COLUMN_NAME";
-  }
-
-  @Override
-  public String columnDateType() {
-    return "DATA_TYPE";
-  }
-
-  @Override
-  public String columnSize() {
-    return "COLUMN_SIZE";
-  }
-
-  @Override
-  public String columnNullable() {
-    return "IS_NULLABLE";
-  }
-
-  @Override
-  public String columnAutoIncrement() {
-    return "IS_AUTOINCREMENT";
-  }
-
-  @Override
-  public String columnGenerated() {
-    return "IS_GENERATEDCOLUMN";
-  }
-
-  @Override
-  public String columnRemarsk() {
-    return "REMARSKS";
-  }
-
-  @Override
-  public String pkColumnName() {
-    return "COLUMN_NAME";
-  }
-
-  @Override
-  public String fkMasterTableCatalog() {
-    return "PKTABLE_CAT";
-  }
-
-  @Override
-  public String fkMasterTableSchema() {
-    return "PKTABLE_SCHEM";
-  }
-
-  @Override
-  public String fkMasterTableName() {
-    return "PKTALBLE_NAME";
-  }
-
-  @Override
-  public String fkMasterColumnName() {
-    return "PKCOLUMN_NAME";
-  }
-
-  @Override
-  public String fkSlaveTableCatalog() {
-    return "FKTABLE_CAT";
-  }
-
-  @Override
-  public String fkSlaveTableSchema() {
-    return "FKTABLE_SCHEM";
-  }
-
-  @Override
-  public String fkSlaveTableName() {
-    return "FKTABLE_NAME";
-  }
-
-  @Override
-  public String fkSlaveColumnName() {
-    return "FKCOLUMN_NAME";
-  }
-
 }

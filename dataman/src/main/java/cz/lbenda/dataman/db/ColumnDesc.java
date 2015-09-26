@@ -17,6 +17,7 @@ package cz.lbenda.dataman.db;
 
 import cz.lbenda.common.StringConverters;
 import cz.lbenda.common.BinaryData;
+import cz.lbenda.dataman.db.dialect.SQLDialect;
 import javafx.util.StringConverter;
 
 import javax.annotation.Nonnull;
@@ -36,6 +37,8 @@ public class ColumnDesc {
     INTEGER(Integer.class, StringConverters.INT_CONVERTER),
     LONG(Long.class, StringConverters.LONG_CONVERTER),
     BYTEARRAY(Byte[].class, StringConverters.BINARYDATA_CONVERTER),
+    UUID(java.util.UUID.class, StringConverters.UUID_CONVERTER),
+    ARRAY(Array.class, StringConverters.OBJECTARRAY_CONVERTER),
 
     FLOAT(Float.class, StringConverters.FLOAT_CONVERTER),
     DOUBLE(Double.class, StringConverters.DOUBLE_CONVERTER),
@@ -100,10 +103,11 @@ public class ColumnDesc {
     this.schema = mtd.getSchemaName(position);
     this.table = mtd.getTableName(position);
     this.displaySize = mtd.getColumnDisplaySize(position);
-    this.dataType = sqlToColumnType(mtd.getColumnType(position));
     this.columnTypeName = mtd.getColumnTypeName(position);
+    this.dataType = sqlToColumnType(mtd.getColumnType(position), this.columnTypeName);
     this.javaClassName = mtd.getColumnClassName(position);
-    System.out.println(mtd.getColumnType(position) + ": " + dataType + " - " + javaClassName);
+    System.out.println(
+        name + ": " + mtd.getColumnType(position) + ": " + dataType + " - " + javaClassName + " , columnTypeName: " + columnTypeName);
     this.nullable = ResultSetMetaData.columnNullable == mtd.isNullable(position) ? Boolean.TRUE :
         (ResultSetMetaData.columnNoNulls == mtd.isNullable(position) ? Boolean.FALSE : null);
 
@@ -111,8 +115,34 @@ public class ColumnDesc {
     generated = this.autoincrement ? Boolean.TRUE : null;
   }
 
-  public ColumnDesc(final TableDesc td, final String name, final String label, final int dataType, final int size,
-                    final boolean nullable, final boolean autoincrement, final boolean generated) {
+  @SuppressWarnings("unchecked")
+  private <T> T confValue(String propertyName, ResultSet rs) throws SQLException {
+    if (propertyName == null) { return null; }
+    return (T) rs.getObject(propertyName);
+  }
+  private boolean confBool(String propertyName, ResultSet rs) throws SQLException {
+    return propertyName != null && "YES".equals(rs.getString(propertyName));
+  }
+
+  /** Create column description and fill it with data which is from result set */
+  public ColumnDesc(final TableDesc td, ResultSet rs, SQLDialect dialect) throws SQLException {
+    this.tableDescription = td;
+    this.position = -1;
+    this.catalog = td.getCatalog();
+    this.schema = td.getSchema();
+    this.table = td.getName();
+    this.name = confValue(dialect.columnName(), rs);
+    this.label = confValue(dialect.columnRemarsk(), rs);
+    this.displaySize = confValue(dialect.columnSize(), rs);
+    this.columnTypeName = confValue(dialect.columnTypeName(), rs);
+    this.nullable = confBool(dialect.columnNullable(), rs);
+    this.autoincrement = confBool(dialect.columnAutoIncrement(), rs);
+    this.generated = confBool(dialect.columnGenerated(), rs);
+    this.dataType = sqlToColumnType(confValue(dialect.columnDateType(), rs), columnTypeName);
+  }
+
+  public ColumnDesc(final TableDesc td, final String name, final String label, final int dataType, final String columnTypeName,
+                    final int size, final boolean nullable, final boolean autoincrement, final boolean generated) {
     this.tableDescription = td;
     this.position = -1;
     this.catalog = td.getCatalog();
@@ -123,11 +153,11 @@ public class ColumnDesc {
     this.nullable = nullable;
     this.autoincrement = autoincrement;
     this.generated = generated;
-    this.dataType = sqlToColumnType(dataType);
+    this.dataType = sqlToColumnType(dataType, columnTypeName);
     this.label = label;
   }
 
-  private ColumnType sqlToColumnType(int dataType) {
+  private ColumnType sqlToColumnType(int dataType, String columnTypeName) {
     switch (dataType) {
       case Types.TIMESTAMP : return ColumnType.TIMESTAMP;
       case Types.TIME : return ColumnType.TIME;
@@ -144,10 +174,13 @@ public class ColumnDesc {
       case Types.CHAR :
       case Types.VARCHAR : return ColumnType.STRING;
       case Types.BOOLEAN : return ColumnType.BOOLEAN;
-      case Types.VARBINARY:
-      case Types.BINARY : return ColumnType.BYTEARRAY;
+      case Types.VARBINARY: return ColumnType.BYTEARRAY;
+      case Types.BINARY :
+        if ("UUID".equals(columnTypeName)) { return ColumnType.UUID; }
+        else { return ColumnType.BYTEARRAY; }
       case Types.CLOB : return ColumnType.CLOB;
       case Types.BLOB : return ColumnType.BLOB;
+      case Types.ARRAY : return ColumnType.ARRAY;
       case Types.OTHER :
       default :
         System.out.println("Unresolved dataType: " + dataType);

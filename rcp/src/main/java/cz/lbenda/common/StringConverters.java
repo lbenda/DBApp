@@ -18,17 +18,19 @@ package cz.lbenda.common;
 import cz.lbenda.rcp.localization.Message;
 import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.util.StringConverter;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.xml.bind.DatatypeConverter;
+import java.io.IOException;
 import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Arrays;
+import java.util.UUID;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 20.9.15.
  * Default string converters */
@@ -130,11 +132,24 @@ public class StringConverters {
     @Override public String toString(Object value) { return value == null ? null : value.toString(); }
     @Override public Object fromString(String s) { throw new UnsupportedOperationException(); }
   };
+  public static StringConverter<UUID> UUID_CONVERTER = new StringConverter<UUID>() {
+    @Override public String toString(UUID value) { return value == null ? null : value.toString(); }
+    @Override public UUID fromString(String s) {
+      if (StringUtils.isBlank(s)) { return null; }
+      return UUID.fromString(s);
+    }
+  };
 
   public static StringConverter<BinaryData> BINARYDATA_CONVERTER = new StringConverter<BinaryData>() {
     @Override public String toString(BinaryData value) {
-      return value == null || value.isNull() ? null :
-          value.isText() ? MSG_CHARACTER_VALUE : MSG_BIG_VALUE;
+      try {
+        return value == null || value.isNull() ? null :
+            value.isLazyLoading() ? value.isText() ? MSG_CHARACTER_VALUE : MSG_BIG_VALUE
+                : value.isText() ? IOUtils.toString(value.getReader())
+                : DatatypeConverter.printHexBinary(IOUtils.toByteArray(value.getInputStream()));
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
     @Override public BinaryData fromString(String s) { throw new UnsupportedOperationException(); }
   };
@@ -149,6 +164,33 @@ public class StringConverters {
     public byte[] fromString(String s) {
       if (s == null || StringUtils.isBlank(s)) { return null; }
       return DatatypeConverter.parseHexBinary(s);
+    }
+  };
+  public static StringConverter<Array> ARRAY_CONVERTER = new StringConverter<Array>() {
+    @Override
+    public String toString(Array array) {
+      if (array == null) { return null; }
+      try {
+        return Arrays.toString((Object[]) array.getArray());
+      } catch (SQLException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    @Override
+    public Array fromString(String s) { throw new UnsupportedOperationException(); }
+  };
+  public static StringConverter<Object[]> OBJECTARRAY_CONVERTER = new StringConverter<Object[]>() {
+    @Override
+    public String toString(Object[] array) {
+      if (array == null) { return null; }
+      return Arrays.toString(array);
+    }
+    @Override
+    public Object[] fromString(String s) {
+      if (StringUtils.isBlank(s)) { return null; }
+      if (s.startsWith("[")) { s = s.substring(1); }
+      if (s.endsWith("]")) { s = s.substring(0, s.length() - 1); }
+      return s.split(",");
     }
   };
 
@@ -173,9 +215,13 @@ public class StringConverters {
     if (LocalDateTime.class.isAssignableFrom(clazz)) { return (StringConverter<T>) LOCALDATETIME_CONVERTER; }
     if (LocalTime.class.isAssignableFrom(clazz)) { return (StringConverter<T>) LOCALTIME_CONVERTER; }
     if (BinaryData.class.isAssignableFrom(clazz)) { return (StringConverter<T>) BINARYDATA_CONVERTER; }
+    if (Array.class.isAssignableFrom(clazz)) { return (StringConverter<T>) ARRAY_CONVERTER; }
 
     if (clazz.isArray()) {
       if (Byte.TYPE.isAssignableFrom(clazz.getComponentType())) { return (StringConverter<T>) BYTEARRAY_CONVERTER; }
+      else {
+        return (StringConverter<T>) OBJECTARRAY_CONVERTER;
+      }
     }
 
 

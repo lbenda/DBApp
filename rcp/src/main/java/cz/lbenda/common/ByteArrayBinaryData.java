@@ -46,6 +46,8 @@ public class ByteArrayBinaryData implements BinaryData {
   public Reader getReader() { return new CharSequenceReader(new String(bytes)); }
   @Override
   public boolean isText() { return false; }
+  @Override
+  public boolean isLazyLoading() { return false; }
 
   @Override
   public long size() {

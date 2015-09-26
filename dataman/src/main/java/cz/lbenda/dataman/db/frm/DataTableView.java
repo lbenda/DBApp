@@ -86,6 +86,8 @@ public class DataTableView extends FilterableTableView<RowDesc> {
       case CLOB:
       case BYTEARRAY:
         return 30 * nWidth;
+      case UUID:
+        return 36 * nWidth;
       case DATE:
         // return 10 * nWidth; non editable
         return 25 * nWidth;

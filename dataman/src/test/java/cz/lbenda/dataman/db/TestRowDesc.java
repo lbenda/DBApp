@@ -28,13 +28,13 @@ public class TestRowDesc {
   public void stateChange() {
     RowDesc row = new RowDesc("id", new Object[] { "value1", 15, Boolean.TRUE }, RowDesc.RowDescState.LOADED);
     TableDesc td = new TableDesc("CATALOG", "SCHEMA", "TABLE", "table1");
-    ColumnDesc cd = new ColumnDesc(td, "col1", null, Types.VARCHAR, 12, true, false, false);
+    ColumnDesc cd = new ColumnDesc(td, "col1", null, Types.VARCHAR, "", 12, true, false, false);
     cd.setPosition(0);
-    ColumnDesc cd1 = new ColumnDesc(td, "col2", null, Types.INTEGER, 12, true, false, false);
+    ColumnDesc cd1 = new ColumnDesc(td, "col2", null, Types.INTEGER, "", 12, true, false, false);
     cd1.setPosition(1);
 
-    String originalValue = (String) row.getColumnValue(cd);
-    Integer originalValue1 = (Integer) row.getColumnValue(cd1);
+    String originalValue = row.getColumnValue(cd);
+    Integer originalValue1 = row.getColumnValue(cd1);
     row.setColumnValue(cd, "Jina hodnota");
     row.setColumnValue(cd1, 8);
     assertEquals(row.getState(), RowDesc.RowDescState.CHANGED);

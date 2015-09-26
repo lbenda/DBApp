@@ -55,6 +55,8 @@ public class BlobBinaryData implements BinaryData {
   public boolean isText() { return false; }
   @Override
   public boolean isNull() { return blob == null; }
+  @Override
+  public boolean isLazyLoading() { return true; }
 
   @Override
   public long size() {

@@ -43,6 +43,8 @@ public class CharSequenceBinaryData implements BinaryData {
   public Reader getReader() { return new CharSequenceReader(charSequence); }
   @Override
   public boolean isText() { return true; }
+  @Override
+  public boolean isLazyLoading() { return false; }
 
   @Override
   public long size() {

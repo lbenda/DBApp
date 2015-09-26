@@ -57,6 +57,8 @@ public class ClobBinaryData implements BinaryData {
   public boolean isText() { return true; }
   @Override
   public boolean isNull() { return clob == null; }
+  @Override
+  public boolean isLazyLoading() { return true; }
 
   @Override
   public long size() {
