@@ -57,7 +57,13 @@ public class SQLEditorController {
       HTML = IOUtils.toString(SQLEditorController.class.getResourceAsStream("SQLConsoleHTML.html"));
     } catch (IOException e) {
       LOG.error("Problem with read SQLConsoleHTML.html", e);
-      HTML = "<html><head></head><body>%s</body></html>";
+      HTML = "<html><head>"
+          + "  <script language=\"javascript\" type=\"text/javascript\">"
+          + "     function toBottom() {"
+          + "        window.scrollTo(0, document.body.scrollHeight);"
+          + "     }"
+          + "  </script>"
+          + "</head><body onLoad=\"toBottom()\">%s</body></html>";
     }
     MessageFactory.initializeMessages(SQLEditorController.class);
   }

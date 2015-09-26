@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
+<html>
+<head lang="en">
   <meta charset="UTF-8">
   <title>SQL Console</title>
   <style>
+    body {
+      font-family: sans-serif;
+      font-size: small;
+    }
     sql {
       color: green;
       font-family: monospace;
@@ -18,8 +22,13 @@
       padding-bottom: 2em;
     }
   </style>
+  <script language="javascript" type="text/javascript">
+    function toBottom() {
+      window.scrollTo(0, document.body.scrollHeight);
+    }
+   </script>
 </head>
-<body>
+<body onLoad="toBottom()">
   %s
 </body>
 </html>
