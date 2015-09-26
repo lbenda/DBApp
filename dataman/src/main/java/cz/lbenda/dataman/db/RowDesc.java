@@ -15,7 +15,7 @@
  */
 package cz.lbenda.dataman.db;
 
-import cz.lbenda.common.AbstractHelper;
+import cz.lbenda.common.*;
 import cz.lbenda.rcp.SimpleLocalDateProperty;
 import cz.lbenda.rcp.SimpleLocalDateTimeProperty;
 import cz.lbenda.rcp.SimpleLocalTimeProperty;
@@ -26,8 +26,12 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -37,6 +41,9 @@ import java.util.List;
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 13.9.15.
  * Description of row */
 public class RowDesc implements Observable {
+
+  @SuppressWarnings("unused")
+  private static final Logger LOG = LoggerFactory.getLogger(RowDesc.class);
 
   public enum RowDescState {
     /** Row is newly added */
@@ -54,22 +61,32 @@ public class RowDesc implements Observable {
 
   private List<InvalidationListener> invalidationListeners = new ArrayList<>();
   private Object id; public Object getId() { return id; } public void setId(Object id) { this.id = id; }
-  private Object[] oldValues; public Object[] getOldValues() { return oldValues; } public void setOldValues(Object[] oldValues) { this.oldValues = oldValues; }
-  private Object[] newValues; public Object[] getNewValues() { return newValues; }
+
+  private Object[] oldValues;
+  private Object[] newValues;
+
 
   private RowDescState state;
 
   /** Row in state new */
   public static RowDesc createNewRow(SQLQueryMetaData metaData) {
-    RowDesc result = new RowDesc();
-    result.newValues = new Object[metaData.columnCount()];
+    RowDesc result = new RowDesc(metaData.columnCount());
     result.state = RowDescState.NEW;
     return result;
   }
+  /** Row in state new */
+  public static RowDesc createNewRow(SQLQueryMetaData metaData, RowDescState state) {
+    RowDesc result = new RowDesc(metaData.columnCount());
+    result.state = state;
+    return result;
+  }
 
-  private RowDesc() {}
+  private RowDesc(int columnCount) {
+    newValues = new Object[columnCount];
+    oldValues = new Object[columnCount];
+  }
 
-  public RowDesc(Object id, Object[] values, RowDescState state) {
+  RowDesc(Object id, Object[] values, RowDescState state) {
     this.id = id;
     this.oldValues = values;
     this.newValues = values.clone();
@@ -113,25 +130,47 @@ public class RowDesc implements Observable {
   }
 
   /** Return value from column */
-  public Object getColumnValue(ColumnDesc column) {
-    return getNewValues()[column.getPosition()];
+  @SuppressWarnings("unchecked")
+  public <T> T getColumnValue(ColumnDesc column) {
+    return (T) newValues[column.getPosition() - 1];
   }
   /** Return value of column in string */
+  @SuppressWarnings("unchecked")
   public String getColumnValueStr(ColumnDesc column) {
-    //noinspection unchecked
-    return column.getStringConverter().toString(getNewValues()[column.getPosition()]);
+    return column.getStringConverter().toString(newValues[column.getPosition() - 1]);
+  }
+
+  /** Set value for both rows - old and new */
+  public <T> void setInitialColumnValue(ColumnDesc column, T value) {
+    Object v = value;
+    if (column.getDataType() == ColumnDesc.ColumnType.BLOB) {
+      v = new BlobBinaryData(column.toString(), (Blob) value);
+    } else if (column.getDataType() == ColumnDesc.ColumnType.CLOB) {
+      v = new ClobBinaryData(column.toString(), (Clob) value);
+    } else if (column.getDataType() == ColumnDesc.ColumnType.BYTEARRAY) {
+      v = new ByteArrayBinaryData(column.toString(), (byte[]) value);
+    }
+    oldValues[column.getPosition() - 1] = v;
+    newValues[column.getPosition() - 1] = v;
+  }
+
+  /** Return initial value of column */
+  @SuppressWarnings("unchecked")
+  public <T> T getInitialColumnValue(ColumnDesc column) {
+    return (T) oldValues[column.getPosition() - 1];
   }
 
   /** Return set value for given column */
-  public void setColumnValue(ColumnDesc column, Object value) {
-    getNewValues()[column.getPosition()] = value;
+  public <T> void setColumnValue(ColumnDesc column, T value) {
+    newValues[column.getPosition() - 1] = value;
+
     if (RowDescState.LOADED == state
-        && !AbstractHelper.nullEquals(value, getOldValues()[column.getPosition()])) {
+        && !AbstractHelper.nullEquals(value, oldValues[column.getPosition() - 1])) {
       this.setState(RowDescState.CHANGED);
     } else if (state == RowDescState.CHANGED) {
       boolean noChanged = true;
-      for (int i = 0; i < getOldValues().length; i++) {
-        noChanged = noChanged && AbstractHelper.nullEquals(getNewValues()[i], getOldValues()[i]);
+      for (int i = 0; i < oldValues.length; i++) {
+        noChanged = noChanged && AbstractHelper.nullEquals(newValues[i], oldValues[i]);
       }
       if (noChanged) { setState(RowDescState.LOADED); }
     }
@@ -146,9 +185,10 @@ public class RowDesc implements Observable {
     if (id != null) { return id.equals(sqr.getId()); }
     else if (sqr.getId() != null) { return false; }
 
-    if (oldValues == null) { return sqr.getOldValues() == null; }
-    else if (sqr.getOldValues() == null) { return false; }
-    return Arrays.equals(oldValues, sqr.getOldValues());
+    if (oldValues == null) {
+      return sqr.oldValues == null; }
+    else if (sqr.oldValues == null) { return false; }
+    return Arrays.equals(oldValues, sqr.oldValues);
   }
 
   @Override
@@ -177,30 +217,41 @@ public class RowDesc implements Observable {
     ObservableValue result;
     switch (columnDesc.getDataType()) {
       case BOOLEAN:
-        result = new SimpleBooleanProperty(newValues[columnDesc.getPosition()], null);
+        result = new SimpleBooleanProperty(newValues[columnDesc.getPosition() - 1], null);
         break;
+      case BYTE:
+      case SHORT:
+      case LONG:
       case INTEGER:
-        // result = new javafx.beans.property.SimpleIntegerProperty(newValues[columnDesc.getPosition()], null);
-        if (newValues[columnDesc.getPosition()] == null) {
-          result = new SimpleStringProperty(null);
+      case FLOAT:
+      case DOUBLE:
+      case DECIMAL:
+        if (newValues[columnDesc.getPosition() - 1] == null) {
+          result = new SimpleObjectProperty<>();//new SimpleStringProperty(null);
         } else {
-          result = new SimpleStringProperty(String.valueOf(newValues[columnDesc.getPosition()]));
+          result = new SimpleObjectProperty<>(newValues[columnDesc.getPosition() - 1]);
+          // new SimpleStringProperty(String.valueOf(newValues[columnDesc.getPosition()]));
         }
         break;
       case DATE:
-        result = new SimpleLocalDateProperty((java.sql.Date) newValues[columnDesc.getPosition()]);
+        result = new SimpleLocalDateProperty((java.sql.Date) newValues[columnDesc.getPosition() - 1]);
         break;
       case TIMESTAMP:
-        result = new SimpleLocalDateTimeProperty((Timestamp) newValues[columnDesc.getPosition()]);
+        result = new SimpleLocalDateTimeProperty((Timestamp) newValues[columnDesc.getPosition() - 1]);
         break;
       case TIME:
-        result = new SimpleLocalTimeProperty((Time) newValues[columnDesc.getPosition()]);
+        result = new SimpleLocalTimeProperty((Time) newValues[columnDesc.getPosition() - 1]);
         break;
       case STRING:
-        result = new SimpleStringProperty((String) newValues[columnDesc.getPosition()]);
+        result = new SimpleStringProperty((String) newValues[columnDesc.getPosition() - 1]);
+        break;
+      case BYTEARRAY:
+      case CLOB:
+      case BLOB:
+        result = new SimpleObjectProperty<>(getColumnValue(columnDesc));
         break;
       default:
-        result = new SimpleObjectProperty<>(newValues[columnDesc.getPosition()]);
+        result = new SimpleObjectProperty<>(newValues[columnDesc.getPosition() - 1]);
         break;
     }
     result.addListener((observable, oldValue, newValue) -> {
@@ -210,12 +261,24 @@ public class RowDesc implements Observable {
         setColumnValue(columnDesc, ((SimpleLocalDateTimeProperty) observable).getSQLTimestamp());
       } else if (observable instanceof SimpleLocalTimeProperty) {
         setColumnValue(columnDesc, ((SimpleLocalTimeProperty) observable).getSQLTime());
-      } else if (columnDesc.getDataType() == ColumnDesc.ColumnType.INTEGER)  {
+      } else if (columnDesc.getDataType() == ColumnDesc.ColumnType.SHORT
+          || columnDesc.getDataType() == ColumnDesc.ColumnType.BYTE
+          || columnDesc.getDataType() == ColumnDesc.ColumnType.INTEGER
+          || columnDesc.getDataType() == ColumnDesc.ColumnType.LONG
+          || columnDesc.getDataType() == ColumnDesc.ColumnType.FLOAT
+          || columnDesc.getDataType() == ColumnDesc.ColumnType.DOUBLE
+          || columnDesc.getDataType() == ColumnDesc.ColumnType.DECIMAL) {
         if (StringUtils.isBlank(((SimpleStringProperty) newValue).getValue())) {
           setColumnValue(columnDesc, null);
         } else {
-          setColumnValue(columnDesc, Integer.valueOf(((SimpleStringProperty) newValue).getValue()));
+          setColumnValue(columnDesc, columnDesc.getStringConverter().fromString(((SimpleStringProperty) newValue).getValue()));
         }
+      } else if (columnDesc.getDataType() == ColumnDesc.ColumnType.BYTEARRAY
+          || columnDesc.getDataType() == ColumnDesc.ColumnType.BLOB) {
+        System.out.println(newValue);
+        setColumnValue(columnDesc, columnDesc.getStringConverter().fromString((String) newValue));
+      } else if (columnDesc.getDataType() == ColumnDesc.ColumnType.BLOB) {
+        throw new UnsupportedOperationException("Editing BLOB isn't supported.");
       } else {
         setColumnValue(columnDesc, newValue);
       }

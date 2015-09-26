@@ -17,10 +17,14 @@ package cz.lbenda.common;
 
 import cz.lbenda.rcp.localization.Message;
 import cz.lbenda.rcp.localization.MessageFactory;
+import javafx.stage.FileChooser;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 20.9.15.
@@ -35,7 +39,36 @@ public class Constants {
   @Message
   public static String CONF_TIME_FORMAT;
 
+  /** Thousand which is used for getting metric prefix in bytes */
+  public static long byteThousand = 1024;
+  /** Metric prefix but only for thousands and bigger then 1 */
+  public static String[] METRIC_THOUSAND_PREFIX = new String[] { "k", "M", "G", "T" };
+  public static long[] BYTES_THOUSAND = new long[] {
+      byteThousand,
+      byteThousand * byteThousand,
+      byteThousand * byteThousand * byteThousand,
+      byteThousand * byteThousand * byteThousand * byteThousand,
+      byteThousand * byteThousand * byteThousand * byteThousand * byteThousand };
+  /** For given size in bytes return prefix which is used for better readibility */
+  public static String prefixForSize(long size) {
+    if (byteThousand > size) { return ""; }
+    if (byteThousand * byteThousand > size) { return METRIC_THOUSAND_PREFIX[0]; }
+    if (byteThousand * byteThousand * byteThousand > size) { return METRIC_THOUSAND_PREFIX[1]; }
+    if (byteThousand * byteThousand * byteThousand * byteThousand > size) { return METRIC_THOUSAND_PREFIX[2]; }
+    return METRIC_THOUSAND_PREFIX[3];
+  }
+  /** Transform given size in bytes to size which work with prefix together */
+  public static long transformToPrefixedSize(long size) {
+    if (byteThousand > size) { return size; }
+    if (byteThousand * byteThousand > size) { return size / byteThousand; }
+    if (byteThousand * byteThousand * byteThousand > size) { return size / (byteThousand * byteThousand); }
+    if (byteThousand * byteThousand * byteThousand * byteThousand > size) { return size / (byteThousand * byteThousand * byteThousand); }
+    return size / (byteThousand * byteThousand * byteThousand * byteThousand);
+  }
+
+  /** Standard height of window which is open to edit text */
   public static double TextAreaWindowsHeight = 500;
+  /** Standard weight of window which is open to edit text */
   public static double TextAreaWindowsWeight = 800;
 
   public static DateTimeFormatter LOCAL_DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
@@ -73,6 +106,9 @@ public class Constants {
   public static int MIN_SIZE_FOR_TEXT_AREA = 100;
   /** Prefer height of text area */
   public static double TEXT_AREA_PREF_HIGH = 50.0;
+
+  public static List<FileChooser.ExtensionFilter> allFilesFilter = new ArrayList<>(Arrays.asList(
+      new FileChooser.ExtensionFilter[] { new FileChooser.ExtensionFilter("All files", "*.*") }));
 
   static {
     MessageFactory.initializeMessages(Constants.class);

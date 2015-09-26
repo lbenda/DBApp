@@ -16,9 +16,11 @@
 package cz.lbenda.dataman.db;
 
 import cz.lbenda.common.StringConverters;
+import cz.lbenda.common.BinaryData;
 import javafx.util.StringConverter;
 
 import javax.annotation.Nonnull;
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.*;
 import java.util.Date;
@@ -29,12 +31,38 @@ import java.util.Date;
 public class ColumnDesc {
 
   public enum ColumnType {
-    BOOLEAN(Boolean.class), STRING(String.class), INTEGER(Integer.class), DATE(Date.class),
-    TIMESTAMP(Timestamp.class), TIME(Time.class), OBJECT(Object.class);
+    SHORT(Short.class, StringConverters.SHORT_CONVERTER),
+    BYTE(Byte.class, StringConverters.BYTE_CONVERTER),
+    INTEGER(Integer.class, StringConverters.INT_CONVERTER),
+    LONG(Long.class, StringConverters.LONG_CONVERTER),
+    BYTEARRAY(Byte[].class, StringConverters.BINARYDATA_CONVERTER),
+
+    FLOAT(Float.class, StringConverters.FLOAT_CONVERTER),
+    DOUBLE(Double.class, StringConverters.DOUBLE_CONVERTER),
+    DECIMAL(BigDecimal.class, StringConverters.DECIMAL_CONVERTER),
+
+    BOOLEAN(Boolean.class, StringConverters.BOOLEAN_CONVERTER),
+    STRING(String.class, StringConverters.STRING_CONVERTER),
+    CLOB(BinaryData.class, StringConverters.BINARYDATA_CONVERTER),
+
+    DATE(Date.class, StringConverters.SQL_DATE_CONVERTER),
+    TIMESTAMP(Timestamp.class, StringConverters.SQL_TIMESTAMP_CONVERTER),
+    TIME(Time.class, StringConverters.SQL_TIME_CONVERTER),
+
+    BLOB(BinaryData.class, StringConverters.BINARYDATA_CONVERTER),
+
+    OBJECT(Object.class, StringConverters.OBJECT_CONVERTER),
+    ;
+
     private final Class clazz;
-    ColumnType(Class clazz) { this.clazz = clazz; }
+    private final StringConverter converter;
+    ColumnType(Class clazz, StringConverter converter) {
+      this.clazz = clazz;
+      this.converter = converter;
+    }
     @SuppressWarnings("unused")
     public Class getJavaClass() { return clazz; }
+    public StringConverter getConverter() { return converter; }
   }
 
   private TableDesc tableDescription;
@@ -65,7 +93,7 @@ public class ColumnDesc {
    * @throws SQLException
    */
   public ColumnDesc(ResultSetMetaData mtd, int position) throws SQLException {
-    this.position = position - 1;
+    this.position = position;
     this.name = mtd.getColumnName(position);
     this.label = mtd.getColumnLabel(position);
     this.catalog = mtd.getCatalogName(position);
@@ -75,6 +103,7 @@ public class ColumnDesc {
     this.dataType = sqlToColumnType(mtd.getColumnType(position));
     this.columnTypeName = mtd.getColumnTypeName(position);
     this.javaClassName = mtd.getColumnClassName(position);
+    System.out.println(mtd.getColumnType(position) + ": " + dataType + " - " + javaClassName);
     this.nullable = ResultSetMetaData.columnNullable == mtd.isNullable(position) ? Boolean.TRUE :
         (ResultSetMetaData.columnNoNulls == mtd.isNullable(position) ? Boolean.FALSE : null);
 
@@ -104,10 +133,25 @@ public class ColumnDesc {
       case Types.TIME : return ColumnType.TIME;
       case Types.DATE : return ColumnType.DATE;
       case Types.INTEGER : return ColumnType.INTEGER;
+      case Types.BIGINT : return ColumnType.LONG;
+      case Types.TINYINT : return ColumnType.BYTE;
+      case Types.SMALLINT : return ColumnType.SHORT;
+      case Types.FLOAT :
+      case Types.REAL : return ColumnType.FLOAT;
+      case Types.NUMERIC :
+      case Types.DECIMAL : return ColumnType.DECIMAL;
+      case Types.DOUBLE : return ColumnType.DOUBLE;
       case Types.CHAR :
       case Types.VARCHAR : return ColumnType.STRING;
       case Types.BOOLEAN : return ColumnType.BOOLEAN;
-      default : return ColumnType.OBJECT;
+      case Types.VARBINARY:
+      case Types.BINARY : return ColumnType.BYTEARRAY;
+      case Types.CLOB : return ColumnType.CLOB;
+      case Types.BLOB : return ColumnType.BLOB;
+      case Types.OTHER :
+      default :
+        System.out.println("Unresolved dataType: " + dataType);
+        return ColumnType.OBJECT;
     }
   }
 
@@ -121,18 +165,9 @@ public class ColumnDesc {
   }
 
   /** Return string converter which is commonly used with date type which is hold by field in this column
-   * @return String convertor */
+   * @return String converter */
   public StringConverter getStringConverter() {
-    switch (dataType) {
-      case INTEGER: return StringConverters.INT_CONVERTER;
-      case DATE: return StringConverters.SQL_DATE_CONVERTER;
-      case TIMESTAMP: return StringConverters.SQL_TIMESTAMP_CONVERTER;
-      case TIME: return StringConverters.SQL_TIME_CONVERTER;
-      case BOOLEAN: return StringConverters.BOOLEAN_CONVERTER;
-      case OBJECT: return StringConverters.OBJECT_CONVERTER;
-      case STRING: return StringConverters.STRING_CONVERTER;
-      default: return StringConverters.OBJECT_CONVERTER;
-    }
+    return dataType.getConverter();
   }
 
   /** Return extensions which are defined for this column in tableDescriptor
@@ -169,5 +204,9 @@ public class ColumnDesc {
   }
 
   @Override
-  public String toString() { return pk ? "* " + name : name; }
+  public String toString() {
+    return (getLabel() != null
+        ? getLabel() + " (" + getSchema() + "." + getTable() + "." + getName() + ")"
+        : getSchema() + "." + getTable() + "." + getName()) + (pk ? " - PK " : "");
+  }
 }

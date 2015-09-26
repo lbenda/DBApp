@@ -2,6 +2,10 @@
   -fx-fill: purple;
   -fx-font-weight: bold;
 }
+.datatype {
+  -fx-fill: #80004e;
+  -fx-font-weight: bold;
+}
 .semicolon {
   -fx-font-weight: bold;
 }
@@ -20,7 +24,6 @@
 .string {
   -fx-fill: blue;
 }
-
 .comment {
   -fx-fill: cadetblue;
 }

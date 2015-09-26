@@ -126,7 +126,7 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
   }
 
   public final void addColumn(ColumnDesc column) {
-    column.setPosition(getColumns().size());
+    column.setPosition(getColumns().size() + 1);
     getColumns().add(column);
   }
 
@@ -180,10 +180,7 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
   /** Reload all data from database - remove changes as part of */
   public void reloadRowsAction() {
     getRows().clear();
-    dbConfig.getReader().readTableData(this, -1, -1).forEach(values -> {
-      RowDesc row = new RowDesc(null, values, RowDesc.RowDescState.LOADED);
-      getRows().add(row);
-    });
+    dbConfig.getReader().readTableData(this, -1, -1).forEach(row -> getRows().add(row));
     this.loaded.setValue(Boolean.TRUE);
   }
 

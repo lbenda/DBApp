@@ -65,8 +65,6 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
     }
     createDataSource();
   }
-  @SuppressWarnings("unused")
-  public final DbConfig getDbConfig() { return dbConfig; }
 
   public DbStructureReader(DbConfig dbConfig) {
     this.setDbConfig(dbConfig);
@@ -121,23 +119,27 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
    * @param to last row where stop read
    * @return list of object from db
    */
-  public final List<Object[]> readTableData(TableDesc td, int from, int to) {
+  public final List<RowDesc> readTableData(TableDesc td, int from, int to) {
     try (Connection conn = getConnection()) {
       try (Statement st = conn.createStatement()) {
         ResultSet rs = st.executeQuery(String.format("SELECT * FROM \"%s\".\"%s\"", td.getSchema(), td.getName()));
-        final List<Object[]> result;
+        final List<RowDesc> result;
         if (from > -1) { result = new ArrayList<>(to - from); }
         else { result = new ArrayList<>(); }
         while (rs.next()) {
-          Object[] row = new Object[td.getColumns().size()];
-          for (int i = 0; i < td.getColumns().size(); i++) { row[i] = rs.getObject(i + 1); }
+          RowDesc row = RowDesc.createNewRow(td.getQueryRow().getMetaData(), RowDesc.RowDescState.LOADED);
+          for (ColumnDesc columnDesc : td.getColumns()) {
+            row.setInitialColumnValue(columnDesc, rs.getObject(columnDesc.getPosition()));
+          }
           result.add(row);
         }
         return result;
       }
     } catch (SQLException e) {
-      LOG.error(String.format("Problem with read whole table data: %s.%s, from: %s, to: %s", td.getSchema(), td.getName(), from, to), e);
-      throw new RuntimeException(String.format("Problem with read whole table data: %s.%s, from: %s, to: %s", td.getSchema(), td.getName(), from, to), e);
+      LOG.error(String.format("Problem with read whole table data: %s.%s, from: %s, to: %s", td.getSchema(),
+          td.getName(), from, to), e);
+      throw new RuntimeException(String.format("Problem with read whole table data: %s.%s, from: %s, to: %s",
+          td.getSchema(), td.getName(), from, to), e);
     }
   }
 
@@ -229,7 +231,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
         for (RowDesc row : insertRows) {
           int i = 1;
           for (ColumnDesc col : insertedColumns) {
-            ps.setObject(i, row.getNewValues()[col.getPosition()]);
+            ps.setObject(i, row.getColumnValue(col));
             i++;
           }
           ps.addBatch();
@@ -245,7 +247,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
             if (col == null) {
               throw new NullPointerException(String.format("The column with name %s not exist", rsmd.getColumnName(i)));
             }
-            row.getNewValues()[col.getPosition()] = rs.getObject(i);
+            row.setInitialColumnValue(col, rs.getObject(i)); // Set value of primary key, so this data is LOADED not changed
           }
         }
         insertRows.forEach(RowDesc::savedChanges);
@@ -283,11 +285,11 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
       try (PreparedStatement ps = AuditPreparedStatement.prepareCall(user, auditorForAudit(td.getAudit()), conn, sql)) {
         for (RowDesc row : changedRows) {
           int i = 0;
-          for (; i < row.getNewValues().length; i++) {
-            ps.setObject(i + 1, row.getNewValues()[i]);
+          for (ColumnDesc columnDesc : td.getColumns()) {
+            ps.setObject(columnDesc.getPosition(), row.getColumnValue(columnDesc));
           }
           for (ColumnDesc col : pks) {
-            ps.setObject(i + 1, row.getOldValues()[col.getPosition()]);
+            ps.setObject(i + 1, row.getInitialColumnValue(col));
             i++;
           }
           ps.addBatch();
@@ -325,7 +327,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
         for (RowDesc row : removedRows) {
           int i = 1;
           for (ColumnDesc col : pks) {
-            ps.setObject(i, row.getOldValues()[col.getPosition()]);
+            ps.setObject(i, row.getInitialColumnValue(col));
             i++;
           }
           ps.addBatch();
@@ -368,10 +370,6 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   private void generateStructureColumns(DatabaseMetaData dmd) throws SQLException {
     SQLDialect di = this.dbConfig.getJdbcConfiguration().getDialect();
     try (ResultSet rsColumn  = dmd.getColumns(null, null, null, null)) {
-      /*ResultSetMetaData rsmd = rsColumn.getMetaData();
-      for (int i = 1; i < rsmd.getColumnCount(); i++) {
-        LOG.trace(String.format("%s: %s", rsmd.getColumnName(i), rsmd.getColumnType(i)));
-      }*/
       while (rsColumn.next()) {
         TableDesc td = dbConfig.getTableDescription(
                 rsColumn.getString(di.columnTableCatalog()), rsColumn.getString(di.columnTableSchema()),

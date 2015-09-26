@@ -13,33 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cz.lbenda.gui.tableView;
+package cz.lbenda.gui.controls;
 
 import cz.lbenda.common.Constants;
-import cz.lbenda.common.Tuple2;
-import cz.lbenda.rcp.DialogHelper;
-import cz.lbenda.rcp.IconFactory;
-import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.*;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
-import javafx.stage.Stage;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 24.9.15.
  * element which show text field or text area by size of field */
 @SuppressWarnings("unused")
 public class TextFieldArea {
 
-  @Message
-  public final static String msgBtnOpenInEditor_tooltip = "Open in editor windo";
-  static {
-    MessageFactory.initializeMessages(TextFieldArea.class);
-  }
+
 
   private final BorderPane panel = new BorderPane(); public Node getNode() { return panel; }
   private final TextInputControl textInputControl;
@@ -55,15 +44,11 @@ public class TextFieldArea {
    * @param useTextField use text field instead of text area */
   public TextFieldArea(String windowTitle, boolean useTextField) {
     this.textInputControl = useTextField ? new TextField() : new TextArea();
-    if (!useTextField) { textInputControl.setPrefHeight(Constants.TEXT_AREA_PREF_HIGH); }
+    if (!useTextField) {
+      textInputControl.setPrefHeight(Constants.TEXT_AREA_PREF_HIGH); }
     this.panel.setCenter(textInputControl);
     BorderPane.setAlignment(textInputControl, Pos.TOP_LEFT);
-    Button btOpenTextEditor = new Button(null,
-        IconFactory.getInstance().imageView(this, "document-edit.png", IconFactory.IconLocation.INDICATOR));
-    btOpenTextEditor.setTooltip(new Tooltip(msgBtnOpenInEditor_tooltip));
-    this.panel.setRight(btOpenTextEditor);
-    BorderPane.setAlignment(btOpenTextEditor, Pos.TOP_RIGHT);
-
+    this.panel.setRight(TextAreaFrmController.createOpenButton(windowTitle, textInputControl::getText, textInputControl::setText));
     this.textInputControl.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
       switch (event.getCode()) {
         case ENTER:
@@ -80,13 +65,6 @@ public class TextFieldArea {
         if (isCancelOnFocusLost()) { cancelEdit(); }
         else { commitEdit(textInputControl.getText()); }
       }
-    });
-    btOpenTextEditor.setOnAction(event -> {
-      Tuple2<Parent, TextAreaFrmController> tuple2 = TextAreaFrmController.createNewInstance();
-      tuple2.get2().textProperty().setValue(textInputControl.getText());
-      tuple2.get2().textProperty().addListener((observable, oldValue, newValue) -> textInputControl.setText(newValue));
-      DialogHelper.getInstance().openWindowInCenterOfStage((Stage) textInputControl.getScene().getWindow(),
-          tuple2.get2().getMainPane(), windowTitle);
     });
     editable.addListener((observable, oldValue, newValue) -> textInputControl.editableProperty().setValue(newValue));
     text.addListener((observable, oldValue, newValue) -> textInputControl.textProperty().setValue(newValue));

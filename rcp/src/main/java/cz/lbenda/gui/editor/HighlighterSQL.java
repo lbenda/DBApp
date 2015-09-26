@@ -31,10 +31,20 @@ public class HighlighterSQL implements Highlighter {
       "select", "insert", "delete", "update", "alter",
       "table", "column", "grant", "role", "user",
       "where", "from", "join", "left join", "right join",
-      "outer join", "inner join", "on"
+      "outer join", "inner join", "on", "create", "schema",
+      "primary key", "not null", "null", "into", "set", "values",
+      "drop", "comment", "to", "is", "constraint", "foreign key", "add",
+      "references", "unique"
+  };
+  private static final String[] DATATYPE = new String[] {
+      "int", "varchar", "char", "date", "timestamp",
+      "decimal", "double", "boolean", "tinyint", "smallint",
+      "identity", "real", "time", "binary", "other", "varchar_ignorecase",
+      "uuid", "array", "geometry", "clob", "blob", "text", "bigint"
   };
 
   private static final String KEYWORD_PATTERN = "\\b(" + String.join("|", KEYWORDS) + ")\\b";
+  private static final String DATATYPE_PATTERN = "\\b(" + String.join("|", DATATYPE) + ")\\b";
   private static final String PAREN_PATTERN = "\\(|\\)";
   private static final String BRACE_PATTERN = "\\{|\\}";
   private static final String BRACKET_PATTERN = "\\[|\\]";
@@ -44,6 +54,7 @@ public class HighlighterSQL implements Highlighter {
 
   private static final Pattern PATTERN = Pattern.compile(
       "(?<KEYWORD>" + KEYWORD_PATTERN + ")"
+          + "|(?<DATATYPE>" + DATATYPE_PATTERN + ")"
           + "|(?<PAREN>" + PAREN_PATTERN + ")"
           + "|(?<BRACE>" + BRACE_PATTERN + ")"
           + "|(?<BRACKET>" + BRACKET_PATTERN + ")"
@@ -60,13 +71,14 @@ public class HighlighterSQL implements Highlighter {
     while(matcher.find()) {
       String styleClass =
           matcher.group("KEYWORD") != null ? "keyword" :
-              matcher.group("PAREN") != null ? "paren" :
-                  matcher.group("BRACE") != null ? "brace" :
-                      matcher.group("BRACKET") != null ? "bracket" :
-                          matcher.group("SEMICOLON") != null ? "semicolon" :
-                              matcher.group("STRING") != null ? "string" :
-                                  matcher.group("COMMENT") != null ? "comment" :
-                                      null; /* never happens */ assert styleClass != null;
+              matcher.group("DATATYPE") != null ? "datatype" :
+                  matcher.group("PAREN") != null ? "paren" :
+                      matcher.group("BRACE") != null ? "brace" :
+                          matcher.group("BRACKET") != null ? "bracket" :
+                              matcher.group("SEMICOLON") != null ? "semicolon" :
+                                  matcher.group("STRING") != null ? "string" :
+                                      matcher.group("COMMENT") != null ? "comment" :
+                                          null; /* never happens */ assert styleClass != null;
       spansBuilder.add(Collections.emptyList(), matcher.start() - lastKwEnd);
       spansBuilder.add(Collections.singleton(styleClass), matcher.end() - matcher.start());
       lastKwEnd = matcher.end();

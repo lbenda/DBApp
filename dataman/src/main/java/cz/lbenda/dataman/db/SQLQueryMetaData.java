@@ -28,8 +28,6 @@ import java.util.List;
 public class SQLQueryMetaData {
   private ObservableList<ColumnDesc> columns = FXCollections.observableArrayList(); public ObservableList<ColumnDesc> getColumns() { return columns; }
   public void setColumns(ColumnDesc[] columns) { this.columns.addAll(columns); }
-  /** Position of column */
-  public int columnIdx(ColumnDesc column) { return columns.indexOf(column); }
   public int columnCount() { return columns.size(); }
   public List<ColumnDesc> pks = new ArrayList<>(); public final List<ColumnDesc> getPKColumns() { return pks; }
 

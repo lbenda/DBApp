@@ -42,7 +42,7 @@ public class RowEditorFrmController {
     this.tableViewObjectProperty = tableViewObjectProperty;
     tableViewObjectProperty.addListener((observable, oldValue, newValue) -> {
       if (oldValue != null) {
-        newValue.getSelectionModel().selectedItemProperty().removeListener(changeRowListener);
+        oldValue.getSelectionModel().selectedItemProperty().removeListener(changeRowListener);
       }
       if (newValue != null) {
         setRowValue(newValue.getSelectionModel().getSelectedItem());
@@ -56,7 +56,7 @@ public class RowEditorFrmController {
 
   public void setRowValue(RowDesc row) {
     sheet.getItems().clear();
-    for (ColumnDesc columnDesc :  tableViewObjectProperty.getValue().getSqlQueryRows().getMetaData().getColumns()) {
+    for (ColumnDesc columnDesc : tableViewObjectProperty.getValue().getSqlQueryRows().getMetaData().getColumns()) {
       RowPropertyItem item = new RowPropertyItem(columnDesc, row, true);
       sheet.getItems().add(item);
     }

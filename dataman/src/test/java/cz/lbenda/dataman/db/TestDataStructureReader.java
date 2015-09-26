@@ -61,7 +61,7 @@ public class TestDataStructureReader extends TestAbstractDB {
     assertEquals(tableDesc.getRows().size(), 3, "In the database must be 3 rows.");
     int i = driverClass == TestHelperPrepareDB.DBDriver.HSQL ? 0 : 1;
     for (RowDesc row : tableDesc.getRows()) {
-      assertEquals(row.getColumnValue(tableDesc.getColumn("ID")), i);
+      assertEquals((Object) row.getColumnValue(tableDesc.getColumn("ID")), i);
       i++;
     }
   }

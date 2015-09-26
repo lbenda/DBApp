@@ -21,12 +21,10 @@ import cz.lbenda.rcp.localization.Message;
 import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import org.apache.commons.io.FilenameUtils;
@@ -120,17 +118,6 @@ public class DialogHelper {
     stage.show();
     stage.setX(parentStage.getX() + (parentStage.getWidth() - stage.getWidth()) / 2);
     stage.setY(parentStage.getY() + (parentStage.getHeight() - stage.getHeight()) / 2);
-  }
-
-  public void openModalWindowInCenterOfStage(Stage parentStage, Pane pane, String title) {
-    Stage stage = new Stage();
-    stage.setTitle(title);
-    stage.setScene(new Scene(pane, pane.getPrefWidth(), pane.getPrefHeight()));
-    stage.getIcons().addAll(parentStage.getIcons());
-    // stage.show();
-    stage.setX(parentStage.getX() + (parentStage.getWidth() - stage.getWidth()) / 2);
-    stage.setY(parentStage.getY() + (parentStage.getHeight() - stage.getHeight()) / 2);
-    stage.showAndWait();
   }
 
   /** Show unsaved object if aren't saved. if user want cancel the closing then return false, elserwhere return true

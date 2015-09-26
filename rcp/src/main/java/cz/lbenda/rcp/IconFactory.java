@@ -41,7 +41,7 @@ public class IconFactory {
 
   /** Location where is icon used, by this location is size choose */
   public enum IconLocation {
-    INDICATOR(IconSize.XSMALL), MENU_ITEM(IconSize.SMALL), GLOBAL_TOOL_BAR(IconSize.XLARGE), LOCAL_TOOLBAR(IconSize.MEDIUM),
+    INDICATOR(IconSize.XSMALL), MENU_ITEM(IconSize.SMALL), GLOBAL_TOOL_BAR(IconSize.XLARGE), LOCAL_TOOLBAR(IconSize.SMALL),
     TABLE_CELL(IconSize.SMALL), APP_ICON(IconSize.SMALL), ;
     private IconSize iconSize;
     IconLocation(IconSize iconSize) { this.iconSize = iconSize; }

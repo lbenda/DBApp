@@ -81,6 +81,11 @@ public class DataTableView extends FilterableTableView<RowDesc> {
     GraphicsContext gc = canvas.getGraphicsContext2D();
     double nWidth = com.sun.javafx.tk.Toolkit.getToolkit().getFontLoader().computeStringWidth("N", gc.getFont()) * 0.9;
     switch (column.getDataType()) {
+      case BOOLEAN: return 10 * nWidth;
+      case BLOB:
+      case CLOB:
+      case BYTEARRAY:
+        return 30 * nWidth;
       case DATE:
         // return 10 * nWidth; non editable
         return 25 * nWidth;
@@ -113,22 +118,30 @@ public class DataTableView extends FilterableTableView<RowDesc> {
     switch (columnDesc.getDataType()) {
       case BOOLEAN:
         return CheckBoxTableCell.forTableColumn(tc);
-      /*case INTEGER:
-        return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) TextFieldTableCell.forTableColumn(new IntegerStringConverter());*/
+      case BYTE:
+      case SHORT:
+      case INTEGER:
+      case LONG:
+      case FLOAT:
+      case DOUBLE:
+      case DECIMAL:
+        return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) TextFieldTableCell.forTableColumn(columnDesc.getStringConverter());
       case DATE:
         return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) DatePickerTableCell.forTableColumn();
       case TIME:
+        return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) TimePickerTableCell.forTableColumn();
       case TIMESTAMP:
         return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) DateTimePickerTableCell.forTableColumn();
       case STRING:
         return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) TextAreaTableCell.forTableColumn(
-            columnDesc.getLabel() != null
-                ? columnDesc.getLabel() + " (" + columnDesc.getSchema() + "." + columnDesc.getTable() + "." + columnDesc.getName() + ")"
-                : columnDesc.getSchema() + "." + columnDesc.getTable() + "." + columnDesc.getName(),
-            columnDesc.getDisplaySize() <= Constants.MIN_SIZE_FOR_TEXT_AREA);
-        // return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) TextFieldTableCell.forTableColumn();
+            columnDesc.toString(), columnDesc.getDisplaySize() <= Constants.MIN_SIZE_FOR_TEXT_AREA);
+      case BYTEARRAY:
+      case BLOB:
+        return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) BinaryDataTableCell.forTableColumn(false);
+      case CLOB:
+        return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) BinaryDataTableCell.forTableColumn(true);
       default:
-        return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) TextFieldTableCell.forTableColumn();
+        return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) TextFieldTableCell.forTableColumn(columnDesc.getStringConverter());
     }
   }
 

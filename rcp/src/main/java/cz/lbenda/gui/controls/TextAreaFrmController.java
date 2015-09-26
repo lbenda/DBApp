@@ -13,34 +13,58 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cz.lbenda.gui.tableView;
+package cz.lbenda.gui.controls;
 
 import cz.lbenda.common.Tuple2;
 import cz.lbenda.gui.editor.*;
+import cz.lbenda.rcp.DialogHelper;
+import cz.lbenda.rcp.IconFactory;
+import cz.lbenda.rcp.localization.Message;
+import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.fxml.JavaFXBuilderFactory;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.Tooltip;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 21.9.15. */
 public class TextAreaFrmController implements Initializable {
 
   private static Logger LOG = LoggerFactory.getLogger(TextAreaFrmController.class);
   private static final String FXML_RESOURCE = "TextAreaFrm.fxml";
+
+  @Message
+  public final static String msgDefaultWindowTitle = "Text editor";
+  @Message
+  public final static String msgBtnOpenInEditor_tooltip = "Open in editor window";
+  static {
+    MessageFactory.initializeMessages(TextFieldArea.class);
+  }
+
+  /** Image for button which open text editor */
+  public static final Image BUTTON_IMAGE = IconFactory.getInstance().image(TextFieldArea.class, "document-edit.png",
+      IconFactory.IconLocation.INDICATOR);
 
   @FXML
   private BorderPane mainPane; public BorderPane getMainPane() { return mainPane; }
@@ -95,5 +119,23 @@ public class TextAreaFrmController implements Initializable {
       LOG.error("Problem with reading FXML", e);
       throw new RuntimeException("Problem with reading FXML", e);
     }
+  }
+
+  /** Create button which can open text editor */
+  public static Button createOpenButton(String windowTitle,
+                                        @Nonnull Supplier<String> oldValueSupplier,
+                                        @Nonnull Consumer<String> newValueConsumer) {
+    String title = windowTitle == null ? msgDefaultWindowTitle : windowTitle;
+    Button result = new Button(null, new ImageView(BUTTON_IMAGE));
+    result.setTooltip(new Tooltip(msgBtnOpenInEditor_tooltip));
+    BorderPane.setAlignment(result, Pos.TOP_RIGHT);
+    result.setOnAction(event -> {
+      Tuple2<Parent, TextAreaFrmController> tuple2 = TextAreaFrmController.createNewInstance();
+      tuple2.get2().textProperty().setValue(oldValueSupplier.get());
+      tuple2.get2().textProperty().addListener((observable, oldValue, newValue) -> newValueConsumer.accept(newValue));
+      Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+      DialogHelper.getInstance().openWindowInCenterOfStage(stage, tuple2.get2().getMainPane(), title);
+    });
+    return result;
   }
 }

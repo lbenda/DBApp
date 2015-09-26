@@ -92,10 +92,10 @@ public class SQLRunHandler extends AbstractAction {
             }
             sqlRows.getMetaData().setColumns(columns);
             while (rs.next()) {
-              Object[] values = new Object[columnCount];
-              for (int i = 1; i <= columnCount; i++) { values[i - 1] = rs.getObject(i); }
-              RowDesc row = new RowDesc(null, values, RowDesc.RowDescState.LOADED);
-              row.setOldValues(values);
+              RowDesc row = RowDesc.createNewRow(sqlRows.getMetaData(), RowDesc.RowDescState.LOADED);
+              for (ColumnDesc columnDesc : sqlRows.getMetaData().getColumns()) {
+                row.setInitialColumnValue(columnDesc, rs.getObject(columnDesc.getPosition()));
+              }
               sqlRows.getRows().add(row);
             }
           }

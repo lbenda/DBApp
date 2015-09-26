@@ -5,7 +5,7 @@
 
 <BorderPane fx:id="mainPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
             prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8"
-            xmlns:fx="http://javafx.com/fxml/1" fx:controller="cz.lbenda.gui.tableView.TextAreaFrmController">
+            xmlns:fx="http://javafx.com/fxml/1" fx:controller="cz.lbenda.gui.controls.TextAreaFrmController">
   <top>
     <HBox>
       <fx:define>

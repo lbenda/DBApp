@@ -15,18 +15,20 @@
  */
 package cz.lbenda.dataman.db.frm;
 
-import cz.lbenda.common.Constants;
-import cz.lbenda.common.StringConverters;
+import cz.lbenda.common.*;
 import cz.lbenda.dataman.db.ColumnDesc;
 import cz.lbenda.dataman.db.ComboBoxTDExtension;
 import cz.lbenda.dataman.db.ComboBoxTDExtension.ComboBoxItem;
-import cz.lbenda.gui.tableView.TextFieldArea;
+import cz.lbenda.gui.controls.BinaryDataEditor;
+import cz.lbenda.gui.controls.TextFieldArea;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.util.StringConverter;
 import org.controlsfx.control.PropertySheet;
 import org.controlsfx.property.editor.PropertyEditor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -37,12 +39,17 @@ import java.util.Date;
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 23.9.15. */
 public class StringPropertyEditor implements PropertyEditor<Object> {
 
+  @SuppressWarnings("unused")
+  private static final Logger LOG = LoggerFactory.getLogger(StringPropertyEditor.class);
+
   private TextFieldArea textFieldArea;
+  private BinaryDataEditor binaryDataEditor;
   private DatePicker datePicker;
   private CheckBox checkBox;
   private ComboBox<ComboBoxItem> comboBox;
   private final StringConverter converter;
   private PropertySheet.Item item;
+  private RowPropertyItem rpi = null;
   private ComboBoxTDExtension comboBoxTDExtension;
   private ChangeListener<Boolean> focusLostListener = (observable, oldValue, newValue) -> {
     if (!newValue) { item.setValue(getValue()); }
@@ -51,9 +58,10 @@ public class StringPropertyEditor implements PropertyEditor<Object> {
   @SuppressWarnings("unchecked")
   public StringPropertyEditor(PropertySheet.Item item) {
     this.item = item;
-    RowPropertyItem rpi = null;
-    if (item instanceof RowPropertyItem) { rpi = (RowPropertyItem) item; }
-    converter = StringConverters.converterForClass(item.getType());
+    if (item instanceof RowPropertyItem) {
+      rpi = (RowPropertyItem) item;
+      converter = rpi.getColumnDesc().getStringConverter();
+    } else { converter = StringConverters.converterForClass(item.getType()); }
     if (java.sql.Date.class.isAssignableFrom(item.getType())
         || java.util.Date.class.isAssignableFrom(item.getType())
         || LocalDate.class.isAssignableFrom(item.getType())) {
@@ -62,6 +70,20 @@ public class StringPropertyEditor implements PropertyEditor<Object> {
     } else if (Boolean.class.isAssignableFrom(item.getType())) {
       checkBox = new CheckBox();
       checkBox.focusedProperty().addListener(focusLostListener);
+    } else if (rpi != null
+        && (rpi.getColumnDesc().getDataType() == ColumnDesc.ColumnType.BLOB
+        || rpi.getColumnDesc().getDataType() == ColumnDesc.ColumnType.BYTEARRAY
+        || rpi.getColumnDesc().getDataType() == ColumnDesc.ColumnType.CLOB)) {
+      BinaryData nullData =
+          rpi.getColumnDesc().getDataType() == ColumnDesc.ColumnType.BLOB ? BlobBinaryData.NULL :
+              rpi.getColumnDesc().getDataType() == ColumnDesc.ColumnType.BYTEARRAY ? ByteArrayBinaryData.NULL :
+                  ClobBinaryData.NULL;
+      binaryDataEditor = new BinaryDataEditor(nullData, item.isEditable());
+      binaryDataEditor.binaryDataProperty().addListener((observable, oldValue, newValue) -> {
+        if (!AbstractHelper.nullEquals(item.getValue(), newValue)) {
+          item.setValue(newValue);
+        }
+      });
     } else {
       if (rpi != null) {
         ColumnDesc columnDesc = rpi.getColumnDesc();
@@ -80,18 +102,24 @@ public class StringPropertyEditor implements PropertyEditor<Object> {
                 ? rpi.getColumnDesc().getLabel() + " (" + rpi.getColumnDesc().getSchema() + "." + rpi.getColumnDesc().getTable() + "." + rpi.getColumnDesc().getName() + ")"
                 : rpi.getColumnDesc().getSchema() + "." + rpi.getColumnDesc().getTable() + "." + rpi.getColumnDesc().getName();
         textFieldArea = new TextFieldArea(windowTitle, editField);
-        textFieldArea.textProperty().addListener((observable, oldValue, newValue) -> item.setValue(newValue));
+        textFieldArea.textProperty().addListener((observable, oldValue, newValue) -> {
+          if (!AbstractHelper.nullEquals(oldValue, newValue)) { item.setValue(converter.fromString(newValue)); }
+        });
       }
     }
-    if (rpi.valueProperty() != null) {
+    if (rpi != null && rpi.valueProperty() != null) {
       rpi.valueProperty().addListener((observable, oldValue, newValue) -> setValue(newValue));
     }
   }
 
   @Override
   public Node getEditor() {
-    return checkBox != null ? checkBox : datePicker != null ? datePicker :
-        comboBox != null ? comboBox : textFieldArea.getNode();
+    return
+        checkBox != null ? checkBox :
+            datePicker != null ? datePicker :
+                comboBox != null ? comboBox :
+                    binaryDataEditor != null ? binaryDataEditor :
+                        textFieldArea.getNode();
   }
 
   @Override
@@ -132,6 +160,20 @@ public class StringPropertyEditor implements PropertyEditor<Object> {
     } else if (comboBox != null) {
       ComboBoxItem comboBoxItem = comboBoxTDExtension.itemForValue(o);
       comboBox.getSelectionModel().select(comboBoxItem);
+    } else if (binaryDataEditor != null) {
+      if (o == null && rpi != null) {
+        if (rpi.getColumnDesc().getDataType() == ColumnDesc.ColumnType.CLOB) {
+          binaryDataEditor.setBinaryData(CharSequenceBinaryData.NULL);
+        } else {
+          binaryDataEditor.setBinaryData(ByteArrayBinaryData.NULL);
+        }
+      } else {
+        if (o == null) {
+          binaryDataEditor.setBinaryData(ByteArrayBinaryData.NULL);
+        } else {
+          binaryDataEditor.setBinaryData((BinaryData) o);
+        }
+      }
     } else {
       //noinspection unchecked
       textFieldArea.setText(converter.toString(o));
