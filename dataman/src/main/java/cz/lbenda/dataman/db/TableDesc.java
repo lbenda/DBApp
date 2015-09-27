@@ -186,9 +186,7 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
 
   /** Save all changes to database */
   public void saveChangesAction() {
-    getDbConfig().getReader().deleteRows(this);
-    getDbConfig().getReader().updateRows(this);
-    getDbConfig().getReader().insertRows(this);
+    getDbConfig().getDbRowManipulator().saveChanges(this);
     unregister();
   }
 

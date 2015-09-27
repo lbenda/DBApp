@@ -228,7 +228,11 @@ public class BinaryDataEditor extends Control {
         Button openAsText = TextAreaFrmController.createOpenButton(binaryDataEditor.getBinaryData().getName(),
             () -> {
               try {
-                return IOUtils.toString(getSkinnable().getBinaryData().getReader());
+                if (getSkinnable().getBinaryData().isNull()) {
+                  return null;
+                } else {
+                  return IOUtils.toString(getSkinnable().getBinaryData().getReader());
+                }
               } catch (IOException e) {
                 LOG.error("The reader is unreadable", e);
                 return e.toString();

@@ -16,11 +16,8 @@
 package cz.lbenda.dataman.rc;
 
 import cz.lbenda.common.AbstractHelper;
-import cz.lbenda.dataman.db.DBAppConnection;
-import cz.lbenda.dataman.db.DbStructureReader;
-import cz.lbenda.dataman.db.JDBCConfiguration;
-import cz.lbenda.dataman.db.TableDescriptionExtension;
-import cz.lbenda.dataman.db.TableDesc;
+import cz.lbenda.dataman.db.*;
+
 import java.io.*;
 import java.net.URL;
 import java.sql.Connection;
@@ -76,6 +73,9 @@ public class DbConfig {
   private final Map<String, List<String>> shownSchemas = new HashMap<>();
   /** Instance of DB reader for this session */
   private DbStructureReader reader; public final DbStructureReader getReader() { return reader; } public final void setReader(DbStructureReader reader) { this.reader = reader; }
+  /** Object which can modify database row */
+  private DbRowManipulator dbRowManipulator; public DbRowManipulator getDbRowManipulator() { return dbRowManipulator; }
+
   /** Timeout when unused connection will be closed */
   private int connectionTimeout; public int getConnectionTimeout() { return connectionTimeout; } public void setConnectionTimeout(int connectionTimeout) { this.connectionTimeout = connectionTimeout; }
   /** Table description map */
@@ -340,6 +340,7 @@ public class DbConfig {
     this.tableDescriptions.clear();
 
     reader = new DbStructureReader(this);
+    dbRowManipulator = new DbRowManipulator(reader);
     loadExtendedConfiguration();
     reader.generateStructure();
   }

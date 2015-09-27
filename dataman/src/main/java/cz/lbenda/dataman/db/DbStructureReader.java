@@ -19,10 +19,6 @@ import cz.lbenda.common.Tuple2;
 import cz.lbenda.dataman.rc.DbConfig;
 import cz.lbenda.dataman.User;
 import cz.lbenda.dataman.UserImpl;
-import cz.lbenda.dataman.db.audit.Auditor;
-import cz.lbenda.dataman.db.audit.AuditorNone;
-import cz.lbenda.dataman.db.audit.SqlLogToLogAuditor;
-import cz.lbenda.dataman.db.audit.SqlLogToTableAuditor;
 import cz.lbenda.dataman.db.dialect.SQLDialect;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -32,12 +28,9 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 
-import cz.lbenda.dataman.schema.exconf.AuditType;
-import cz.lbenda.rcp.ExceptionMessageFrmController;
 import cz.lbenda.rcp.action.SavableRegistry;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
@@ -51,6 +44,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   private static final Logger LOG = LoggerFactory.getLogger(DbStructureReader.class);
 
   private DbConfig dbConfig;
+
   private User user; public User getUser() { return user; }
 
   private DBAppDataSource dataSource = null;
@@ -66,9 +60,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
     createDataSource();
   }
 
-  public DbStructureReader(DbConfig dbConfig) {
-    this.setDbConfig(dbConfig);
-  }
+  public DbStructureReader(DbConfig dbConfig) { this.setDbConfig(dbConfig); }
 
   /** Inform if the reader is prepared for read data - the session configuration exist */
   public final boolean isPrepared() { return dbConfig != null; }
@@ -193,164 +185,16 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
     }
   }
 
-  /** Return auditor object for given audit type with configuration
-   * @param auditType audit configuration
-   * @return auditor, never return null */
-  private Auditor auditorForAudit(AuditType auditType) {
-    switch (auditType.getType()) {
-      case NONE : return AuditorNone.getInstance();
-      case SQL_LOG_TO_LOG: return SqlLogToLogAuditor.getInstance();
-      case SQL_LOG_TO_TABLE : return SqlLogToTableAuditor.getInstance(this, auditType);
-      default : return AuditorNone.getInstance();
-    }
-  }
-
-  public void insertRows(TableDesc td) {
-    List<RowDesc> insertRows = new ArrayList<>();
-    td.getRows().stream().filter(row -> RowDesc.RowDescState.NEW.equals(row.getState())).forEach(insertRows::add);
-    if (insertRows.isEmpty()) { return; }
-
-    StringBuilder names = new StringBuilder();
-    StringBuilder values = new StringBuilder();
-    List<ColumnDesc> insertedColumns = new ArrayList<>();
-    td.getColumns().stream().filter(col -> !col.isAutoincrement() && !col.isGenerated()).forEach(col -> {
-      if (!insertedColumns.isEmpty()) {
-        names.append(", ");
-        values.append(", ");
-      }
-      insertedColumns.add(col);
-      names.append('"').append(col.getName()).append("\"");
-      values.append('?');
-    });
-
-    String sql = String.format("insert into \"%s\".\"%s\" (%s) values (%s)", td.getSchema(), td.getName(), names, values);
-    LOG.debug(sql);
-    try (Connection conn = getConnection()) {
-      try (PreparedStatement ps = AuditPreparedStatement.prepareStatement(user, auditorForAudit(td.getAudit()), conn,
-          sql, Statement.RETURN_GENERATED_KEYS)) {
-        for (RowDesc row : insertRows) {
-          int i = 1;
-          for (ColumnDesc col : insertedColumns) {
-            ps.setObject(i, row.getColumnValue(col));
-            i++;
-          }
-          ps.addBatch();
-        }
-        ps.executeBatch();
-        ResultSet rs = ps.getGeneratedKeys();
-        ResultSetMetaData rsmd = rs.getMetaData();
-        Iterator<RowDesc> itt = insertRows.iterator();
-        while (rs.next()) {
-          RowDesc row = itt.next();
-          for (int i = 1; i <= rsmd.getColumnCount(); i++) {
-            ColumnDesc col = td.getColumn(rsmd.getColumnName(i));
-            if (col == null) {
-              throw new NullPointerException(String.format("The column with name %s not exist", rsmd.getColumnName(i)));
-            }
-            row.setInitialColumnValue(col, rs.getObject(i)); // Set value of primary key, so this data is LOADED not changed
-          }
-        }
-        insertRows.forEach(RowDesc::savedChanges);
-        LOG.debug("New column was inserted");
-      }
-    } catch (SQLException e) {
-      LOG.error("Problem with save inserted row", e);
-      ExceptionMessageFrmController.showException(e);
-    }
-  }
-
-  public void updateRows(TableDesc td) {
-    List<RowDesc> changedRows = new ArrayList<>();
-    td.getRows().stream().filter(row -> RowDesc.RowDescState.CHANGED.equals(row.getState())).forEach(changedRows::add);
-    if (changedRows.isEmpty()) { return; }
-
-    final StringBuilder where = new StringBuilder();
-    List<ColumnDesc> pks = td.getPKColumns();
-    if (pks.isEmpty()) { pks = td.getColumns(); }
-    pks.stream().forEachOrdered(col -> {
-      if (where.length() != 0) { where.append(" and "); }
-      where.append('"').append(col.getName()).append("\"=?");
-    });
-    StringBuilder set = new StringBuilder();
-    td.getColumns().stream().forEachOrdered(col -> {
-      if (set.length() > 0) {
-        set.append(", ");
-      }
-      set.append('"').append(col.getName()).append("\"=?");
-    });
-    String sql = String.format("update \"%s\".\"%s\" set %s where %s", td.getSchema(), td.getName(), set, where);
-    LOG.debug(sql);
-
-    try (Connection conn = getConnection()) {
-      try (PreparedStatement ps = AuditPreparedStatement.prepareCall(user, auditorForAudit(td.getAudit()), conn, sql)) {
-        for (RowDesc row : changedRows) {
-          int i = 0;
-          for (ColumnDesc columnDesc : td.getColumns()) {
-            ps.setObject(columnDesc.getPosition(), row.getColumnValue(columnDesc));
-          }
-          for (ColumnDesc col : pks) {
-            ps.setObject(i + 1, row.getInitialColumnValue(col));
-            i++;
-          }
-          ps.addBatch();
-        }
-        ps.executeBatch();
-        changedRows.forEach(RowDesc::savedChanges);
-      }
-    } catch (SQLException e) {
-      LOG.error("Problem with update rows", e);
-      ExceptionMessageFrmController.showException(e);
-    }
-  }
-
-  /** Method which remove row from table. If table have primary key, then use primary key for delete row, if haven't
-   * then use values of all columns. If there is table without any unique index (or primary key) then can be more then
-   * one row deleted.
-   * @param td table description */
-  public final void deleteRows(final TableDesc td) {
-    List<RowDesc> removedRows = new ArrayList<>();
-    td.getRows().stream().filter(row -> RowDesc.RowDescState.REMOVED.equals(row.getState())).forEach(removedRows::add);
-    if (removedRows.isEmpty()) { return; }
-
-    StringBuilder where = new StringBuilder();
-    List<ColumnDesc> pks = td.getPKColumns();
-    if (pks.isEmpty()) { pks = td.getColumns(); }
-    for (ColumnDesc col : pks) {
-      if (where.length() != 0) { where.append(" and "); }
-      where.append('"').append(col.getName()).append('"').append("=?");
-    }
-    String sql = String.format("DELETE FROM \"%s\".\"%s\" WHERE %s", td.getSchema(), td.getName(), where);
-
-    LOG.debug(sql);
-    try (Connection conn = getConnection()) {
-      try (PreparedStatement ps = AuditPreparedStatement.prepareCall(user, auditorForAudit(td.getAudit()), conn, sql)) {
-        for (RowDesc row : removedRows) {
-          int i = 1;
-          for (ColumnDesc col : pks) {
-            ps.setObject(i, row.getInitialColumnValue(col));
-            i++;
-          }
-          ps.addBatch();
-        }
-        ps.executeBatch();
-        td.getRows().removeAll(removedRows);
-        LOG.debug("Record was deleted.");
-      }
-    } catch (SQLException e) {
-      LOG.error("Problem with delete rows", e);
-      ExceptionMessageFrmController.showException(e);
-    }
+  public SQLDialect getDialect() {
+    return this.dbConfig.getJdbcConfiguration().getDialect();
   }
 
   public void generateStructure() {
     if (this.savableRegistry == null) { this.savableRegistry = SavableRegistry.getInstance(); }
     try (Connection conn = getConnection()) {
       DatabaseMetaData dmd = conn.getMetaData();
-      SQLDialect dialect = this.dbConfig.getJdbcConfiguration().getDialect();
-
-      // List<TableDescription> result;
+      SQLDialect dialect = getDialect();
       try (ResultSet tabs = dmd.getTables(null, null, null, null)) {
-        // result = new ArrayList<>();
         while (tabs.next()) {
           TableDesc td = this.dbConfig.getOrCreateTableDescription(tabs.getString(dialect.tableCatalog()),
               tabs.getString(dialect.tableSchema()), tabs.getString(dialect.tableName()));

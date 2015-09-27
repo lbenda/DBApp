@@ -18,7 +18,6 @@ package cz.lbenda.rcp.ribbon;
 import cz.lbenda.rcp.ribbon.skin.RibbonMainButtonSkin;
 import javafx.scene.control.Control;
 import javafx.scene.control.Menu;
-import javafx.scene.control.MenuItem;
 import javafx.scene.control.Skin;
 import javafx.scene.image.Image;
 

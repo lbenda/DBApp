@@ -46,6 +46,7 @@ public class ClobBinaryData implements BinaryData {
 
   @Override
   public Reader getReader() {
+    if (clob == null) { return null; }
     try {
       return clob.getCharacterStream();
     } catch (SQLException e) {

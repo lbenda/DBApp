@@ -15,6 +15,7 @@
  */
 package cz.lbenda.dataman.db.dialect;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -54,4 +55,7 @@ public interface SQLDialect {
   default String fkSlaveTableName() { return "FKTABLE_NAME"; }
   default String fkSlaveColumnName() { return "FKCOLUMN_NAME"; }
 
+  /** Set of names which is used to describe identity column */
+  default Set<String> nameOfGeneratedIdentityColumn() { return new HashSet<>(Arrays.asList(new String[] {
+      "SCOPE_IDENTITY()", "IDENTITY()" })); }
 }

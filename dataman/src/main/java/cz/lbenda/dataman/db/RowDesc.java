@@ -24,19 +24,21 @@ import javafx.beans.Observable;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.beans.value.ObservableValue;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.Time;
-import java.sql.Timestamp;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 13.9.15.
  * Description of row */
@@ -217,7 +219,8 @@ public class RowDesc implements Observable {
     ObservableValue result;
     switch (columnDesc.getDataType()) {
       case BOOLEAN:
-        result = new SimpleBooleanProperty(newValues[columnDesc.getPosition() - 1], null);
+        result = new SimpleBooleanProperty(getColumnValue(columnDesc), null);
+        ((SimpleBooleanProperty) result).setValue(getColumnValue(columnDesc));
         break;
       case BYTE:
       case SHORT:
@@ -268,21 +271,102 @@ public class RowDesc implements Observable {
           || columnDesc.getDataType() == ColumnDesc.ColumnType.FLOAT
           || columnDesc.getDataType() == ColumnDesc.ColumnType.DOUBLE
           || columnDesc.getDataType() == ColumnDesc.ColumnType.DECIMAL) {
-        if (StringUtils.isBlank(((SimpleStringProperty) newValue).getValue())) {
-          setColumnValue(columnDesc, null);
-        } else {
-          setColumnValue(columnDesc, columnDesc.getStringConverter().fromString(((SimpleStringProperty) newValue).getValue()));
-        }
+        Object nVal;
+        if (newValue == null) { nVal = null; }
+        else if (newValue instanceof String) {
+          if (StringUtils.isBlank((String) newValue)) {
+            nVal = null;
+          } else {
+            nVal = columnDesc.getStringConverter().fromString((String) newValue);
+          }
+        } else if (newValue instanceof StringProperty) {
+          if (StringUtils.isBlank(((StringProperty) newValue).getValue())) {
+            nVal = null;
+          } else {
+            nVal = columnDesc.getStringConverter().fromString(((StringProperty) newValue).getValue());
+          }
+        } else { nVal = newValue; }
+        setColumnValue(columnDesc, nVal);
       } else if (columnDesc.getDataType() == ColumnDesc.ColumnType.BYTEARRAY
-          || columnDesc.getDataType() == ColumnDesc.ColumnType.BLOB) {
+          || columnDesc.getDataType() == ColumnDesc.ColumnType.BLOB
+          || columnDesc.getDataType() == ColumnDesc.ColumnType.CLOB) {
         System.out.println(newValue);
-        setColumnValue(columnDesc, columnDesc.getStringConverter().fromString((String) newValue));
-      } else if (columnDesc.getDataType() == ColumnDesc.ColumnType.BLOB) {
-        throw new UnsupportedOperationException("Editing BLOB isn't supported.");
+        setColumnValue(columnDesc, newValue);
       } else {
         setColumnValue(columnDesc, newValue);
       }
     });
     return result;
+  }
+
+  /** return true if value in column was changed */
+  public boolean isColumnChanged(ColumnDesc columnDesc) {
+    return !AbstractHelper.nullEquals(oldValues[columnDesc.getPosition() - 1], newValues[columnDesc.getPosition() - 1]);
+  }
+
+  /** Insert into prepared statement initial value from current column
+   * @param columnDesc column which values is inserted
+   * @param ps prepared statement to which is data write
+   * @param position position where are values inserted
+   * @throws SQLException prepare statement can throw exception
+   */
+  public final void putInitialValueToPS(ColumnDesc columnDesc, PreparedStatement ps, int position) throws SQLException {
+    putToPS(columnDesc, getInitialColumnValue(columnDesc), ps, position);
+  }
+
+  /** Insert into prepared statement value from current column
+   * @param columnDesc column which values is inserted
+   * @param ps prepared statement to which is data write
+   * @param position position where are values inserted
+   * @throws SQLException prepare statement can throw exception
+   */
+  public final void putValueToPS(ColumnDesc columnDesc, PreparedStatement ps, int position) throws SQLException {
+    putToPS(columnDesc, getColumnValue(columnDesc), ps, position);
+  }
+
+  @SuppressWarnings("ConstantConditions")
+  private <T> void putToPS(ColumnDesc columnDesc, T value, PreparedStatement ps, int position) throws SQLException {
+    if (value == null) {
+      ps.setObject(position, null);
+      return;
+    }
+    BinaryData bd = value instanceof  BinaryData ? (BinaryData) value : null;
+    switch (columnDesc.getDataType()) {
+      case STRING: ps.setString(position, (String) value); break;
+      case BOOLEAN: ps.setBoolean(position, (Boolean) value); break;
+      case TIMESTAMP: ps.setTimestamp(position, (Timestamp) value); break;
+      case DATE: ps.setDate(position, (Date) value); break;
+      case TIME: ps.setTime(position, (Time) value); break;
+      case BYTE: ps.setByte(position, (Byte) value); break;
+      case SHORT: ps.setShort(position, (Short) value); break;
+      case INTEGER: ps.setInt(position, (Integer) value); break;
+      case LONG: ps.setLong(position, (Long) value); break;
+      case FLOAT: ps.setFloat(position, (Float) value); break;
+      case DOUBLE: ps.setDouble(position, (Double) value); break;
+      case DECIMAL: ps.setBigDecimal(position, (BigDecimal) value); break;
+      case UUID: ps.setBytes(position, AbstractHelper.uuidToByteArray((UUID) value)); break;
+      case ARRAY:
+        throw new UnsupportedOperationException("The saving changes in ARRAY isn't supported.");
+        // ps.setArray(position, (Array) value); break; // FIXME the value isn't in type java.sql.Array
+      case BYTEARRAY:
+        if (bd == null || bd.isNull()) { ps.setBytes(position, null); }
+        else {
+          try {
+            ps.setBytes(position, IOUtils.toByteArray(bd.getInputStream()));
+          } catch (IOException e) {
+            throw new SQLException(e);
+          }
+        }
+        break;
+      case CLOB:
+        if (bd == null || bd.isNull()) { ps.setNull(position, Types.CLOB); }
+        else { ps.setClob(position, bd.getReader()); }
+        break;
+      case BLOB:
+        if (bd == null || bd.isNull()) { ps.setNull(position, Types.BLOB);
+        } else { ps.setBlob(position, bd.getInputStream()); }
+        break;
+      case OBJECT: ps.setObject(position, value);
+    }
   }
 }
