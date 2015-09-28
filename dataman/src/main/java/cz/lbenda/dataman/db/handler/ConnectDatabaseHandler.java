@@ -22,8 +22,6 @@ import cz.lbenda.rcp.action.ActionGUIConfig;
 import cz.lbenda.rcp.localization.Message;
 import javafx.beans.property.ObjectProperty;
 import javafx.event.ActionEvent;
-import javafx.scene.Node;
-import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +31,7 @@ import org.slf4j.LoggerFactory;
     category = "/DbConfig/connect",
     id = "cz.lbenda.dataman.db.handler.ConnectDatabaseHandler",
     priority = 10,
+    showInMenuButton = false,
     gui = {
         @ActionGUIConfig(
             iconBase = "db-disconnect.png",
@@ -81,7 +80,7 @@ public class ConnectDatabaseHandler extends AbstractAction {
         dbConfigProperty.setValue(null);
         dbConfigProperty.setValue(dbConfig);
       } else {
-        dbConfig.getConnectionProvider().close((Stage) ((Node) e.getSource()).getScene().getWindow());
+        dbConfig.getConnectionProvider().close(extractStage(e));
         if (!dbConfig.getConnectionProvider().isConnected()) {
           dbConfigProperty.setValue(null);
           dbConfigProperty.setValue(dbConfig);

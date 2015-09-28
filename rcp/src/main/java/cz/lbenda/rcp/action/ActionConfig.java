@@ -32,12 +32,12 @@ public @interface ActionConfig {
   /** The unique ID (inside a category) of the action. Should follow
    * Java naming conventions and somehow include package name prefix. Like
    * <code>org.myproject.myproduct.MyAction</code>.
-   *
-   * @return java identifiers separated with '.'
-   */
+   * @return java identifiers separated with '.' */
   String id();
   /** If is false then item isn't in main ribbon toolbar, only in menu button */
   boolean showInRibbon() default true;
+  /** If is false then isn't showed in menu button */
+  boolean showInMenuButton() default true;
   /** Priority of show action */
   int priority();
   /** Array of gui configs */

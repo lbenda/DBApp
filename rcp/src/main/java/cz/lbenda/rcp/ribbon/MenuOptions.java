@@ -15,7 +15,10 @@
  */
 package cz.lbenda.rcp.ribbon;
 
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 12.9.15.
  * Interface which is used as options which can user choose from menu */
@@ -27,7 +30,17 @@ public interface MenuOptions<T> {
   /** Return item for text  */
   T stringToItem(String name);
   /** Method which is call when item is selected
-   * @param item item which was selected
-   * @return true if item can be selected */
-  boolean onSelect(T item);
+   * @param item item which was selected */
+  void setSelect(T item);
+  /** Return current selected item */
+  T getSelect();
+  /** Property which hold current selected item */
+  ObjectProperty<T> selectProperty();
+
+  /** Execute default handle operation */
+  void handle(ActionEvent stage);
+
+  /** Inform if item will be checked or not */
+  boolean isChecked(T item);
+  ReadOnlyBooleanProperty checkedProperty(T item);
 }

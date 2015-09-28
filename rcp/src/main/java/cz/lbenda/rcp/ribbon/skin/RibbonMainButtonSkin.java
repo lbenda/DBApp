@@ -35,8 +35,9 @@ public class RibbonMainButtonSkin extends SkinBase<RibbonMainButton> {
     dropDown.setOnAction(event -> {
       control.getMenu().show(dropDown,
           dropDown.getScene().getWindow().getX() + menu.getScene().getX() + menu.getLayoutX(),
-          dropDown.getScene().getWindow().getY() + menu.getScene().getX() + menu.getLayoutY() + menu.getHeight()); // + menu.getHeight());
+          dropDown.getScene().getWindow().getY() + menu.getScene().getX() + menu.getLayoutY() + menu.getHeight() + menu.getHeight()); // + menu.getHeight());
     });
+    menu.setOnAction(dropDown.getOnAction()); // TODO create separate window
     pane.getChildren().addAll(menu, dropDown);
     getChildren().add(pane);
   }

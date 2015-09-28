@@ -54,31 +54,40 @@ public abstract class AbstractAction implements Action {
     changeActionConfigConsumers.forEach(consumer -> consumer.accept(config));
   }
 
-  protected static Stage stageFromActionEvent(ActionEvent actionEvent) {
+  public static Stage extractStage(Window window) {
+    if (window instanceof Stage) { return (Stage) window; }
+    if (window instanceof ContextMenu) { return extractStage((ContextMenu) window); }
+    throw new UnsupportedOperationException("Can't return stage.");
+  }
+
+  public static Stage extractStage(ContextMenu contextMenu) {
+    if (contextMenu.getOwnerWindow() instanceof Stage) { return (Stage) contextMenu.getOwnerWindow(); }
+    if (contextMenu.getOwnerWindow() instanceof ContextMenu) {
+      return extractStage((ContextMenu) contextMenu.getOwnerWindow());
+    }
+    throw new UnsupportedOperationException("No stage found for class: " + contextMenu.getOwnerWindow().getClass());
+  }
+
+  public static Stage extractStage(MenuItem menuItem) {
+    Window window = null;
+    if (menuItem.getParentPopup() != null) {
+      window = menuItem.getParentPopup().getScene().getWindow();
+    } else {
+      Menu parentMenu = menuItem.getParentMenu();
+      do {
+        if (parentMenu.getParentPopup() != null) { window = parentMenu.getParentPopup().getScene().getWindow(); }
+        parentMenu = parentMenu.getParentMenu();
+      } while (parentMenu != null);
+    }
+    if (window != null) { return extractStage(window); }
+    throw new UnsupportedOperationException("Can't return stage no parent popup was found");
+  }
+
+  public static Stage extractStage(ActionEvent actionEvent) {
     if (actionEvent.getSource() instanceof Node) {
       return (Stage) ((Node) actionEvent.getSource()).getScene().getWindow();
     } else if (actionEvent.getSource() instanceof MenuItem) {
-      MenuItem menuItem = (MenuItem) actionEvent.getSource();
-      Window window = null;
-      if (menuItem.getParentPopup() != null) {
-        window = menuItem.getParentPopup().getScene().getWindow();
-      } else {
-        Menu parentMenu = menuItem.getParentMenu();
-        do {
-          if (parentMenu.getParentPopup() != null) { window = parentMenu.getParentPopup().getScene().getWindow(); }
-          parentMenu = parentMenu.getParentMenu();
-        } while (parentMenu != null);
-      }
-      if (window != null) {
-        if (window instanceof Stage) { return (Stage) window; }
-        if (window instanceof ContextMenu) {
-          ContextMenu cm = (ContextMenu) window;
-          return (Stage) cm.getOwnerWindow();
-        }
-        throw new UnsupportedOperationException("Can't return stage.");
-      } else {
-        throw new UnsupportedOperationException("Can't return stage no parent popup was found");
-      }
+      return extractStage((MenuItem) actionEvent.getSource());
     } else {
       throw new UnsupportedOperationException("Can't return stage for action event with source: " + actionEvent.getSource());
     }

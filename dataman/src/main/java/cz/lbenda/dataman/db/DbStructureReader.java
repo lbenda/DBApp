@@ -16,7 +16,6 @@
 package cz.lbenda.dataman.db;
 
 import cz.lbenda.common.Tuple2;
-import cz.lbenda.dataman.db.dialect.ColumnType;
 import cz.lbenda.dataman.db.dialect.SQLDialect;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -149,6 +148,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
     }
   }
 
+  /*
   private void writeColumnNames(ResultSetMetaData metaData) throws SQLException {
     for (int i = 1; i <= metaData.getColumnCount(); i++) {
       System.out.print(metaData.getColumnName(i));
@@ -156,11 +156,12 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
       System.out.println(metaData.getColumnLabel(i));
     }
   }
+  */
 
   private void generateStructureColumns(DatabaseMetaData dmd) throws SQLException {
     SQLDialect dialect = dbConfig.getJdbcConfiguration().getDialect();
     try (ResultSet rsColumn  = dmd.getColumns(null, null, null, null)) {
-      writeColumnNames(rsColumn.getMetaData());
+      // writeColumnNames(rsColumn.getMetaData());
       while (rsColumn.next()) {
         TableDesc td = dbConfig.getTableDescription(
                 rsColumn.getString(dialect.columnTableCatalog()), rsColumn.getString(dialect.columnTableSchema()),

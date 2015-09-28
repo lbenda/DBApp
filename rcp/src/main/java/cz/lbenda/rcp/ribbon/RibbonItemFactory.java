@@ -49,8 +49,8 @@ public class RibbonItemFactory {
   }
 
   public void addItemToMenu(Object item) {
-    if (item instanceof EventHandler) { addEventHandlerToMenu((Action) item); }
     if (item instanceof MenuOptions) { addOptionsToMenu((MenuOptions) item); }
+    else if (item instanceof EventHandler) { addEventHandlerToMenu((Action) item); }
   }
 
   /** Return title for given category */
@@ -110,9 +110,9 @@ public class RibbonItemFactory {
     cb.setPromptText(messageFactory.getMessage(ac.gui()[0].displayName()));
     Tooltip tp = new Tooltip(messageFactory.getMessage(ac.gui()[0].displayTooltip()));
     cb.setTooltip(tp);
-
-    cb.valueProperty().addListener((observableValue, f, t1) -> {
-      options.onSelect(t1);
+    cb.valueProperty().addListener((observableValue, f, t1) -> options.setSelect(t1));
+    options.selectProperty().addListener((observable, oldValue, newValue) -> {
+      cb.getSelectionModel().select(newValue);
     });
     ri.setItem(cb);
 

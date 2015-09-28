@@ -19,6 +19,9 @@ import cz.lbenda.dataman.User;
 import cz.lbenda.dataman.UserImpl;
 import cz.lbenda.dataman.db.dialect.SQLDialect;
 import cz.lbenda.rcp.action.SavableRegistry;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,9 +39,9 @@ public class ConnectionProvider {
   private DbConfig dbConfig;
   private DBAppDataSource dataSource = null;
   private User user; public User getUser() { return user; }
-  private boolean connected = false;
+  public final BooleanProperty connected = new SimpleBooleanProperty(false);
   /** Savable register for whole db config. */
-  private SavableRegistry savableRegistry = SavableRegistry.newInstance();
+  private final SavableRegistry savableRegistry = SavableRegistry.newInstance();
   public @Nonnull SavableRegistry getSavableRegistry() { return savableRegistry; }
 
   public ConnectionProvider(@Nonnull DbConfig dbConfig) {
@@ -50,7 +53,8 @@ public class ConnectionProvider {
 
   /** Inform if the reader is prepared for read data - the session configuration exist */
   public final boolean isPrepared() { return dbConfig != null; }
-  public final boolean isConnected() { return connected; }
+  public final boolean isConnected() { return connected.get(); }
+  public final ReadOnlyBooleanProperty connectedProperty() { return connected; }
 
   /** SQLDialect for this db configuration */
   public SQLDialect getDialect() { return dbConfig.getJdbcConfiguration().getDialect(); }
@@ -67,17 +71,16 @@ public class ConnectionProvider {
   public void close(@Nonnull Stage stage) {
     if (this.savableRegistry != null) {
       if (!this.savableRegistry.close(stage)) { return; }
-      this.savableRegistry = null;
     }
     if (dataSource != null) {
       try {
         dataSource.closeAllConnections();
-        this.connected = false;
+        this.connected.set(false);
       } catch (SQLException e) {
         LOG.error("The connection isn't close.", e);
       }
     } else {
-      this.connected = false;
+      this.connected.set(false);
     }
   }
 
@@ -86,7 +89,7 @@ public class ConnectionProvider {
     try {
       Connection result = dataSource.getConnection();
       if (result == null) { throw new RuntimeException("The connection isn't created"); }
-      this.connected = !result.isClosed();
+      this.connected.set(!result.isClosed());
       return result;
     } catch (SQLException e) {
       LOG.error("Filed to get connection", e);

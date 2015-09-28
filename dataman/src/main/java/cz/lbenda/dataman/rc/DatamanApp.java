@@ -173,8 +173,7 @@ public class DatamanApp extends Application {
   @SuppressWarnings("unchecked")
   @Override
   public void start(Stage primaryStage) throws Exception {
-    ribbon = new Ribbon(primaryStage,
-        MessageFactory.getInstance().getMessage("app.name"),
+    ribbon = new Ribbon(MessageFactory.getInstance().getMessage("app.name"),
         IconFactory.getInstance().image(this, "dataman.png", IconFactory.IconLocation.APP_ICON));
 
     primaryStage.getIcons().add(new Image(this.getClass().getResourceAsStream("dataman16.png")));

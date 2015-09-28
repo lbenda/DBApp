@@ -17,12 +17,15 @@ package cz.lbenda.dataman.db.handler;
 
 import cz.lbenda.dataman.rc.DbConfigFactory;
 import cz.lbenda.dataman.db.DbConfig;
+import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
 import cz.lbenda.rcp.localization.Message;
 import cz.lbenda.rcp.ribbon.MenuOptions;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 12.9.15.
  * Menu options for select db configuration */
@@ -46,15 +49,40 @@ public class DbConfigMenuOptions implements MenuOptions<DbConfig> {
   public DbConfig stringToItem(String name) { return DbConfigFactory.getConfiguration(name); }
 
   /** The holder to which is set session configuration values */
-  private ObjectProperty<DbConfig> dbConfigObserver;
+  private ObjectProperty<DbConfig> dbConfigProperty;
 
-  public DbConfigMenuOptions(ObjectProperty<DbConfig> dbConfigObserver) {
-    this.dbConfigObserver = dbConfigObserver;
+  public DbConfigMenuOptions(ObjectProperty<DbConfig> dbConfigProperty) {
+    this.dbConfigProperty = dbConfigProperty;
+    dbConfigProperty.addListener((observable, oldValue, newValue) -> {
+
+    });
   }
 
   @Override
-  public boolean onSelect(DbConfig item) {
-    dbConfigObserver.setValue(item);
-    return true;
+  public boolean isChecked(DbConfig item) { return item.connectionProvider.isConnected(); }
+  @Override
+  public ReadOnlyBooleanProperty checkedProperty(DbConfig item) { return item.connectionProvider.connectedProperty(); }
+
+  @Override
+  public void setSelect(DbConfig item) { dbConfigProperty.setValue(item); }
+  @Override
+  public DbConfig getSelect() { return dbConfigProperty.getValue(); }
+  @Override
+  public ObjectProperty<DbConfig> selectProperty() { return dbConfigProperty; }
+
+  @Override
+  public void handle(ActionEvent event) {
+    DbConfig item = getSelect();
+    if (!item.getConnectionProvider().isConnected()) {
+      item.reloadStructure();
+      dbConfigProperty.setValue(null);
+      dbConfigProperty.setValue(item);
+    } else {
+      item.getConnectionProvider().close(AbstractAction.extractStage(event));
+      if (!item.getConnectionProvider().isConnected()) {
+        dbConfigProperty.setValue(null);
+        dbConfigProperty.setValue(item);
+      }
+    }
   }
 }

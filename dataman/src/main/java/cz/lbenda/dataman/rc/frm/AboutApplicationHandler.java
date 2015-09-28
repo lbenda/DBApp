@@ -23,7 +23,7 @@ import javafx.event.ActionEvent;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15. */
 @ActionConfig(
-    category = "/Help/About",
+    category = "/Help",
     id = "cz.lbenda.dataman.rc.frm.AboutApplicationHandler",
     priority = 100,
     showInRibbon = false,
@@ -40,6 +40,6 @@ public class AboutApplicationHandler extends AbstractAction {
 
   @Override
   public void handle(ActionEvent actionEvent) {
-    AboutApplicationFrm.show(stageFromActionEvent(actionEvent));
+    AboutApplicationFrm.show(extractStage(actionEvent));
   }
 }

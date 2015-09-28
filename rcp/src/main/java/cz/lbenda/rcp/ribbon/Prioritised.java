@@ -15,12 +15,13 @@
  */
 package cz.lbenda.rcp.ribbon;
 
+import javax.annotation.Nonnull;
 import java.util.Comparator;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 20.9.15.
  * Prioritised object. Used on example for order or hide or show the button. The lowest number priority is higher.
  * NULL mean no priority at all */
-public interface Prioritised {
+public interface Prioritised extends Comparable<Prioritised> {
   Comparator<Prioritised> COMPARATOR = (p1, p2) ->
         p1.getPriority() == null && p2.getPriority() == null ? 0 :
             p1.getPriority() == null ? 1 :
@@ -29,4 +30,6 @@ public interface Prioritised {
 
   /** The lowest number priority is higher NULL mean no priority at all */
   Integer getPriority();
+
+  default int compareTo(@Nonnull Prioritised prioritised) { return COMPARATOR.compare(this, prioritised); }
 }

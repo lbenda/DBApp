@@ -1,17 +1,13 @@
 package cz.lbenda.rcp.ribbon;
 
 import cz.lbenda.rcp.ribbon.skin.RibbonSkin;
-import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.scene.control.Button;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.image.Image;
-import javafx.scene.layout.HBox;
-import javafx.stage.Stage;
 
 import javax.annotation.Nonnull;
 import java.util.Collections;
@@ -25,7 +21,6 @@ public class Ribbon extends Control {
 
   private RibbonQuickAccessBar quickAccessBar;
   private RibbonMainButton mainButton; public RibbonMainButton getMainButton() { return mainButton; }
-  private RibbonItemFactory itemFactory; public RibbonItemFactory getItemFactory() { return itemFactory; }
 
   private ObservableList<Object> items = FXCollections.observableArrayList();
   @SuppressWarnings("unused")
@@ -35,10 +30,9 @@ public class Ribbon extends Control {
   public ObservableList<Object> itemsProperty() { return items; }
 
   /** Create ribbon menu including change window decoration. The window is primary stage
-   * @param primaryStage primary stage of application
    * @param appName name of app which is add to main button
    * @param appImg image of app which is used as icon on main button */
-  public Ribbon(Stage primaryStage, String appName, Image appImg) {
+  public Ribbon(String appName, Image appImg) {
     // primaryStage.initStyle(StageStyle.UNDECORATED);
     tabs.addListener((ListChangeListener<RibbonTab>) change -> {
       while (change.next()) {
@@ -47,7 +41,7 @@ public class Ribbon extends Control {
         }
       }
     });
-    itemFactory = new RibbonItemFactory(this);
+    new RibbonItemFactory(this);
     quickAccessBar = new RibbonQuickAccessBar();
     mainButton = new RibbonMainButton(appName, appImg, this);
     getStyleClass().setAll(DEFAULT_STYLE_CLASS);
@@ -93,14 +87,5 @@ public class Ribbon extends Control {
   @Override
   public String getUserAgentStylesheet() {
     return this.getClass().getResource("fxribbon.css").toExternalForm();
-  }
-
-  class WindowButtons extends HBox {
-    public WindowButtons() {
-      Button closeBtn = new Button("X");
-      closeBtn.setOnAction(actionEvent -> Platform.exit());
-
-      this.getChildren().add(closeBtn);
-    }
   }
 }

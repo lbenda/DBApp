@@ -38,6 +38,7 @@ import cz.lbenda.dataman.schema.dataman.*;
 import cz.lbenda.dataman.schema.exconf.*;
 import cz.lbenda.dataman.schema.exconf.ObjectFactory;
 import cz.lbenda.rcp.ExceptionMessageFrmController;
+import javafx.beans.property.BooleanProperty;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -72,7 +73,6 @@ public class DbConfig {
   private String extendedConfigurationPath; public final String getExtendedConfigurationPath() { return this.extendedConfigurationPath; }
   /** Showed schemas */
   private final Map<String, List<String>> shownSchemas = new HashMap<>();
-
 
   /** SQLDialect for this db configuration */
   public final SQLDialect getDialect() { return getJdbcConfiguration().getDialect(); }

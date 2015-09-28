@@ -66,8 +66,10 @@ public class ColumnDesc {
     this.columnTypeName = mtd.getColumnTypeName(position);
     this.dataType = dialect.columnTypeFromSQL(mtd.getColumnType(position), this.columnTypeName, this.size);
     this.javaClassName = mtd.getColumnClassName(position);
+    /*
     System.out.println(
         name + ": " + mtd.getColumnType(position) + ": " + dataType + " - " + javaClassName + " , columnTypeName: " + columnTypeName);
+    */
     this.nullable = ResultSetMetaData.columnNullable == mtd.isNullable(position) ? Boolean.TRUE :
         (ResultSetMetaData.columnNoNulls == mtd.isNullable(position) ? Boolean.FALSE : null);
 
@@ -100,12 +102,14 @@ public class ColumnDesc {
     this.generated = confBool(dialect.columnGenerated(), rs);
     this.dataType = dialect.columnTypeFromSQL(confValue(dialect.columnDateType(), rs), columnTypeName, size);
 
+    /*
     if ("DATAMAN".equals(this.schema)) {
       System.out.println(this.name
           + ", SQLType: " + confValue(dialect.columnDateType(), rs)
           + ", Column type name: " + this.columnTypeName
           + ", Identified type: " + this.dataType);
     }
+    */
   }
 
   public ColumnDesc(final TableDesc td, final String name, final String label, final int dataType, final String columnTypeName,
