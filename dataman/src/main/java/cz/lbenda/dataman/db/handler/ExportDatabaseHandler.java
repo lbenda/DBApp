@@ -16,7 +16,7 @@
 package cz.lbenda.dataman.db.handler;
 
 import cz.lbenda.dataman.Constants;
-import cz.lbenda.dataman.rc.DbConfig;
+import cz.lbenda.dataman.db.DbConfig;
 import cz.lbenda.rcp.DialogHelper;
 import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;

@@ -15,7 +15,6 @@
  */
 package cz.lbenda.dataman.db;
 
-import cz.lbenda.dataman.rc.DbConfig;
 import java.io.File;
 import java.io.PrintWriter;
 import java.net.MalformedURLException;
@@ -116,9 +115,9 @@ public class DBAppDataSource implements DataSource {
         dbConfig.getJdbcConfiguration().getPassword());
   }
 
-  private static Map<DbConfig, Driver> drivers = new WeakHashMap<>();
-  private static Map<DbConfig, DBAppConnection> connections = new WeakHashMap<>();
-  private static Map<DBAppConnection, Date> lastConnectionUse = new WeakHashMap<>();
+  private static final Map<DbConfig, Driver> drivers = new WeakHashMap<>();
+  private static final Map<DbConfig, DBAppConnection> connections = new WeakHashMap<>();
+  private static final Map<DBAppConnection, Date> lastConnectionUse = new WeakHashMap<>();
 
   private Driver getDriver(DbConfig sc) throws SQLException {
     Driver driver = drivers.get(sc);
@@ -144,7 +143,7 @@ public class DBAppDataSource implements DataSource {
       if (StringUtils.isBlank(sc.getJdbcConfiguration().getDriverClass())) {
         throw new IllegalStateException("The driver must point to class");
       }
-      Class driverCls = null;
+      Class driverCls;
       try {
         driverCls = urlCl.loadClass(sc.getJdbcConfiguration().getDriverClass());
       } catch (ClassNotFoundException ce) {
@@ -176,7 +175,7 @@ public class DBAppDataSource implements DataSource {
   }
 
   private Connection createConnection(String username, String password) throws SQLException {
-    DBAppConnection connection = this.connections.get(dbConfig);
+    DBAppConnection connection = connections.get(dbConfig);
     if (connection != null && !connection.isClosed()) {
       scheduleUnconect(connection);
       return connection;
@@ -209,13 +208,14 @@ public class DBAppDataSource implements DataSource {
     this.listeners.add(listener);
   }
 
+  @SuppressWarnings("unused")
   public void removeListener(DBAppDataSourceExceptionListener listener) {
     this.listeners.remove(listener);
   }
 
   /** Close all connection in pool */
   public void closeAllConnections() throws SQLException {
-    DBAppConnection connection = this.connections.get(dbConfig);
+    DBAppConnection connection = connections.get(dbConfig);
     connection.realyClose();
   }
 
@@ -241,10 +241,8 @@ public class DBAppDataSource implements DataSource {
             LOG.error("Failed when connection is closed", e);
           }
         }
-        for (DBAppConnection con : remove) {
-          lastConnectionUse.remove(con);
-        }
+        remove.forEach(lastConnectionUse::remove);
       }
     }
-  };
+  }
 }

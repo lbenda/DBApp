@@ -16,6 +16,8 @@
 package cz.lbenda.dataman.db;
 
 import static org.testng.Assert.*;
+
+import cz.lbenda.dataman.db.dialect.HSQLDBDialect;
 import org.testng.annotations.Test;
 
 import java.sql.Types;
@@ -28,9 +30,9 @@ public class TestRowDesc {
   public void stateChange() {
     RowDesc row = new RowDesc("id", new Object[] { "value1", 15, Boolean.TRUE }, RowDesc.RowDescState.LOADED);
     TableDesc td = new TableDesc("CATALOG", "SCHEMA", "TABLE", "table1");
-    ColumnDesc cd = new ColumnDesc(td, "col1", null, Types.VARCHAR, "", 12, true, false, false);
+    ColumnDesc cd = new ColumnDesc(td, "col1", null, Types.VARCHAR, "", 12, true, false, false, new HSQLDBDialect());
     cd.setPosition(0);
-    ColumnDesc cd1 = new ColumnDesc(td, "col2", null, Types.INTEGER, "", 12, true, false, false);
+    ColumnDesc cd1 = new ColumnDesc(td, "col2", null, Types.INTEGER, "", 12, true, false, false, new HSQLDBDialect());
     cd1.setPosition(1);
 
     String originalValue = row.getColumnValue(cd);

@@ -15,7 +15,7 @@
  */
 package cz.lbenda.dataman.db.handler;
 
-import cz.lbenda.dataman.rc.DbConfig;
+import cz.lbenda.dataman.db.DbConfig;
 import cz.lbenda.dataman.rc.DbConfigFactory;
 import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;

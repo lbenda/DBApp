@@ -15,7 +15,7 @@
  */
 package cz.lbenda.dataman.db.audit;
 
-import cz.lbenda.dataman.db.DbStructureReader;
+import cz.lbenda.dataman.db.ConnectionProvider;
 import cz.lbenda.dataman.schema.exconf.AuditType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,13 +35,14 @@ public class SqlLogToTableAuditor implements Auditor {
   private static final Map<AuditType, SqlLogToTableAuditor> CACHED_AUDITORS = new WeakHashMap<>();
 
   private static Logger LOG = LoggerFactory.getLogger(SqlLogToTableAuditor.class);
+  @SuppressWarnings("FieldCanBeLocal")
   private static String SQL_INSERT_LOG = "insert into %s (usr, created, log) values (?, ?, ?)";
 
-  private final DbStructureReader dbStructureReader;
+  private final ConnectionProvider connectionProvider;
   private final AuditType auditType;
 
-  public SqlLogToTableAuditor(DbStructureReader dbStructureReader, AuditType auditType) {
-    this.dbStructureReader = dbStructureReader;
+  public SqlLogToTableAuditor(ConnectionProvider connectionProvider, AuditType auditType) {
+    this.connectionProvider = connectionProvider;
     this.auditType = auditType;
   }
 
@@ -54,9 +55,9 @@ public class SqlLogToTableAuditor implements Auditor {
     }
     tableName += auditType.getTargetLogTable().getSchema() + "." + auditType.getTargetLogTable().getTable();
 
-    try (Connection conn = dbStructureReader.getConnection()) {
+    try (Connection conn = connectionProvider.getConnection()) {
       try (PreparedStatement ps = conn.prepareCall(String.format(SQL_INSERT_LOG, tableName))) {
-        ps.setString(1, dbStructureReader.getUser().getUsername());
+        ps.setString(1, connectionProvider.getUser().getUsername());
         ps.setTimestamp(2, new Timestamp((new Date()).getTime()));
         ps.setString(3, plainTextAudit);
         ps.execute();
@@ -68,11 +69,11 @@ public class SqlLogToTableAuditor implements Auditor {
     }
   }
 
-  public static SqlLogToTableAuditor getInstance(DbStructureReader dbStructureReader, AuditType auditType) {
+  public static SqlLogToTableAuditor getInstance(ConnectionProvider connectionProvider, AuditType auditType) {
     synchronized (CACHED_AUDITORS) {
       SqlLogToTableAuditor result = CACHED_AUDITORS.get(auditType);
       if (result == null) {
-        result = new SqlLogToTableAuditor(dbStructureReader, auditType);
+        result = new SqlLogToTableAuditor(connectionProvider, auditType);
         CACHED_AUDITORS.put(auditType, result);
       }
       return result;

@@ -16,6 +16,7 @@
 package cz.lbenda.dataman.db;
 
 import cz.lbenda.dataman.Constants;
+import cz.lbenda.dataman.db.dialect.HSQLDBDialect;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -31,13 +32,13 @@ public class TestExportTableData {
   @Test
   public void saveToXLSX() {
     TableDesc tableDesc = new TableDesc("catalog", "scheme", "TABLE", "table");
-    ColumnDesc cd1 = new ColumnDesc(tableDesc, "id", null, Types.INTEGER, "", 10, false, true, true);
+    ColumnDesc cd1 = new ColumnDesc(tableDesc, "id", null, Types.INTEGER, "", 10, false, true, true, new HSQLDBDialect());
     cd1.setPosition(0);
-    ColumnDesc cd2 = new ColumnDesc(tableDesc, "column2", null, Types.VARCHAR, "", 250, true, false, false);
+    ColumnDesc cd2 = new ColumnDesc(tableDesc, "column2", null, Types.VARCHAR, "", 250, true, false, false, new HSQLDBDialect());
     cd2.setPosition(1);
-    ColumnDesc cd3 = new ColumnDesc(tableDesc, "column3", null, Types.DATE, "", 12, true, false, false);
+    ColumnDesc cd3 = new ColumnDesc(tableDesc, "column3", null, Types.DATE, "", 12, true, false, false, new HSQLDBDialect());
     cd3.setPosition(2);
-    ColumnDesc cd4 = new ColumnDesc(tableDesc, "column4", null, Types.BOOLEAN, "", 1, true, false, false);
+    ColumnDesc cd4 = new ColumnDesc(tableDesc, "column4", null, Types.BOOLEAN, "", 1, true, false, false, new HSQLDBDialect());
     cd4.setPosition(3);
     tableDesc.getQueryRow().getMetaData().getColumns().addAll(cd1, cd2, cd3, cd4);
 

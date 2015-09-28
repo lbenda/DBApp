@@ -15,7 +15,6 @@
  */
 package cz.lbenda.dataman.db;
 
-import cz.lbenda.dataman.rc.DbConfig;
 import java.util.List;
 
 import cz.lbenda.dataman.schema.exconf.*;

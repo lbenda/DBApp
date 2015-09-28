@@ -17,7 +17,7 @@ package cz.lbenda.dataman.db.sql;
 
 import cz.lbenda.dataman.db.SQLQueryResult;
 import cz.lbenda.dataman.db.frm.DataTableFrmController;
-import cz.lbenda.dataman.rc.DbConfig;
+import cz.lbenda.dataman.db.DbConfig;
 import cz.lbenda.dataman.rc.DetailDescriptor;
 import cz.lbenda.gui.editor.HighlighterSQL;
 import cz.lbenda.gui.editor.TextEditor;

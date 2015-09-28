@@ -16,6 +16,7 @@
 package cz.lbenda.dataman.db;
 
 import cz.lbenda.common.*;
+import cz.lbenda.dataman.db.dialect.ColumnType;
 import cz.lbenda.rcp.SimpleLocalDateProperty;
 import cz.lbenda.rcp.SimpleLocalDateTimeProperty;
 import cz.lbenda.rcp.SimpleLocalTimeProperty;
@@ -145,15 +146,30 @@ public class RowDesc implements Observable {
   /** Set value for both rows - old and new */
   public <T> void setInitialColumnValue(ColumnDesc column, T value) {
     Object v = value;
-    if (column.getDataType() == ColumnDesc.ColumnType.BLOB) {
+    if (column.getDataType() == ColumnType.BLOB) {
       v = new BlobBinaryData(column.toString(), (Blob) value);
-    } else if (column.getDataType() == ColumnDesc.ColumnType.CLOB) {
+    } else if (column.getDataType() == ColumnType.CLOB) {
       v = new ClobBinaryData(column.toString(), (Clob) value);
-    } else if (column.getDataType() == ColumnDesc.ColumnType.BYTEARRAY) {
+    } else if (column.getDataType() == ColumnType.BYTE_ARRAY) {
       v = new ByteArrayBinaryData(column.toString(), (byte[]) value);
+    } else if (column.getDataType() == ColumnType.BIT_ARRAY) {
+      v = new BitArrayBinaryData(column.toString(), (byte[]) value);
     }
     oldValues[column.getPosition() - 1] = v;
     newValues[column.getPosition() - 1] = v;
+  }
+
+  /** Load initial column value from rs */
+  public void loadInitialColumnValue(ColumnDesc columnDesc, ResultSet rs) throws SQLException {
+    Object val;
+    if (columnDesc.getDataType() == ColumnType.BIT) {
+      val = rs.getBoolean(columnDesc.getPosition());
+      if (Boolean.TRUE.equals(val)) { val = (byte) 1; }
+      else if (Boolean.FALSE.equals(val)) { val = (byte) 0; }
+    }
+    else if (columnDesc.getDataType() == ColumnType.BIT_ARRAY) { val = rs.getBytes(columnDesc.getPosition()); }
+    else { val = rs.getObject(columnDesc.getPosition()); }
+    setInitialColumnValue(columnDesc, val);
   }
 
   /** Return initial value of column */
@@ -248,7 +264,7 @@ public class RowDesc implements Observable {
       case STRING:
         result = new SimpleStringProperty((String) newValues[columnDesc.getPosition() - 1]);
         break;
-      case BYTEARRAY:
+      case BYTE_ARRAY:
       case CLOB:
       case BLOB:
         result = new SimpleObjectProperty<>(getColumnValue(columnDesc));
@@ -264,13 +280,13 @@ public class RowDesc implements Observable {
         setColumnValue(columnDesc, ((SimpleLocalDateTimeProperty) observable).getSQLTimestamp());
       } else if (observable instanceof SimpleLocalTimeProperty) {
         setColumnValue(columnDesc, ((SimpleLocalTimeProperty) observable).getSQLTime());
-      } else if (columnDesc.getDataType() == ColumnDesc.ColumnType.SHORT
-          || columnDesc.getDataType() == ColumnDesc.ColumnType.BYTE
-          || columnDesc.getDataType() == ColumnDesc.ColumnType.INTEGER
-          || columnDesc.getDataType() == ColumnDesc.ColumnType.LONG
-          || columnDesc.getDataType() == ColumnDesc.ColumnType.FLOAT
-          || columnDesc.getDataType() == ColumnDesc.ColumnType.DOUBLE
-          || columnDesc.getDataType() == ColumnDesc.ColumnType.DECIMAL) {
+      } else if (columnDesc.getDataType() == ColumnType.SHORT
+          || columnDesc.getDataType() == ColumnType.BYTE
+          || columnDesc.getDataType() == ColumnType.INTEGER
+          || columnDesc.getDataType() == ColumnType.LONG
+          || columnDesc.getDataType() == ColumnType.FLOAT
+          || columnDesc.getDataType() == ColumnType.DOUBLE
+          || columnDesc.getDataType() == ColumnType.DECIMAL) {
         Object nVal;
         if (newValue == null) { nVal = null; }
         else if (newValue instanceof String) {
@@ -287,9 +303,9 @@ public class RowDesc implements Observable {
           }
         } else { nVal = newValue; }
         setColumnValue(columnDesc, nVal);
-      } else if (columnDesc.getDataType() == ColumnDesc.ColumnType.BYTEARRAY
-          || columnDesc.getDataType() == ColumnDesc.ColumnType.BLOB
-          || columnDesc.getDataType() == ColumnDesc.ColumnType.CLOB) {
+      } else if (columnDesc.getDataType() == ColumnType.BYTE_ARRAY
+          || columnDesc.getDataType() == ColumnType.BLOB
+          || columnDesc.getDataType() == ColumnType.CLOB) {
         System.out.println(newValue);
         setColumnValue(columnDesc, newValue);
       } else {
@@ -348,7 +364,7 @@ public class RowDesc implements Observable {
       case ARRAY:
         throw new UnsupportedOperationException("The saving changes in ARRAY isn't supported.");
         // ps.setArray(position, (Array) value); break; // FIXME the value isn't in type java.sql.Array
-      case BYTEARRAY:
+      case BYTE_ARRAY:
         if (bd == null || bd.isNull()) { ps.setBytes(position, null); }
         else {
           try {

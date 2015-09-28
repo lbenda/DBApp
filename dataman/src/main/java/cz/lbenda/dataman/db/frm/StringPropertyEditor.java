@@ -17,6 +17,7 @@ package cz.lbenda.dataman.db.frm;
 
 import cz.lbenda.common.*;
 import cz.lbenda.dataman.db.ColumnDesc;
+import cz.lbenda.dataman.db.dialect.ColumnType;
 import cz.lbenda.dataman.db.ComboBoxTDExtension;
 import cz.lbenda.dataman.db.ComboBoxTDExtension.ComboBoxItem;
 import cz.lbenda.gui.controls.BinaryDataEditor;
@@ -71,12 +72,12 @@ public class StringPropertyEditor implements PropertyEditor<Object> {
       checkBox = new CheckBox();
       checkBox.focusedProperty().addListener(focusLostListener);
     } else if (rpi != null
-        && (rpi.getColumnDesc().getDataType() == ColumnDesc.ColumnType.BLOB
-        || rpi.getColumnDesc().getDataType() == ColumnDesc.ColumnType.BYTEARRAY
-        || rpi.getColumnDesc().getDataType() == ColumnDesc.ColumnType.CLOB)) {
+        && (rpi.getColumnDesc().getDataType() == ColumnType.BLOB
+        || rpi.getColumnDesc().getDataType() == ColumnType.BYTE_ARRAY
+        || rpi.getColumnDesc().getDataType() == ColumnType.CLOB)) {
       BinaryData nullData =
-          rpi.getColumnDesc().getDataType() == ColumnDesc.ColumnType.BLOB ? BlobBinaryData.NULL :
-              rpi.getColumnDesc().getDataType() == ColumnDesc.ColumnType.BYTEARRAY ? ByteArrayBinaryData.NULL :
+          rpi.getColumnDesc().getDataType() == ColumnType.BLOB ? BlobBinaryData.NULL :
+              rpi.getColumnDesc().getDataType() == ColumnType.BYTE_ARRAY ? ByteArrayBinaryData.NULL :
                   ClobBinaryData.NULL;
       binaryDataEditor = new BinaryDataEditor(nullData, item.isEditable());
       binaryDataEditor.binaryDataProperty().addListener((observable, oldValue, newValue) -> {
@@ -96,7 +97,7 @@ public class StringPropertyEditor implements PropertyEditor<Object> {
         }
       }
       if (comboBox == null) {
-        boolean editField = rpi == null || rpi.getColumnDesc().getDisplaySize() <= Constants.MIN_SIZE_FOR_TEXT_AREA;
+        boolean editField = rpi == null || rpi.getColumnDesc().getSize() <= Constants.MIN_SIZE_FOR_TEXT_AREA;
         String windowTitle = rpi == null ? "Edit window" :
             rpi.getColumnDesc().getLabel() != null
                 ? rpi.getColumnDesc().getLabel() + " (" + rpi.getColumnDesc().getSchema() + "." + rpi.getColumnDesc().getTable() + "." + rpi.getColumnDesc().getName() + ")"
@@ -162,7 +163,7 @@ public class StringPropertyEditor implements PropertyEditor<Object> {
       comboBox.getSelectionModel().select(comboBoxItem);
     } else if (binaryDataEditor != null) {
       if (o == null && rpi != null) {
-        if (rpi.getColumnDesc().getDataType() == ColumnDesc.ColumnType.CLOB) {
+        if (rpi.getColumnDesc().getDataType() == ColumnType.CLOB) {
           binaryDataEditor.setBinaryData(CharSequenceBinaryData.NULL);
         } else {
           binaryDataEditor.setBinaryData(ByteArrayBinaryData.NULL);

@@ -15,6 +15,7 @@
  */
 package cz.lbenda.dataman.db.dialect;
 
+import java.sql.Types;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -28,7 +29,7 @@ public interface SQLDialect {
 
   default String tableCatalog() { return "TABLE_CAT"; }
   default String tableSchema() { return "TABLE_SCHEM"; }
-  default String tableName()  { return "TABLE_NAME"; }
+  default String tableName() { return "TABLE_NAME"; }
   default String tableType() { return "TABLE_TYPE"; }
   default String tableRemarks()  { return "REMARKS"; }
 
@@ -58,4 +59,38 @@ public interface SQLDialect {
   /** Set of names which is used to describe identity column */
   default Set<String> nameOfGeneratedIdentityColumn() { return new HashSet<>(Arrays.asList(new String[] {
       "SCOPE_IDENTITY()", "IDENTITY()" })); }
+
+  default ColumnType columnTypeFromSQL(int dataType, String columnTypeName, int size) {
+    switch (dataType) {
+      case Types.TIMESTAMP : return ColumnType.TIMESTAMP;
+      case Types.TIME : return ColumnType.TIME;
+      case Types.DATE : return ColumnType.DATE;
+      case Types.BIT :
+        if (size == 1 ) { return ColumnType.BIT; }
+        return ColumnType.BIT_ARRAY;
+      case Types.INTEGER : return ColumnType.INTEGER;
+      case Types.BIGINT : return ColumnType.LONG;
+      case Types.TINYINT : return ColumnType.BYTE;
+      case Types.SMALLINT : return ColumnType.SHORT;
+      case Types.FLOAT :
+      case Types.REAL : return ColumnType.FLOAT;
+      case Types.NUMERIC :
+      case Types.DECIMAL : return ColumnType.DECIMAL;
+      case Types.DOUBLE : return ColumnType.DOUBLE;
+      case Types.CHAR :
+      case Types.VARCHAR : return ColumnType.STRING;
+      case Types.BOOLEAN : return ColumnType.BOOLEAN;
+      case Types.VARBINARY: return ColumnType.BYTE_ARRAY;
+      case Types.BINARY :
+        if ("UUID".equals(columnTypeName)) { return ColumnType.UUID; }
+        else { return ColumnType.BYTE_ARRAY; }
+      case Types.CLOB : return ColumnType.CLOB;
+      case Types.BLOB : return ColumnType.BLOB;
+      case Types.ARRAY : return ColumnType.ARRAY;
+      case Types.OTHER :
+      default :
+        System.out.println("Unresolved dataType: " + dataType);
+        return ColumnType.OBJECT;
+    }
+  }
 }

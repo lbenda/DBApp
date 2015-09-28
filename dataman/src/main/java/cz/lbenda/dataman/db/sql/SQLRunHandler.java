@@ -17,7 +17,7 @@ package cz.lbenda.dataman.db.sql;
 
 import cz.lbenda.common.Tuple2;
 import cz.lbenda.dataman.db.*;
-import cz.lbenda.dataman.rc.DbConfig;
+import cz.lbenda.dataman.db.DbConfig;
 import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
@@ -53,8 +53,7 @@ public class SQLRunHandler extends AbstractAction {
   public SQLRunHandler(ObjectProperty<DbConfig> dbConfigProperty, SQLEditorController sqlEditorController) {
     this.sqlEditorController = sqlEditorController;
     this.dbConfigProperty = dbConfigProperty;
-    dbConfigProperty.addListener(observable ->
-      setEnable(dbConfigProperty.getValue() != null && dbConfigProperty.getValue().isConnected()));
+    dbConfigProperty.addListener(observable -> setEnable(dbConfigProperty.getValue() != null && dbConfigProperty.getValue().connectionProvider.isConnected()));
   }
 
   @Override
@@ -65,7 +64,7 @@ public class SQLRunHandler extends AbstractAction {
       SQLQueryResult sqlQueryResult = new SQLQueryResult();
       sqlQueryResult.setSql(sql);
       if (dbConfigProperty.getValue() != null
-          && dbConfigProperty.getValue().isConnected()) {
+          && dbConfigProperty.getValue().connectionProvider.isConnected()) {
         dbConfigProperty.getValue().getReader().onPreparedStatement(sql,
             tuple2 -> this.statementToSQLQueryResult(sqlQueryResult, tuple2));
         sqlEditorController.addQueryResult(sqlQueryResult);
@@ -88,13 +87,13 @@ public class SQLRunHandler extends AbstractAction {
             int columnCount = mtd.getColumnCount();
             ColumnDesc columns[] = new ColumnDesc[columnCount];
             for (int i = 1; i <= columnCount; i++) {
-              columns[i - 1] = new ColumnDesc(mtd, i);
+              columns[i - 1] = new ColumnDesc(mtd, i, dbConfigProperty.getValue().getDialect());
             }
             sqlRows.getMetaData().setColumns(columns);
             while (rs.next()) {
               RowDesc row = RowDesc.createNewRow(sqlRows.getMetaData(), RowDesc.RowDescState.LOADED);
               for (ColumnDesc columnDesc : sqlRows.getMetaData().getColumns()) {
-                row.setInitialColumnValue(columnDesc, rs.getObject(columnDesc.getPosition()));
+                row.loadInitialColumnValue(columnDesc, rs);
               }
               sqlRows.getRows().add(row);
             }

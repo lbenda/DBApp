@@ -15,7 +15,7 @@
  */
 package cz.lbenda.dataman.db.handler;
 
-import cz.lbenda.dataman.rc.DbConfig;
+import cz.lbenda.dataman.db.DbConfig;
 import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
@@ -62,7 +62,7 @@ public class ConnectDatabaseHandler extends AbstractAction {
       if (dbConfig == null) {
         setConfig(0);
         setEnable(false);
-      } else if (dbConfig.getReader() != null && dbConfig.getReader().isConnected()) {
+      } else if (dbConfig.getConnectionProvider().isConnected()) {
         setConfig(1);
         setEnable(true);
       } else {
@@ -76,13 +76,13 @@ public class ConnectDatabaseHandler extends AbstractAction {
   public void handle(ActionEvent e) {
     if (dbConfigProperty.getValue() != null) {
       DbConfig dbConfig = dbConfigProperty.getValue();
-      if (dbConfig.getReader() == null || !dbConfig.getReader().isConnected()) {
+      if (!dbConfig.getConnectionProvider().isConnected()) {
         dbConfig.reloadStructure();
         dbConfigProperty.setValue(null);
         dbConfigProperty.setValue(dbConfig);
       } else {
-        dbConfig.getReader().close((Stage) ((Node) e.getSource()).getScene().getWindow());
-        if (!dbConfig.getReader().isConnected()) {
+        dbConfig.getConnectionProvider().close((Stage) ((Node) e.getSource()).getScene().getWindow());
+        if (!dbConfig.getConnectionProvider().isConnected()) {
           dbConfigProperty.setValue(null);
           dbConfigProperty.setValue(dbConfig);
         }

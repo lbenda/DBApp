@@ -16,7 +16,6 @@
 package cz.lbenda.dataman.db;
 
 import cz.lbenda.common.AbstractHelper;
-import cz.lbenda.dataman.rc.DbConfig;
 import cz.lbenda.rcp.action.AbstractSavable;
 import cz.lbenda.dataman.schema.exconf.AuditType;
 import javafx.beans.property.BooleanProperty;

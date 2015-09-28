@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cz.lbenda.dataman.rc;
+package cz.lbenda.dataman.db;
 
 import cz.lbenda.common.AbstractHelper;
-import cz.lbenda.dataman.db.*;
 
 import java.io.*;
 import java.net.URL;
@@ -33,6 +32,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import cz.lbenda.dataman.db.dialect.SQLDialect;
+import cz.lbenda.dataman.rc.DbConfigFactory;
 import cz.lbenda.dataman.schema.dataman.*;
 import cz.lbenda.dataman.schema.exconf.*;
 import cz.lbenda.dataman.schema.exconf.ObjectFactory;
@@ -71,17 +72,28 @@ public class DbConfig {
   private String extendedConfigurationPath; public final String getExtendedConfigurationPath() { return this.extendedConfigurationPath; }
   /** Showed schemas */
   private final Map<String, List<String>> shownSchemas = new HashMap<>();
-  /** Instance of DB reader for this session */
-  private DbStructureReader reader; public final DbStructureReader getReader() { return reader; } public final void setReader(DbStructureReader reader) { this.reader = reader; }
+
+
+  /** SQLDialect for this db configuration */
+  public final SQLDialect getDialect() { return getJdbcConfiguration().getDialect(); }
+  /** Connection provider */
+  public final ConnectionProvider connectionProvider = new ConnectionProvider(this);
+  /** Connection provider */
+  public @Nonnull ConnectionProvider getConnectionProvider() { return connectionProvider; }
   /** Object which can modify database row */
-  private DbRowManipulator dbRowManipulator; public DbRowManipulator getDbRowManipulator() { return dbRowManipulator; }
+  private final DbRowManipulator dbRowManipulator = new DbRowManipulator(connectionProvider);
+  /** Manipulator of DB */
+  public final @Nonnull DbRowManipulator getDbRowManipulator() { return dbRowManipulator; }
+  /** Instance of DB reader for this session */
+  private DbStructureReader reader = new DbStructureReader(this);
+  public final @Nonnull DbStructureReader getReader() { return reader; }
+  final void setReader(@Nonnull DbStructureReader reader) { this.reader = reader; }
 
   /** Timeout when unused connection will be closed */
   private int connectionTimeout; public int getConnectionTimeout() { return connectionTimeout; } public void setConnectionTimeout(int connectionTimeout) { this.connectionTimeout = connectionTimeout; }
   /** Table description map */
-  private final Map<String, Map<String, Map<String, TableDesc>>> tableDescriptionsMap = new HashMap<>(); public  Map<String, Map<String, Map<String, TableDesc>>> getTableDescriptionsMap() { return tableDescriptionsMap; }
-
-  public boolean isConnected() { return reader != null && reader.isConnected(); }
+  private final Map<String, Map<String, Map<String, TableDesc>>> tableDescriptionsMap = new HashMap<>();
+  public Map<String, Map<String, Map<String, TableDesc>>> getTableDescriptionsMap() { return tableDescriptionsMap; }
 
   public final void setExtendedConfigType(ExtendedConfigTypeType extendedConfigType) {
     this.extendedConfigType = extendedConfigType;
@@ -90,7 +102,7 @@ public class DbConfig {
   public final void setExtendedConfigurationPath(String extendedConfigurationPath) {
     if (!AbstractHelper.nullEquals(extendedConfigurationPath, this.extendedConfigurationPath)) {
       this.extendedConfigurationPath = extendedConfigurationPath;
-      if (isConnected()) { loadExtendedConfiguration(); }
+      if (connectionProvider.isConnected()) { loadExtendedConfiguration(); }
     }
   }
 
@@ -205,11 +217,11 @@ public class DbConfig {
         break;
       case DATABASE:
         String extendConfiguration = null;
-        try (Connection connection = reader.getConnection()) {
+        try (Connection connection = connectionProvider.getConnection()) {
           //noinspection SqlNoDataSourceInspection,SqlDialectInspection
           try (PreparedStatement ps = connection.prepareCall("select usr, exConf from "
               + extendedConfigurationPath + " where (usr = ? or usr is null or usr = '')")) {
-            ps.setString(1, reader.getUser().getUsername());
+            ps.setString(1, connectionProvider.getUser().getUsername());
             try (ResultSet rs = ps.executeQuery()) {
               while (rs.next()) {
                 if (rs.getString(1) == null && extendConfiguration == null) { // The null user is used only if no specific user configuration is read
@@ -338,9 +350,6 @@ public class DbConfig {
   public void reloadStructure() {
     this.tableDescriptionsMap.clear();
     this.tableDescriptions.clear();
-
-    reader = new DbStructureReader(this);
-    dbRowManipulator = new DbRowManipulator(reader);
     loadExtendedConfiguration();
     reader.generateStructure();
   }
@@ -349,8 +358,8 @@ public class DbConfig {
   @SuppressWarnings("unused")
   public void close() {
     try {
-      if (this.reader != null && this.reader.getConnection() != null && !this.reader.getConnection().isClosed()) {
-        ((DBAppConnection) this.reader.getConnection()).realyClose();
+      if (connectionProvider.getConnection() != null && !connectionProvider.getConnection().isClosed()) {
+        ((DBAppConnection) connectionProvider.getConnection()).realyClose();
       }
     } catch (SQLException e) {
       LOG.warn("The connection can't be closed.");

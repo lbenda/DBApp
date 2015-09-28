@@ -15,7 +15,7 @@
  */
 package cz.lbenda.dataman.db.handler;
 
-import cz.lbenda.dataman.rc.DbConfig;
+import cz.lbenda.dataman.db.DbConfig;
 import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
@@ -46,12 +46,12 @@ public class SaveAllTableHandler extends AbstractAction {
   public SaveAllTableHandler(ObjectProperty<DbConfig> dbConfigProperty) {
     this.dbConfigProperty = dbConfigProperty;
     dbConfigProperty.addListener((observableValue, oldValue, newValue) -> {
-      if (oldValue != null && oldValue.getReader() != null && oldValue.getReader().getSavableRegistry() != null) {
-        oldValue.getReader().getSavableRegistry().dirtyProperty().removeListener(dirtyListener);
+      if (oldValue != null) {
+        oldValue.getConnectionProvider().getSavableRegistry().dirtyProperty().removeListener(dirtyListener);
       }
-      if (newValue != null && newValue.getReader() != null && newValue.getReader().getSavableRegistry() != null) {
-        setEnable(newValue.getReader().getSavableRegistry().dirtyProperty().getValue());
-        newValue.getReader().getSavableRegistry().dirtyProperty().addListener(dirtyListener);
+      if (newValue != null) {
+        setEnable(newValue.getConnectionProvider().getSavableRegistry().dirtyProperty().getValue());
+        newValue.getConnectionProvider().getSavableRegistry().dirtyProperty().addListener(dirtyListener);
       } else { setEnable(false); }
     });
   }
@@ -59,8 +59,8 @@ public class SaveAllTableHandler extends AbstractAction {
   @Override
   public void handle(ActionEvent event) {
     DbConfig dbConfig = dbConfigProperty.getValue();
-    if (dbConfig != null && dbConfig.getReader() != null) {
-      dbConfig.getReader().close((Stage) ((Node) event.getSource()).getScene().getWindow());
+    if (dbConfig != null) {
+      dbConfig.getConnectionProvider().close((Stage) ((Node) event.getSource()).getScene().getWindow());
     }
   }
 }

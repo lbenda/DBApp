@@ -153,6 +153,16 @@ public class StringConverters {
     }
     @Override public BinaryData fromString(String s) { throw new UnsupportedOperationException(); }
   };
+  public static StringConverter<BinaryData> BITARRAY_CONVERTER = new StringConverter<BinaryData>() {
+    @Override public String toString(BinaryData value) {
+      try {
+        return value == null || value.isNull() ? null : IOUtils.toString(value.getReader());
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    @Override public BinaryData fromString(String s) { return new BitArrayBinaryData(null, s); }
+  };
 
   public static StringConverter<byte[]> BYTEARRAY_CONVERTER = new StringConverter<byte[]>() {
     @Override

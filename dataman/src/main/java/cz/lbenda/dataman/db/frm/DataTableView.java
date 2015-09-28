@@ -79,18 +79,22 @@ public class DataTableView extends FilterableTableView<RowDesc> {
     GraphicsContext gc = canvas.getGraphicsContext2D();
     double nWidth = com.sun.javafx.tk.Toolkit.getToolkit().getFontLoader().computeStringWidth("N", gc.getFont()) * 0.9;
     switch (column.getDataType()) {
+      case BIT: return 3 * nWidth;
       case BOOLEAN: return 10 * nWidth;
       case BLOB:
       case CLOB:
-      case BYTEARRAY:
+      case BYTE_ARRAY:
         return 30 * nWidth;
       case UUID:
         return 36 * nWidth;
+      case TIME:
       case DATE:
         // return 10 * nWidth; non editable
-        return 25 * nWidth;
+        return 10 * nWidth;
+      case TIMESTAMP:
+        return 20 * nWidth;
       default:
-        double prefSize = column.getDisplaySize() / Math.log(column.getDisplaySize());
+        double prefSize = column.getSize() / Math.log(column.getSize());
         if (prefSize > 100) {
           prefSize = 100;
         } else if (prefSize < 10) {
@@ -128,8 +132,8 @@ public class DataTableView extends FilterableTableView<RowDesc> {
       case TIME: return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) TimePickerTableCell.forTableColumn();
       case TIMESTAMP: return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) DateTimePickerTableCell.forTableColumn();
       case STRING: return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) TextAreaTableCell.forTableColumn(
-          columnDesc.toString(), columnDesc.getDisplaySize() <= Constants.MIN_SIZE_FOR_TEXT_AREA);
-      case BYTEARRAY:
+          columnDesc.toString(), columnDesc.getSize() <= Constants.MIN_SIZE_FOR_TEXT_AREA);
+      case BYTE_ARRAY:
       case BLOB: return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) BinaryDataTableCell.forTableColumn(false);
       case CLOB: return (Callback<TableColumn<RowDesc, Object>, TableCell<RowDesc, Object>>) (Object) BinaryDataTableCell.forTableColumn(true);
       default:

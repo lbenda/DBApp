@@ -15,18 +15,22 @@
  */
 package cz.lbenda.dataman.db.dialect;
 
+import java.util.Arrays;
+
 /** @author Lukas Benda <lbenda at lbenda.cz> */
 public class SQLDialectsHelper {
 
+  /** Default Dialect */
   private static final SQLDialect DEFAULT = new H2Dialect();
 
   public static SQLDialect dialectForDriver(String driver) {
     if (SQLDialect.DIALECTS.isEmpty()) {
-      SQLDialect.DIALECTS.add(new H2Dialect());
-      SQLDialect.DIALECTS.add(new HSQLDBDialect());
+      SQLDialect.DIALECTS.addAll(Arrays.asList(new H2Dialect(), new HSQLDBDialect()));
     }
     for (SQLDialect dialect : SQLDialect.DIALECTS) {
-      if (dialect.isForDriver(driver)) { return dialect; }
+      if (dialect.isForDriver(driver)) {
+        return dialect;
+      }
     }
     return DEFAULT;
   }

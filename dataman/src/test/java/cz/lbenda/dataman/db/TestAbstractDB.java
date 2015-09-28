@@ -16,7 +16,6 @@
 package cz.lbenda.dataman.db;
 
 import cz.lbenda.common.Tuple3;
-import cz.lbenda.dataman.rc.DbConfig;
 import org.testng.annotations.BeforeGroups;
 import org.testng.annotations.DataProvider;
 

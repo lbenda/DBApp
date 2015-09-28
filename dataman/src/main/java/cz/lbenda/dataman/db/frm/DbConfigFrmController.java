@@ -18,7 +18,7 @@ package cz.lbenda.dataman.db.frm;
 import cz.lbenda.common.Tuple2;
 import cz.lbenda.dataman.Constants;
 import cz.lbenda.dataman.rc.DbConfigFactory;
-import cz.lbenda.dataman.rc.DbConfig;
+import cz.lbenda.dataman.db.DbConfig;
 import cz.lbenda.dataman.schema.dataman.ExtendedConfigTypeType;
 import cz.lbenda.rcp.localization.Message;
 import cz.lbenda.rcp.localization.MessageFactory;

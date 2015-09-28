@@ -15,7 +15,6 @@
  */
 package cz.lbenda.dataman.db;
 
-import cz.lbenda.dataman.rc.DbConfig;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

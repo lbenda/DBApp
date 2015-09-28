@@ -15,6 +15,7 @@
  */
 package cz.lbenda.dataman.rc;
 
+import cz.lbenda.dataman.db.DbConfig;
 import cz.lbenda.dataman.db.SQLQueryRows;
 import cz.lbenda.dataman.db.frm.DataTableFrmController;
 import cz.lbenda.dataman.db.frm.DataTableView;

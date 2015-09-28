@@ -71,4 +71,34 @@ public abstract class AbstractHelper {
     bb.putLong(uuid.getLeastSignificantBits());
     return bb.array();
   }
+
+  /** Transform bite array to bit representation
+   * @param bytes array of bites which will be interpreted to binary map
+   * @return string like this: 0110 1111 0101 1000 */
+  public static String printBitBinary(byte[] bytes) {
+    StringBuilder sb = new StringBuilder();
+    for (byte b : bytes) {
+      String s = Integer.toBinaryString((b & 0xFF) + 0x100).substring(1);
+      if (sb.length() > 0) { sb.append(" "); }
+      if (s.length() > 4) { sb.append(s.substring(0, 4)).append(" ").append(s.substring(4, s.length())); }
+      else { sb.append(s); }
+    }
+    return sb.toString();
+  }
+
+  /** Parse binary map from string to array of bytes
+   * @param bytes String which hold byte array. The space is removed before transformation.
+   * @return byte array */
+  public static byte[] parseBitBinary(String bytes) {
+    bytes = bytes.replaceAll(" ", "");
+    if (bytes.length() % 8 > 0) { bytes += "00000000".substring(0, bytes.length() % 8); }
+    byte[] result = new byte[bytes.length() / 8];
+
+    for (int i = 0; i < result.length; i ++) {
+      String s = bytes.substring(i * 8, (i + 1) * 8);
+      short sh = Short.parseShort(s, 2);
+      result[i] = (byte) sh;
+    }
+    return result;
+  }
 }

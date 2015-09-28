@@ -16,7 +16,7 @@
 package cz.lbenda.dataman.db.handler;
 
 import cz.lbenda.dataman.rc.DbConfigFactory;
-import cz.lbenda.dataman.rc.DbConfig;
+import cz.lbenda.dataman.db.DbConfig;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
 import cz.lbenda.rcp.localization.Message;

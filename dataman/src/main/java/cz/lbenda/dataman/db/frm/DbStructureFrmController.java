@@ -16,7 +16,7 @@
 package cz.lbenda.dataman.db.frm;
 
 import cz.lbenda.dataman.db.TableDesc;
-import cz.lbenda.dataman.rc.DbConfig;
+import cz.lbenda.dataman.db.DbConfig;
 import javafx.beans.property.ObjectProperty;
 import javafx.scene.Node;
 import javafx.scene.control.TreeItem;
@@ -53,7 +53,7 @@ public class DbStructureFrmController {
       treeView.setRoot(root);
       root.setExpanded(true);
 
-      if (dbConfig != null && dbConfig.isConnected()) {
+      if (dbConfig != null && dbConfig.connectionProvider.isConnected()) {
         createCatalogTreeItems(root, dbConfig);
       }
     });

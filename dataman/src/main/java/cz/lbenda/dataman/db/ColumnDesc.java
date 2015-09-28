@@ -15,58 +15,18 @@
  */
 package cz.lbenda.dataman.db;
 
-import cz.lbenda.common.StringConverters;
-import cz.lbenda.common.BinaryData;
+import cz.lbenda.dataman.db.dialect.ColumnType;
 import cz.lbenda.dataman.db.dialect.SQLDialect;
 import javafx.util.StringConverter;
 
 import javax.annotation.Nonnull;
-import java.math.BigDecimal;
 import java.sql.*;
 import java.util.*;
-import java.util.Date;
 
 /** Description of column in database
  * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/26/14.
  */
 public class ColumnDesc {
-
-  public enum ColumnType {
-    SHORT(Short.class, StringConverters.SHORT_CONVERTER),
-    BYTE(Byte.class, StringConverters.BYTE_CONVERTER),
-    INTEGER(Integer.class, StringConverters.INT_CONVERTER),
-    LONG(Long.class, StringConverters.LONG_CONVERTER),
-    BYTEARRAY(Byte[].class, StringConverters.BINARYDATA_CONVERTER),
-    UUID(java.util.UUID.class, StringConverters.UUID_CONVERTER),
-    ARRAY(Array.class, StringConverters.OBJECTARRAY_CONVERTER),
-
-    FLOAT(Float.class, StringConverters.FLOAT_CONVERTER),
-    DOUBLE(Double.class, StringConverters.DOUBLE_CONVERTER),
-    DECIMAL(BigDecimal.class, StringConverters.DECIMAL_CONVERTER),
-
-    BOOLEAN(Boolean.class, StringConverters.BOOLEAN_CONVERTER),
-    STRING(String.class, StringConverters.STRING_CONVERTER),
-    CLOB(BinaryData.class, StringConverters.BINARYDATA_CONVERTER),
-
-    DATE(Date.class, StringConverters.SQL_DATE_CONVERTER),
-    TIMESTAMP(Timestamp.class, StringConverters.SQL_TIMESTAMP_CONVERTER),
-    TIME(Time.class, StringConverters.SQL_TIME_CONVERTER),
-
-    BLOB(BinaryData.class, StringConverters.BINARYDATA_CONVERTER),
-
-    OBJECT(Object.class, StringConverters.OBJECT_CONVERTER),
-    ;
-
-    private final Class clazz;
-    private final StringConverter converter;
-    ColumnType(Class clazz, StringConverter converter) {
-      this.clazz = clazz;
-      this.converter = converter;
-    }
-    @SuppressWarnings("unused")
-    public Class getJavaClass() { return clazz; }
-    public StringConverter getConverter() { return converter; }
-  }
 
   private TableDesc tableDescription;
   @SuppressWarnings("unused")
@@ -75,7 +35,7 @@ public class ColumnDesc {
   private final String schema; public String getSchema() { return schema; }
   private final String table; public String getTable() { return table; }
   private final String name; public final String getName() { return name; }
-  private final int displaySize; public int getDisplaySize() { return displaySize; }
+  private final int size; public int getSize() { return size; }
   private final ColumnType dataType; public final ColumnType getDataType() { return dataType; }
   private final Boolean nullable; @SuppressWarnings("unused") public final Boolean isNullable() { return nullable; }
   private int position; public final int getPosition() { return position; } public final void setPosition(int position) { this.position = position; }
@@ -95,16 +55,16 @@ public class ColumnDesc {
    * @param position Index of column
    * @throws SQLException
    */
-  public ColumnDesc(ResultSetMetaData mtd, int position) throws SQLException {
+  public ColumnDesc(ResultSetMetaData mtd, int position, SQLDialect dialect) throws SQLException {
     this.position = position;
     this.name = mtd.getColumnName(position);
     this.label = mtd.getColumnLabel(position);
     this.catalog = mtd.getCatalogName(position);
     this.schema = mtd.getSchemaName(position);
     this.table = mtd.getTableName(position);
-    this.displaySize = mtd.getColumnDisplaySize(position);
+    this.size = mtd.getColumnDisplaySize(position);
     this.columnTypeName = mtd.getColumnTypeName(position);
-    this.dataType = sqlToColumnType(mtd.getColumnType(position), this.columnTypeName);
+    this.dataType = dialect.columnTypeFromSQL(mtd.getColumnType(position), this.columnTypeName, this.size);
     this.javaClassName = mtd.getColumnClassName(position);
     System.out.println(
         name + ": " + mtd.getColumnType(position) + ": " + dataType + " - " + javaClassName + " , columnTypeName: " + columnTypeName);
@@ -133,59 +93,36 @@ public class ColumnDesc {
     this.table = td.getName();
     this.name = confValue(dialect.columnName(), rs);
     this.label = confValue(dialect.columnRemarsk(), rs);
-    this.displaySize = confValue(dialect.columnSize(), rs);
+    this.size = confValue(dialect.columnSize(), rs);
     this.columnTypeName = confValue(dialect.columnTypeName(), rs);
     this.nullable = confBool(dialect.columnNullable(), rs);
     this.autoincrement = confBool(dialect.columnAutoIncrement(), rs);
     this.generated = confBool(dialect.columnGenerated(), rs);
-    this.dataType = sqlToColumnType(confValue(dialect.columnDateType(), rs), columnTypeName);
+    this.dataType = dialect.columnTypeFromSQL(confValue(dialect.columnDateType(), rs), columnTypeName, size);
+
+    if ("DATAMAN".equals(this.schema)) {
+      System.out.println(this.name
+          + ", SQLType: " + confValue(dialect.columnDateType(), rs)
+          + ", Column type name: " + this.columnTypeName
+          + ", Identified type: " + this.dataType);
+    }
   }
 
   public ColumnDesc(final TableDesc td, final String name, final String label, final int dataType, final String columnTypeName,
-                    final int size, final boolean nullable, final boolean autoincrement, final boolean generated) {
+                    final int size, final boolean nullable, final boolean autoincrement, final boolean generated,
+                    final SQLDialect dialect) {
     this.tableDescription = td;
     this.position = -1;
     this.catalog = td.getCatalog();
     this.schema = td.getSchema();
     this.table = td.getName();
     this.name = name;
-    this.displaySize = size;
+    this.size = size;
     this.nullable = nullable;
     this.autoincrement = autoincrement;
     this.generated = generated;
-    this.dataType = sqlToColumnType(dataType, columnTypeName);
+    this.dataType = dialect.columnTypeFromSQL(dataType, columnTypeName, size);
     this.label = label;
-  }
-
-  private ColumnType sqlToColumnType(int dataType, String columnTypeName) {
-    switch (dataType) {
-      case Types.TIMESTAMP : return ColumnType.TIMESTAMP;
-      case Types.TIME : return ColumnType.TIME;
-      case Types.DATE : return ColumnType.DATE;
-      case Types.INTEGER : return ColumnType.INTEGER;
-      case Types.BIGINT : return ColumnType.LONG;
-      case Types.TINYINT : return ColumnType.BYTE;
-      case Types.SMALLINT : return ColumnType.SHORT;
-      case Types.FLOAT :
-      case Types.REAL : return ColumnType.FLOAT;
-      case Types.NUMERIC :
-      case Types.DECIMAL : return ColumnType.DECIMAL;
-      case Types.DOUBLE : return ColumnType.DOUBLE;
-      case Types.CHAR :
-      case Types.VARCHAR : return ColumnType.STRING;
-      case Types.BOOLEAN : return ColumnType.BOOLEAN;
-      case Types.VARBINARY: return ColumnType.BYTEARRAY;
-      case Types.BINARY :
-        if ("UUID".equals(columnTypeName)) { return ColumnType.UUID; }
-        else { return ColumnType.BYTEARRAY; }
-      case Types.CLOB : return ColumnType.CLOB;
-      case Types.BLOB : return ColumnType.BLOB;
-      case Types.ARRAY : return ColumnType.ARRAY;
-      case Types.OTHER :
-      default :
-        System.out.println("Unresolved dataType: " + dataType);
-        return ColumnType.OBJECT;
-    }
   }
 
   /** Set primary key and add this column to set of primary column in to metadata */
@@ -219,14 +156,14 @@ public class ColumnDesc {
     ColumnDesc column = (ColumnDesc) o;
 
     return autoincrement == column.autoincrement && generated == column.generated && nullable == column.nullable
-        && pk == column.pk && position == column.position && displaySize == column.displaySize
+        && pk == column.pk && position == column.position && size == column.size
         && dataType == column.dataType && !(name != null ? !name.equals(column.name) : column.name != null);
   }
 
   @Override
   public int hashCode() {
     int result = name != null ? name.hashCode() : 0;
-    result = 31 * result + displaySize;
+    result = 31 * result + size;
     result = 31 * result + (dataType != null ? dataType.hashCode() : 0);
     result = 31 * result + (nullable ? 1 : 0);
     result = 31 * result + position;

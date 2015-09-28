@@ -16,9 +16,7 @@
 package cz.lbenda.dataman.db;
 
 import cz.lbenda.common.Tuple2;
-import cz.lbenda.dataman.rc.DbConfig;
-import cz.lbenda.dataman.User;
-import cz.lbenda.dataman.UserImpl;
+import cz.lbenda.dataman.db.dialect.ColumnType;
 import cz.lbenda.dataman.db.dialect.SQLDialect;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -31,88 +29,33 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import cz.lbenda.rcp.action.SavableRegistry;
-import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+
 /** Class for reading data structure from JDBC. The first method which must be call is
- * @author Lukas Benda <lbenda at lbenda.cz>
- */
+ * @author Lukas Benda <lbenda at lbenda.cz> */
 public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExceptionListener, SQLExecutor {
 
   private static final Logger LOG = LoggerFactory.getLogger(DbStructureReader.class);
+  private final ConnectionProvider connectionProvider;
+  private final DbConfig dbConfig;
 
-  private DbConfig dbConfig;
-
-  private User user; public User getUser() { return user; }
-
-  private DBAppDataSource dataSource = null;
-  private boolean connected = false;
-  /** Savable register for whole db config. */
-  private SavableRegistry savableRegistry; public SavableRegistry getSavableRegistry() { return savableRegistry; }
-
-  public final void setDbConfig(DbConfig dbConfig) {
+  public DbStructureReader(@Nonnull DbConfig dbConfig) {
+    // this.setDbConfig(dbConfig);
     this.dbConfig = dbConfig;
-    if (dbConfig != null && dbConfig.getJdbcConfiguration() != null) {
-      user = new UserImpl(dbConfig.getJdbcConfiguration().getUsername());
-    }
-    createDataSource();
-  }
-
-  public DbStructureReader(DbConfig dbConfig) { this.setDbConfig(dbConfig); }
-
-  /** Inform if the reader is prepared for read data - the session configuration exist */
-  public final boolean isPrepared() { return dbConfig != null; }
-  public final boolean isConnected() { return connected; }
-
-  private void createDataSource() throws IllegalStateException {
-    if (!isPrepared()) {
-      throw new IllegalStateException("The DBStructureReader isn't yet prepared for create dataSource. Please check isPrepared() properties");
-    }
-    if (dataSource != null) { dataSource = null; }
-    dataSource = new DBAppDataSource(dbConfig);
-  }
-
-  /** Close all connections */
-  public void close(Stage stage) {
-    if (this.savableRegistry != null) {
-      if (!this.savableRegistry.close(stage)) { return; }
-      this.savableRegistry = null;
-    }
-    if (dataSource != null) {
-      try {
-        dataSource.closeAllConnections();
-        this.connected = false;
-      } catch (SQLException e) {
-        LOG.error("The connection isn't close.", e);
-      }
-    } else {
-      this.connected = false;
-    }
-  }
-
-  public Connection getConnection() throws RuntimeException {
-    if (dataSource == null) { createDataSource(); }
-    try {
-      Connection result = dataSource.getConnection();
-      if (result == null) { throw new RuntimeException("The connection isn't created"); }
-      this.connected = !result.isClosed();
-      return result;
-    } catch (SQLException e) {
-      LOG.error("Filed to get connection", e);
-      throw new RuntimeException(e);
-    }
+    this.connectionProvider = dbConfig.getConnectionProvider();
   }
 
   /** Method read data from table to List, where every record is create as array of objects
-   * @param td table which is readed
+   * @param td table which is read
    * @param from first row where to start with read. If -1 is set, then return whole table
    * @param to last row where stop read
    * @return list of object from db
    */
   public final List<RowDesc> readTableData(TableDesc td, int from, int to) {
-    try (Connection conn = getConnection()) {
+    try (Connection conn = connectionProvider.getConnection()) {
       try (Statement st = conn.createStatement()) {
         ResultSet rs = st.executeQuery(String.format("SELECT * FROM \"%s\".\"%s\"", td.getSchema(), td.getName()));
         final List<RowDesc> result;
@@ -121,7 +64,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
         while (rs.next()) {
           RowDesc row = RowDesc.createNewRow(td.getQueryRow().getMetaData(), RowDesc.RowDescState.LOADED);
           for (ColumnDesc columnDesc : td.getColumns()) {
-            row.setInitialColumnValue(columnDesc, rs.getObject(columnDesc.getPosition()));
+            row.loadInitialColumnValue(columnDesc, rs);
           }
           result.add(row);
         }
@@ -165,7 +108,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
     String sql = String.format("SELECT * FROM \"%s\".\"%s\" WHERE \"%s\"=?",
             tbSchema, tbName, tbColumn);
     LOG.debug(sql);
-    try (Connection conn = getConnection()) {
+    try (Connection conn = connectionProvider.getConnection()) {
       try (PreparedStatement ps = conn.prepareCall(sql)) {
         ps.setObject(1, fkValue);
         try (ResultSet rs =  ps.executeQuery()) {
@@ -185,20 +128,15 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
     }
   }
 
-  public SQLDialect getDialect() {
-    return this.dbConfig.getJdbcConfiguration().getDialect();
-  }
-
   public void generateStructure() {
-    if (this.savableRegistry == null) { this.savableRegistry = SavableRegistry.getInstance(); }
-    try (Connection conn = getConnection()) {
+    try (Connection conn = connectionProvider.getConnection()) {
       DatabaseMetaData dmd = conn.getMetaData();
-      SQLDialect dialect = getDialect();
+      SQLDialect dialect = dbConfig.getDialect();
       try (ResultSet tabs = dmd.getTables(null, null, null, null)) {
         while (tabs.next()) {
           TableDesc td = this.dbConfig.getOrCreateTableDescription(tabs.getString(dialect.tableCatalog()),
               tabs.getString(dialect.tableSchema()), tabs.getString(dialect.tableName()));
-          td.setSavableRegister(savableRegistry);
+          td.setSavableRegister(connectionProvider.getSavableRegistry());
           td.setTableType(TableDesc.TableType.fromJDBC(tabs.getString(dialect.tableType())));
           td.setComment(dialect.tableRemarks());
         }
@@ -220,7 +158,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   }
 
   private void generateStructureColumns(DatabaseMetaData dmd) throws SQLException {
-    SQLDialect dialect = this.dbConfig.getJdbcConfiguration().getDialect();
+    SQLDialect dialect = dbConfig.getJdbcConfiguration().getDialect();
     try (ResultSet rsColumn  = dmd.getColumns(null, null, null, null)) {
       writeColumnNames(rsColumn.getMetaData());
       while (rsColumn.next()) {
@@ -234,7 +172,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   }
 
   private void generatePKColumns(DatabaseMetaData dmd) throws SQLException {
-    SQLDialect di = this.dbConfig.getJdbcConfiguration().getDialect();
+    SQLDialect di = dbConfig.getJdbcConfiguration().getDialect();
     for (TableDesc td : dbConfig.getTableDescriptions()) {
       try (ResultSet rsPk = dmd.getPrimaryKeys(td.getCatalog(), td.getSchema(), td.getName())) {
         while (rsPk.next()) {
@@ -250,7 +188,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   public final List<Object[]> getSQLRows(String sql, String... columnNames) throws SQLException {
     LOG.trace("load sql rows for SQL: " + sql);
     List<Object[]> result = new ArrayList<>();
-    try (Statement stm = getConnection().createStatement()) {
+    try (Statement stm = connectionProvider.getConnection().createStatement()) {
       try (ResultSet rs = stm.executeQuery(sql)) {
         while (rs.next()) {
           Object[] row = new Object[columnNames.length];
@@ -270,7 +208,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   public final List<Object[]> getSQLRows(String sql, int... columnPoz) throws SQLException {
     LOG.trace("load sql rows for SQL: " + sql);
     List<Object[]> result = new ArrayList<>();
-    try (Statement stm = getConnection().createStatement()) {
+    try (Statement stm = connectionProvider.getConnection().createStatement()) {
       try (ResultSet rs = stm.executeQuery(sql)) {
         while (rs.next()) {
           Object[] row = new Object[columnPoz.length];
@@ -285,7 +223,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   }
 
   private void generateStrucutreForeignKeys(DatabaseMetaData dmd) throws SQLException {
-    SQLDialect di = this.dbConfig.getJdbcConfiguration().getDialect();
+    SQLDialect di = dbConfig.getJdbcConfiguration().getDialect();
     for (TableDesc td : dbConfig.getTableDescriptions()) {
       ResultSet rsEx = dmd.getExportedKeys(td.getCatalog(), td.getSchema(), td.getName());
       while (rsEx.next()) {
@@ -305,7 +243,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
 
   @Override
   public void onPreparedStatement(String sql, Consumer<Tuple2<PreparedStatement, SQLException>> consumer) {
-    try (Connection connection = getConnection()) {
+    try (Connection connection = connectionProvider.getConnection()) {
       try (PreparedStatement ps = connection.prepareCall(sql)) {
         consumer.accept(new Tuple2<>(ps, null));
       }

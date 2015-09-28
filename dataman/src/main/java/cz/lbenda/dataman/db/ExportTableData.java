@@ -151,12 +151,12 @@ public class ExportTableData {
   public static void writeSqlQueryRowsToTXT(SQLQueryRows sqlQueryRows, OutputStream outputStream) throws IOException {
     Writer writer = new OutputStreamWriter(outputStream);
     String joined = sqlQueryRows.getMetaData().getColumns().stream()
-        .map(cd -> fixedString(cd.getName(), cd.getDisplaySize()))
+        .map(cd -> fixedString(cd.getName(), cd.getSize()))
         .collect(Collectors.joining(""));
     writer.append(joined).append(Constants.CSV_NEW_LINE_SEPARATOR);
     for (RowDesc row : sqlQueryRows.getRows()) {
       joined = sqlQueryRows.getMetaData().getColumns().stream()
-          .map(cd -> fixedString(row.getColumnValueStr(cd), cd.getDisplaySize()))
+          .map(cd -> fixedString(row.getColumnValueStr(cd), cd.getSize()))
           .collect(Collectors.joining(""));
       writer.append(joined).append(Constants.CSV_NEW_LINE_SEPARATOR);
     }

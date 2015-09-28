@@ -15,6 +15,7 @@
  */
 package cz.lbenda.dataman.rc;
 
+import cz.lbenda.dataman.db.DbConfig;
 import cz.lbenda.dataman.schema.dataman.DatamanType;
 import cz.lbenda.dataman.schema.dataman.SessionType;
 import cz.lbenda.rcp.config.ConfigurationRW;

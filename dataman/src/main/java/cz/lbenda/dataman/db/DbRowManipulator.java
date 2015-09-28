@@ -19,7 +19,9 @@ import cz.lbenda.dataman.db.audit.Auditor;
 import cz.lbenda.dataman.db.audit.AuditorNone;
 import cz.lbenda.dataman.db.audit.SqlLogToLogAuditor;
 import cz.lbenda.dataman.db.audit.SqlLogToTableAuditor;
+import cz.lbenda.dataman.db.dialect.ColumnType;
 import cz.lbenda.dataman.schema.exconf.AuditType;
+import cz.lbenda.dataman.schema.exconf.AuditTypeType;
 import cz.lbenda.rcp.ExceptionMessageFrmController;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -33,23 +35,23 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 27.9.15.
- * Object whcih manipulate with rows in database */
+ * Object which manipulate with rows in database */
 public class DbRowManipulator {
 
   private static final Logger LOG = LoggerFactory.getLogger(DbRowManipulator.class);
 
-  private final ObjectProperty<DbStructureReader> dbStructureReader = new SimpleObjectProperty<>();
+  private final ObjectProperty<ConnectionProvider> connectionProvider = new SimpleObjectProperty<>();
 
-  public DbRowManipulator(DbStructureReader dbStructureReader) {
-    this.dbStructureReader.setValue(dbStructureReader);
+  public DbRowManipulator(ConnectionProvider connectionProvider) {
+    this.connectionProvider.setValue(connectionProvider);
   }
 
   @SuppressWarnings("unused")
-  public void setDbStructureReader(@Nonnull DbStructureReader dbStructureReader) { this.dbStructureReader.setValue(dbStructureReader); }
+  public void setConnectionProvider(@Nonnull ConnectionProvider connectionProvider) { this.connectionProvider.setValue(connectionProvider); }
   @SuppressWarnings("unused")
-  public DbStructureReader getDbStructureReader() { return this.dbStructureReader.getValue(); }
+  public ConnectionProvider getConnectionProvider() { return this.connectionProvider.getValue(); }
   @SuppressWarnings("unused")
-  public ObjectProperty<DbStructureReader> dbStructureReader() { return dbStructureReader; }
+  public ObjectProperty<ConnectionProvider> connectionProvider() { return connectionProvider; }
 
   /** Save all changes inside table which is given as paramte */
   public void saveChanges(@Nonnull TableDesc td) {
@@ -57,7 +59,7 @@ public class DbRowManipulator {
     List<RowDesc> updateRows = td.getRows().stream().filter(row -> RowDesc.RowDescState.CHANGED.equals(row.getState())).collect(Collectors.toList());
     List<RowDesc> insertRows = td.getRows().stream().filter(row -> RowDesc.RowDescState.NEW.equals(row.getState())).collect(Collectors.toList());
     if (!deleteRows.isEmpty() || !updateRows.isEmpty() || !insertRows.isEmpty()) {
-      try (Connection connection = getDbStructureReader().getConnection()) {
+      try (Connection connection = getConnectionProvider().getConnection()) {
         boolean autocommit = connection.getAutoCommit();
         connection.setAutoCommit(false);
         try {
@@ -101,7 +103,7 @@ public class DbRowManipulator {
       String sql = String.format("insert into \"%s\".\"%s\" (%s) values (%s)", td.getSchema(), td.getName(), names, values);
       LOG.trace(sql);
 
-      try (PreparedStatement ps = AuditPreparedStatement.prepareStatement(getDbStructureReader().getUser(),
+      try (PreparedStatement ps = AuditPreparedStatement.prepareStatement(getConnectionProvider().getUser(),
           auditorForAudit(td.getAudit()), connection, sql, Statement.RETURN_GENERATED_KEYS)) {
         int i = 1;
         for (ColumnDesc col : insertedColumns) {
@@ -116,7 +118,7 @@ public class DbRowManipulator {
             for (int j = 1; j <= rsmd.getColumnCount(); j++) {
               ColumnDesc col = td.getColumn(rsmd.getColumnName(j));
               if (col == null) {
-                if (getDbStructureReader().getDialect().nameOfGeneratedIdentityColumn().contains(rsmd.getColumnName(j))) {
+                if (getConnectionProvider().getDialect().nameOfGeneratedIdentityColumn().contains(rsmd.getColumnName(j))) {
                   col = td.getPKColumns().get(0);
                 } else {
                   throw new IllegalStateException(String.format("The column with name %s not exist", rsmd.getColumnName(j)));
@@ -137,11 +139,11 @@ public class DbRowManipulator {
     List<ColumnDesc> result = td.getPKColumns();
     if (result.isEmpty()) {
       result = td.getColumns().stream().filter(col ->
-              col.getDataType() != ColumnDesc.ColumnType.BLOB
-                  && col.getDataType() != ColumnDesc.ColumnType.CLOB
-                  && col.getDataType() != ColumnDesc.ColumnType.ARRAY
-                  && col.getDataType() != ColumnDesc.ColumnType.BYTEARRAY
-                  && col.getDataType() != ColumnDesc.ColumnType.OBJECT
+              col.getDataType() != ColumnType.BLOB
+                  && col.getDataType() != ColumnType.CLOB
+                  && col.getDataType() != ColumnType.ARRAY
+                  && col.getDataType() != ColumnType.BYTE_ARRAY
+                  && col.getDataType() != ColumnType.OBJECT
       ).collect(Collectors.toList());
     }
     return result;
@@ -166,7 +168,7 @@ public class DbRowManipulator {
       String sql = String.format("update \"%s\".\"%s\" set %s where %s", td.getSchema(), td.getName(), set, where);
       LOG.trace(sql);
 
-      try (PreparedStatement ps = AuditPreparedStatement.prepareCall(getDbStructureReader().getUser(),
+      try (PreparedStatement ps = AuditPreparedStatement.prepareCall(getConnectionProvider().getUser(),
           auditorForAudit(td.getAudit()), connection, sql)) {
         int i = 1;
         for (ColumnDesc columnDesc : changedColumns) {
@@ -198,7 +200,7 @@ public class DbRowManipulator {
     String sql = String.format("DELETE FROM \"%s\".\"%s\" WHERE %s", td.getSchema(), td.getName(), where);
     LOG.trace(sql);
     for (RowDesc row : rows) {
-      try (PreparedStatement ps = AuditPreparedStatement.prepareCall(getDbStructureReader().getUser(),
+      try (PreparedStatement ps = AuditPreparedStatement.prepareCall(getConnectionProvider().getUser(),
           auditorForAudit(td.getAudit()), connection, sql)) {
         int i = 1;
         for (ColumnDesc col : pks) {
@@ -214,10 +216,11 @@ public class DbRowManipulator {
    * @param auditType audit configuration
    * @return auditor, never return null */
   private Auditor auditorForAudit(AuditType auditType) {
-    switch (auditType.getType()) {
+    System.out.println(auditType);
+    switch (auditType == null || auditType.getType() == null ? AuditTypeType.NONE : auditType.getType()) {
       case NONE : return AuditorNone.getInstance();
       case SQL_LOG_TO_LOG: return SqlLogToLogAuditor.getInstance();
-      case SQL_LOG_TO_TABLE : return SqlLogToTableAuditor.getInstance(getDbStructureReader(), auditType);
+      case SQL_LOG_TO_TABLE : return SqlLogToTableAuditor.getInstance(getConnectionProvider(), auditType);
       default : return AuditorNone.getInstance();
     }
   }

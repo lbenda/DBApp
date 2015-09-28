@@ -15,7 +15,6 @@
  */
 package cz.lbenda.dataman.db;
 
-import cz.lbenda.dataman.rc.DbConfig;
 import javafx.beans.property.SimpleStringProperty;
 import org.testng.Assert;
 import org.testng.annotations.Test;

@@ -15,18 +15,22 @@
  */
 package cz.lbenda.dataman.db.dialect;
 
-/**
- *
- * @author Lukas Benda <lbenda at lbenda.cz>
- */
-public class HSQLDBDialect implements SQLDialect {
+import java.sql.Types;
 
-  static {
-    SQLDialect.DIALECTS.add(new HSQLDBDialect());
-  }
+/** @author Lukas Benda <lbenda at lbenda.cz> */
+public class HSQLDBDialect implements SQLDialect {
 
   @Override
   public boolean isForDriver(String driver) {
     return driver != null && driver.startsWith("org.hsqldb");
+  }
+
+  public ColumnType columnTypeFromSQL(int dataType, String columnTypeName, int size) {
+    switch (dataType) {
+      case Types.TINYINT :
+      case Types.SMALLINT :
+        return ColumnType.INTEGER;
+      default: return SQLDialect.super.columnTypeFromSQL(dataType, columnTypeName, size);
+    }
   }
 }

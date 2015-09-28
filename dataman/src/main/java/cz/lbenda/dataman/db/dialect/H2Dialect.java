@@ -18,10 +18,6 @@ package cz.lbenda.dataman.db.dialect;
 /** @author Lukas Benda <lbenda at lbenda.cz> */
 public class H2Dialect implements SQLDialect {
 
-  static {
-    SQLDialect.DIALECTS.add(new H2Dialect());
-  }
-
   @Override
   public boolean isForDriver(String driver) {
     return driver != null && driver.startsWith("org.h2");
