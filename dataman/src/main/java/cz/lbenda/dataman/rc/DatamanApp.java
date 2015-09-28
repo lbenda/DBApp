@@ -22,6 +22,7 @@ import cz.lbenda.dataman.db.frm.DataTableView;
 import cz.lbenda.dataman.db.frm.DbStructureFrmController;
 import cz.lbenda.dataman.db.frm.RowEditorFrmController;
 import cz.lbenda.dataman.db.handler.*;
+import cz.lbenda.dataman.rc.frm.AboutApplicationHandler;
 import cz.lbenda.rcp.DialogHelper;
 import cz.lbenda.rcp.IconFactory;
 import cz.lbenda.rcp.action.SavableRegistry;
@@ -187,25 +188,27 @@ public class DatamanApp extends Application {
     ObjectProperty<DbConfig> currentDbProperty = new SimpleObjectProperty<>();
 
     prepareMainPane();
-    ribbon.getItemFactory().getItemsHandler().add(new AddDatabaseHandler());
-    ribbon.getItemFactory().getItemsHandler().add(new ImportDatabaseHandler());
-    ribbon.getItemFactory().getItemsHandler().add(new ExportDatabaseHandler(currentDbProperty));
-    ribbon.getItemFactory().getItemsHandler().add(new DbConfigMenuOptions(currentDbProperty));
-    ribbon.getItemFactory().getItemsHandler().add(new ConnectDatabaseHandler(currentDbProperty));
-    ribbon.getItemFactory().getItemsHandler().add(new EditDatabaseHandler(currentDbProperty));
-    ribbon.getItemFactory().getItemsHandler().add(new CopyDatabaseHandler(currentDbProperty));
-    ribbon.getItemFactory().getItemsHandler().add(new RemoveDatabaseHandler(currentDbProperty));
-    ribbon.getItemFactory().getItemsHandler().add(new RemoveRowsHandler(tableViewObjectProperty));
-    ribbon.getItemFactory().getItemsHandler().add(new AddRowHandler(tableViewObjectProperty));
-    ribbon.getItemFactory().getItemsHandler().add(new ReloadTableHandler(tableViewObjectProperty));
-    ribbon.getItemFactory().getItemsHandler().add(new SaveTableHandler(tableViewObjectProperty));
-    ribbon.getItemFactory().getItemsHandler().add(new SaveAllTableHandler(currentDbProperty));
-    ribbon.getItemFactory().getItemsHandler().add(new OpenConnectedTablesHandler(tableViewObjectProperty,
-        detailDescriptor -> addRemoveToDetail(detailDescriptor.getTitle(), detailDescriptor.getNode(), detailDescriptor.getClosable())));
-    ribbon.getItemFactory().getItemsHandler().add(new ExportTableHandler(sqlQueryRowsObjectProperty));
+    ribbon.itemsProperty().addAll(
+        new AddDatabaseHandler(),
+        new ImportDatabaseHandler(),
+        new ExportDatabaseHandler(currentDbProperty),
+        new DbConfigMenuOptions(currentDbProperty),
+        new ConnectDatabaseHandler(currentDbProperty),
+        new EditDatabaseHandler(currentDbProperty),
+        new CopyDatabaseHandler(currentDbProperty),
+        new RemoveDatabaseHandler(currentDbProperty),
+        new RemoveRowsHandler(tableViewObjectProperty),
+        new AddRowHandler(tableViewObjectProperty),
+        new ReloadTableHandler(tableViewObjectProperty),
+        new SaveTableHandler(tableViewObjectProperty),
+        new SaveAllTableHandler(currentDbProperty),
+        new OpenConnectedTablesHandler(tableViewObjectProperty,
+            detailDescriptor -> addRemoveToDetail(detailDescriptor.getTitle(), detailDescriptor.getNode(), detailDescriptor.getClosable())),
+        new ExportTableHandler(sqlQueryRowsObjectProperty),
+        new AboutApplicationHandler());
 
     Scene scene = new Scene(mainPane);
-    te = new SQLEditorController(ribbon.getItemFactory(), scene, currentDbProperty,
+    te = new SQLEditorController(ribbon::addItem, scene, currentDbProperty,
       detailDescriptor -> addRemoveToDetail(detailDescriptor.getTitle(), detailDescriptor.getNode(), detailDescriptor.getClosable()));
 
     addToCenter("SQL", te.getNode(), false);

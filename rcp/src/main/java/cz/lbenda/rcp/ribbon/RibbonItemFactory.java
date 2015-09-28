@@ -20,9 +20,7 @@ import cz.lbenda.rcp.action.Action;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
 import cz.lbenda.rcp.localization.MessageFactory;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -31,26 +29,26 @@ import java.util.*;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
  * Factory which create action and holder from given action configuration */
-public class RibbonItemFactory<T> {
+public class RibbonItemFactory {
 
   private Map<ActionConfig, Node> nodeForAction = new HashMap<>();
 
-  private ObservableList<T> itemsHandler = FXCollections.observableArrayList(); public ObservableList<T> getItemsHandler() { return itemsHandler; }
   private Ribbon ribbon;
   private MessageFactory messageFactory = MessageFactory.getInstance();
 
   public RibbonItemFactory(Ribbon ribbon) {
     this.ribbon = ribbon;
-    itemsHandler.addListener((ListChangeListener<T>) change -> {
+    ribbon.itemsProperty().addListener((ListChangeListener<Object>) change -> {
       while (change.next()) {
         if (change.wasAdded()) {
           change.getAddedSubList().forEach(this::addItemToMenu);
         }
+        // TODO removed
       }
     });
   }
 
-  public void addItemToMenu(T item) {
+  public void addItemToMenu(Object item) {
     if (item instanceof EventHandler) { addEventHandlerToMenu((Action) item); }
     if (item instanceof MenuOptions) { addOptionsToMenu((MenuOptions) item); }
   }
@@ -98,6 +96,7 @@ public class RibbonItemFactory<T> {
 
   private <F> void addOptionsToMenu(MenuOptions<F> options) {
     ActionConfig ac = options.getClass().getAnnotation(ActionConfig.class);
+    if (!ac.showInRibbon()) { return; }
     String itemId = "ribbonOptions_" + ac.id();
     RibbonGroup group = prepareGroup(ac);
 
@@ -122,6 +121,7 @@ public class RibbonItemFactory<T> {
 
   private void addEventHandlerToMenu(Action event) {
     ActionConfig ac = event.getClass().getAnnotation(ActionConfig.class);
+    if (!ac.showInRibbon()) { return; }
     String itemId = "ribbonButton_" + ac.id();
     RibbonGroup group = prepareGroup(ac);
 
@@ -133,7 +133,7 @@ public class RibbonItemFactory<T> {
     button.setDisable(!event.isEnable());
     button.setOnAction(event);
 
-    actionGUIConfigToButton(ac.gui()[event.getConfig()], button, event);
+    actionGUIConfigToButton(ac.gui()[0], button, event);
     event.addChangeActionConfigConsumer(i -> actionGUIConfigToButton(ac.gui()[i], button, event));
     event.addEnableDisableConsumer(enabled -> button.setDisable(!enabled));
 

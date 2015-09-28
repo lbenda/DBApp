@@ -35,6 +35,4 @@ public interface Action extends EventHandler<ActionEvent> {
 
   /** Return enable if action is enable */
   boolean isEnable();
-  /** Return config position */
-  int getConfig();
 }

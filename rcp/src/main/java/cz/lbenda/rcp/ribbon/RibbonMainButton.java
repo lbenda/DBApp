@@ -15,10 +15,14 @@
  */
 package cz.lbenda.rcp.ribbon;
 
+import cz.lbenda.rcp.action.Action;
+import cz.lbenda.rcp.action.ActionConfig;
+import cz.lbenda.rcp.action.ActionGUIConfig;
+import cz.lbenda.rcp.localization.MessageFactory;
 import cz.lbenda.rcp.ribbon.skin.RibbonMainButtonSkin;
-import javafx.scene.control.Control;
-import javafx.scene.control.Menu;
-import javafx.scene.control.Skin;
+import javafx.collections.ListChangeListener;
+import javafx.event.EventHandler;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 24.9.15.
@@ -26,15 +30,36 @@ import javafx.scene.image.Image;
 public class RibbonMainButton extends Control {
   public final static String DEFAULT_STYLE_CLASS = "main-button";
 
-  private Menu menu;
+  private ContextMenu menu = new ContextMenu();
   private String appName; public String getAppName() { return appName; }
   private Image appImg; public Image getAppImg() { return appImg; }
 
   /** Create main ribbon button */
-  public RibbonMainButton(String appName, Image appImg) {
+  public RibbonMainButton(String appName, Image appImg, Ribbon ribbon) {
     getStyleClass().setAll(DEFAULT_STYLE_CLASS);
     this.appName = appName;
     this.appImg = appImg;
+    ribbon.itemsProperty().addListener((ListChangeListener<Object>) change -> {
+      while (change.next()) {
+        if (change.wasAdded()) { change.getAddedSubList().forEach(this::addMenuItem);  }
+        // TODO removed
+      }
+    });
+  }
+
+  private void addMenuItem(Object item) {
+    if (item instanceof EventHandler) { addEventHandlerToMenu((Action) item); }
+    // TODO combo box / options
+  }
+
+  private void addEventHandlerToMenu(Action event) {
+    ActionConfig ac = event.getClass().getAnnotation(ActionConfig.class);
+    if (!ac.showInRibbon()) {
+      ActionGUIConfig gui = ac.gui()[0];
+      MenuItem item = new MenuItem(MessageFactory.getInstance().getMessage(gui.displayName()));
+      menu.getItems().add(item);
+      item.setOnAction(event);
+    }
   }
 
   @Override
@@ -42,5 +67,7 @@ public class RibbonMainButton extends Control {
     return new RibbonMainButtonSkin(this);
   }
 
-  public Menu getMenu() { return menu; }
+  public ContextMenu getMenu() {
+    return menu;
+  }
 }

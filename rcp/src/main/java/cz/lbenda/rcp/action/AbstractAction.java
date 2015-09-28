@@ -15,7 +15,11 @@
  */
 package cz.lbenda.rcp.action;
 
+import javafx.event.ActionEvent;
 import javafx.scene.Node;
+import javafx.scene.control.*;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +33,6 @@ public abstract class AbstractAction implements Action {
   private List<Consumer<Integer>> changeActionConfigConsumers = new ArrayList<>();
 
   private boolean enable = true;
-  private int config = 0; public int getConfig() { return config; }
 
   @Override
   public void addEnableDisableConsumer(Consumer<Boolean> consumer) { this.enableDisableConsumers.add(consumer); }
@@ -49,5 +52,35 @@ public abstract class AbstractAction implements Action {
   }
   public void setConfig(int config) {
     changeActionConfigConsumers.forEach(consumer -> consumer.accept(config));
+  }
+
+  protected static Stage stageFromActionEvent(ActionEvent actionEvent) {
+    if (actionEvent.getSource() instanceof Node) {
+      return (Stage) ((Node) actionEvent.getSource()).getScene().getWindow();
+    } else if (actionEvent.getSource() instanceof MenuItem) {
+      MenuItem menuItem = (MenuItem) actionEvent.getSource();
+      Window window = null;
+      if (menuItem.getParentPopup() != null) {
+        window = menuItem.getParentPopup().getScene().getWindow();
+      } else {
+        Menu parentMenu = menuItem.getParentMenu();
+        do {
+          if (parentMenu.getParentPopup() != null) { window = parentMenu.getParentPopup().getScene().getWindow(); }
+          parentMenu = parentMenu.getParentMenu();
+        } while (parentMenu != null);
+      }
+      if (window != null) {
+        if (window instanceof Stage) { return (Stage) window; }
+        if (window instanceof ContextMenu) {
+          ContextMenu cm = (ContextMenu) window;
+          return (Stage) cm.getOwnerWindow();
+        }
+        throw new UnsupportedOperationException("Can't return stage.");
+      } else {
+        throw new UnsupportedOperationException("Can't return stage no parent popup was found");
+      }
+    } else {
+      throw new UnsupportedOperationException("Can't return stage for action event with source: " + actionEvent.getSource());
+    }
   }
 }

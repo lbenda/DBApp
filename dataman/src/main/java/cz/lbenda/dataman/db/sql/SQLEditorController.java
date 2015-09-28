@@ -24,7 +24,6 @@ import cz.lbenda.gui.editor.TextEditor;
 import cz.lbenda.rcp.ExceptionMessageFrmController;
 import cz.lbenda.rcp.localization.Message;
 import cz.lbenda.rcp.localization.MessageFactory;
-import cz.lbenda.rcp.ribbon.RibbonItemFactory;
 import javafx.beans.property.ObjectProperty;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -100,7 +99,7 @@ public class SQLEditorController {
   }
 
   @SuppressWarnings("unchecked")
-  public SQLEditorController(RibbonItemFactory actionFactory, Scene scene,
+  public SQLEditorController(Consumer<Object> menuItemConsumer, Scene scene,
                              ObjectProperty<DbConfig> dbConfigProperty,
                              Consumer<DetailDescriptor> detailAppender) {
     node.setMaxHeight(Double.MAX_VALUE);
@@ -121,10 +120,10 @@ public class SQLEditorController {
     AnchorPane.setRightAnchor(ca, 0.0);
     node.getChildren().add(ca);
 
-    actionFactory.getItemsHandler().add(new SQLRunHandler(dbConfigProperty, this));
-    actionFactory.getItemsHandler().add(new OpenFileHandler(this));
-    actionFactory.getItemsHandler().add(new SaveFileHandler(this));
-    actionFactory.getItemsHandler().add(new SaveAsFileHandler(this));
+    menuItemConsumer.accept(new SQLRunHandler(dbConfigProperty, this));
+    menuItemConsumer.accept(new OpenFileHandler(this));
+    menuItemConsumer.accept(new SaveFileHandler(this));
+    menuItemConsumer.accept(new SaveAsFileHandler(this));
   }
 
   /** Load data SQL file */

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.text.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane id="mainPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="200.0" prefWidth="501.0" BorderPane.alignment="CENTER" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cz.lbenda.dataman.rc.frm.AboutApplicationFrm">
+   <center>
+      <VBox prefHeight="200.0" prefWidth="370.0" BorderPane.alignment="CENTER">
+         <Label text="Dataman">
+            <font>
+               <Font size="39.0"/>
+            </font>
+         </Label>
+         <Label text="Version: 2.0_ALPHA_03" textFill="#9a3c3c"/>
+         <Label text="Wiki / Help"/>
+         <Hyperlink text="https://github.com/lbenda/Dataman/wiki"/>
+         <Label text="Issues"/>
+         <Hyperlink prefHeight="14.0" prefWidth="333.0" text="https://github.com/lbenda/Dataman/issues"/>
+         <Label text="Source code"/>
+         <Hyperlink text="https://github.com/lbenda/Dataman"/>
+      </VBox>
+   </center>
+   <left>
+      <ImageView fitHeight="150.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true"
+                 BorderPane.alignment="CENTER">
+         <Image url="@../dataman128.png"/>
+      </ImageView>
+   </left>
+</BorderPane>

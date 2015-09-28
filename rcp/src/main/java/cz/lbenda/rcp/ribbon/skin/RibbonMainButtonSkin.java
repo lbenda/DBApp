@@ -32,6 +32,11 @@ public class RibbonMainButtonSkin extends SkinBase<RibbonMainButton> {
     Button menu = new Button(control.getAppName(), new ImageView(control.getAppImg()));
     Button dropDown = new Button(null, IconFactory.getInstance().imageView(this, "dropDown.png",
         IconFactory.IconSize.XSMALL)) ;
+    dropDown.setOnAction(event -> {
+      control.getMenu().show(dropDown,
+          dropDown.getScene().getWindow().getX() + menu.getScene().getX() + menu.getLayoutX(),
+          dropDown.getScene().getWindow().getY() + menu.getScene().getX() + menu.getLayoutY() + menu.getHeight()); // + menu.getHeight());
+    });
     pane.getChildren().addAll(menu, dropDown);
     getChildren().add(pane);
   }

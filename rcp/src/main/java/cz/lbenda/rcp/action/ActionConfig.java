@@ -20,9 +20,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Created by Lukas Benda <lbenda @ lbenda.cz> on 12.9.15.
- */
+/** Created by Lukas Benda <lbenda @ lbenda.cz> on 12.9.15.
+ * This annotation is used for annotation handler which can be show as cation in action toolbars and menus  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface ActionConfig {
@@ -37,6 +36,8 @@ public @interface ActionConfig {
    * @return java identifiers separated with '.'
    */
   String id();
+  /** If is false then item isn't in main ribbon toolbar, only in menu button */
+  boolean showInRibbon() default true;
   /** Priority of show action */
   int priority();
   /** Array of gui configs */

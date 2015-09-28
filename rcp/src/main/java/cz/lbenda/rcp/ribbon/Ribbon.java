@@ -12,7 +12,6 @@ import javafx.scene.control.Skin;
 import javafx.scene.image.Image;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 
 import javax.annotation.Nonnull;
 import java.util.Collections;
@@ -27,6 +26,13 @@ public class Ribbon extends Control {
   private RibbonQuickAccessBar quickAccessBar;
   private RibbonMainButton mainButton; public RibbonMainButton getMainButton() { return mainButton; }
   private RibbonItemFactory itemFactory; public RibbonItemFactory getItemFactory() { return itemFactory; }
+
+  private ObservableList<Object> items = FXCollections.observableArrayList();
+  @SuppressWarnings("unused")
+  public void addItem(Object item) { items.add(item); }
+  @SuppressWarnings("unused")
+  public void removeItem(Object item) { items.remove(item); }
+  public ObservableList<Object> itemsProperty() { return items; }
 
   /** Create ribbon menu including change window decoration. The window is primary stage
    * @param primaryStage primary stage of application
@@ -43,7 +49,7 @@ public class Ribbon extends Control {
     });
     itemFactory = new RibbonItemFactory(this);
     quickAccessBar = new RibbonQuickAccessBar();
-    mainButton = new RibbonMainButton(appName, appImg);
+    mainButton = new RibbonMainButton(appName, appImg, this);
     getStyleClass().setAll(DEFAULT_STYLE_CLASS);
   }
 
