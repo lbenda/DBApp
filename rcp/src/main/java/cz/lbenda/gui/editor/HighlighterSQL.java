@@ -70,7 +70,7 @@ public class HighlighterSQL implements Highlighter {
           + "|(?<SEMICOLON>" + SEMICOLON_PATTERN + ")"
           + "|(?<STRING>" + STRING_PATTERN + ")"
           + "|(?<COMMENT>" + COMMENT_PATTERN + ")"
-  );
+      , Pattern.CASE_INSENSITIVE);
 
   @Override
   public StyleSpans<Collection<String>> computeHighlighting(String text) {

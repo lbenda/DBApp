@@ -38,7 +38,6 @@ import cz.lbenda.dataman.schema.dataman.*;
 import cz.lbenda.dataman.schema.exconf.*;
 import cz.lbenda.dataman.schema.exconf.ObjectFactory;
 import cz.lbenda.rcp.ExceptionMessageFrmController;
-import javafx.beans.property.BooleanProperty;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -172,7 +171,6 @@ public class DbConfig {
   }
 
   private void loadJdbcConfiguration(JdbcType jdbcType) {
-    LOG.trace("load jdbc configuration");
     jdbcConfiguration = new JDBCConfiguration();
     jdbcConfiguration.load(jdbcType);
   }
