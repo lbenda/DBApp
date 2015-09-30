@@ -77,8 +77,12 @@ public class DatamanApp extends Application {
   private TabPane detailTabs = new TabPane();
   private Accordion rightPane = new Accordion();
   private ObjectProperty<SQLQueryRows> sqlQueryRowsObjectProperty = new SimpleObjectProperty<>();
+  private NodeShower nodeShower = new NodeShower() {
+    @Override public void addNode(Node node, String title, boolean closable) { addRemoveToDetail(title, node, closable); }
+    @Override public void removeNode(Node node) { addRemoveToDetail("", node, false); }
+    @Override public void focusNode(Node node) { DatamanApp.this.focusNode(node); }
+  };
 
-  // TextEditor te  = new TextEditor();
 
   public void prepareMainPane() {
     mainPane = new BorderPane();
@@ -152,8 +156,13 @@ public class DatamanApp extends Application {
     return titlePane;
   }
 
+  private void focusNode(@Nonnull Node node) {
+    detailTabs.getTabs().stream().filter(tab -> node.equals(tab.getContent()))
+        .forEach(tab -> this.detailTabs.getSelectionModel().select(tab));
+  }
+
   /** Add node to center pane */
-  public void addRemoveToDetail(@Nonnull String title, @Nonnull Node node, boolean closable) {
+  private void addRemoveToDetail(@Nonnull String title, @Nonnull Node node, boolean closable) {
     boolean removed = false;
     for (Iterator<Tab> itt = detailTabs.getTabs().iterator(); itt.hasNext(); ) {
       Tab tab = itt.next();
@@ -207,10 +216,9 @@ public class DatamanApp extends Application {
         new AboutApplicationHandler());
 
     Scene scene = new Scene(mainPane);
-    te = new SQLEditorController(ribbon::addItem, scene, currentDbProperty,
-      detailDescriptor -> addRemoveToDetail(detailDescriptor.getTitle(), detailDescriptor.getNode(), detailDescriptor.getClosable()));
+    te = new SQLEditorController(ribbon::addItem, scene, currentDbProperty, nodeShower);
 
-    addToCenter("SQL", te.getNode(), false);
+    addToCenter(SQLEditorController.WINDOW_TITLE, te.getNode(), false);
 
     DbStructureFrmController dfc = new DbStructureFrmController(currentDbProperty, td -> {
       DataTableFrmController controller = new DataTableFrmController(td);

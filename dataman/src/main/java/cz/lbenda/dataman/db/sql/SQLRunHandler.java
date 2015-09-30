@@ -31,6 +31,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.function.Consumer;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
  * Action which run SQL command */
@@ -49,11 +50,16 @@ public class SQLRunHandler extends AbstractAction {
   private static Logger LOG = LoggerFactory.getLogger(SQLRunHandler.class);
   private SQLEditorController sqlEditorController;
   private ObjectProperty<DbConfig> dbConfigProperty;
+  /** Function which is call when something is write to console and should be show */
+  private Consumer<SQLRunHandler> consoleShower;
 
-  public SQLRunHandler(ObjectProperty<DbConfig> dbConfigProperty, SQLEditorController sqlEditorController) {
+  public SQLRunHandler(ObjectProperty<DbConfig> dbConfigProperty, SQLEditorController sqlEditorController,
+                       Consumer<SQLRunHandler> consoleShower) {
     this.sqlEditorController = sqlEditorController;
     this.dbConfigProperty = dbConfigProperty;
-    dbConfigProperty.addListener(observable -> setEnable(dbConfigProperty.getValue() != null && dbConfigProperty.getValue().connectionProvider.isConnected()));
+    this.consoleShower = consoleShower;
+    dbConfigProperty.addListener(observable -> setEnable(dbConfigProperty.getValue() != null
+        && dbConfigProperty.getValue().connectionProvider.isConnected()));
   }
 
   @Override
@@ -76,6 +82,7 @@ public class SQLRunHandler extends AbstractAction {
     if (tuple.get2() != null) {
       result.setErrorMsg(tuple.get2().getMessage());
       LOG.debug(String.format("Problem with execute SQL '%s'", result.getSql()), tuple.get2());
+      consoleShower.accept(this);
     } else {
       try {
         boolean ex = tuple.get1().execute();

@@ -36,7 +36,7 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
   public enum TableType {
     NULL, TABLE, VIEW, SYSTEM_TABLE, INDEX, SYSTEM_INDEX, SYSTEM_TOAST_INDEX, SYSTEM_VIEW, UNDEFINED,
     FOREIGN_TABLE, SYSTEM_TOAST_TABLE, TEMPORARY_INDEX, TEMPORARY_SEQUENCE, TEMPORARY_TABLE,
-    TEMPORARY_VIEW, TYPE, PROCEDURE, UDT, SEQUENCE ;
+    TEMPORARY_VIEW, TYPE, PROCEDURE, UDT, SEQUENCE, ALIAS ;
     public static TableType fromJDBC(String tt) {
       if (tt == null) { return UNDEFINED; }
       return TableType.valueOf(tt.replace(" ", "_"));

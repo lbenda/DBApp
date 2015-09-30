@@ -21,7 +21,6 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -56,7 +55,11 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   public final List<RowDesc> readTableData(TableDesc td, int from, int to) {
     try (Connection conn = connectionProvider.getConnection()) {
       try (Statement st = conn.createStatement()) {
-        ResultSet rs = st.executeQuery(String.format("SELECT * FROM \"%s\".\"%s\"", td.getSchema(), td.getName()));
+        System.out.println("-1");
+        String sql = String.format("SELECT * FROM \"%s\".\"%s\"", td.getSchema(), td.getName());
+        System.out.println("SQL: " + sql);
+        ResultSet rs = st.executeQuery(sql);
+        System.out.println("0");
         final List<RowDesc> result;
         if (from > -1) { result = new ArrayList<>(to - from); }
         else { result = new ArrayList<>(); }
@@ -81,8 +84,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
    * <b>fk</b>.
    * @param fk foreign key which describe connection between tables
    * @param selectedRow all values of selected row
-   * @return resul set or null
-   */
+   * @return resul set or null */
   @SuppressWarnings("unused")
   public final List<TableRow> getJoinedRows(final ForeignKey fk, final TableRow selectedRow) {
     final Object fkValue;

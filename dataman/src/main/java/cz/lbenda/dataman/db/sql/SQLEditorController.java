@@ -18,7 +18,7 @@ package cz.lbenda.dataman.db.sql;
 import cz.lbenda.dataman.db.SQLQueryResult;
 import cz.lbenda.dataman.db.frm.DataTableFrmController;
 import cz.lbenda.dataman.db.DbConfig;
-import cz.lbenda.dataman.rc.DetailDescriptor;
+import cz.lbenda.dataman.rc.NodeShower;
 import cz.lbenda.gui.editor.HighlighterSQL;
 import cz.lbenda.gui.editor.TextEditor;
 import cz.lbenda.rcp.ExceptionMessageFrmController;
@@ -49,6 +49,8 @@ public class SQLEditorController {
   private static String HTML;
 
   @Message
+  public final static String WINDOW_TITLE = "SQL";
+  @Message
   public final static String msgConsoleTitle = "Console";
 
   static {
@@ -70,7 +72,7 @@ public class SQLEditorController {
   private TextEditor textEditor = new TextEditor();
   private WebView webView = new WebView();
   private StringBuffer consoleMessages = new StringBuffer();
-  private Consumer<DetailDescriptor> detailAppender;
+  private NodeShower nodeShower;
 
   /** Return text which is in code Area */
   public String getText() { return textEditor.getText(); }
@@ -101,16 +103,17 @@ public class SQLEditorController {
   @SuppressWarnings("unchecked")
   public SQLEditorController(Consumer<Object> menuItemConsumer, Scene scene,
                              ObjectProperty<DbConfig> dbConfigProperty,
-                             Consumer<DetailDescriptor> detailAppender) {
+                             NodeShower nodeShower) {
     node.setMaxHeight(Double.MAX_VALUE);
     node.setMaxHeight(Double.MAX_VALUE);
 
-    this.detailAppender = detailAppender;
+    this.nodeShower = nodeShower;
 
     textEditor.setScene(scene);
     textEditor.changeHighlighter(new HighlighterSQL());
 
-    detailAppender.accept(new DetailDescriptor(msgConsoleTitle, webView, false));
+    nodeShower.addNode(webView, msgConsoleTitle, false);
+
     CodeArea ca = textEditor.createCodeArea();
     ca.setMaxHeight(Double.MAX_VALUE);
     ca.setMaxWidth(Double.MAX_VALUE);
@@ -120,7 +123,7 @@ public class SQLEditorController {
     AnchorPane.setRightAnchor(ca, 0.0);
     node.getChildren().add(ca);
 
-    menuItemConsumer.accept(new SQLRunHandler(dbConfigProperty, this));
+    menuItemConsumer.accept(new SQLRunHandler(dbConfigProperty, this, handler -> nodeShower.focusNode(webView)));
     menuItemConsumer.accept(new OpenFileHandler(this));
     menuItemConsumer.accept(new SaveFileHandler(this));
     menuItemConsumer.accept(new SaveAsFileHandler(this));
@@ -164,7 +167,7 @@ public class SQLEditorController {
       DataTableFrmController dataTableController = new DataTableFrmController(result);
 
       String title = result.getSql() == null ? "" : (result.getSql().length() > 50 ? result.getSql().substring(1, 45) + "..." : result.getSql());
-      detailAppender.accept(new DetailDescriptor(title, dataTableController.getTabView(), true));
+      nodeShower.addNode(dataTableController.getTabView(), title, true);
     }
   }
 

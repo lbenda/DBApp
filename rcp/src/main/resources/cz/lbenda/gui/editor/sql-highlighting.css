@@ -6,6 +6,11 @@
   -fx-fill: #80004e;
   -fx-font-weight: bold;
 }
+.function {
+  -fx-fill: #228006;
+  -fx-font-weight: bold;
+  -fx-font-style: italic;
+}
 .semicolon {
   -fx-font-weight: bold;
 }
