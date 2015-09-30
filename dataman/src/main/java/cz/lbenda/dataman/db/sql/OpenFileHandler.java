@@ -59,6 +59,7 @@ public class OpenFileHandler extends AbstractAction {
     fileChooser.setTitle(msgDialogTitle);
     fileChooser.getExtensionFilters().addAll(Constants.sqlFilter);
     if (sqlEditorController.lastFile() != null) {
+      fileChooser.setInitialDirectory(sqlEditorController.lastFile().getParentFile());
       fileChooser.setInitialFileName(sqlEditorController.lastFile().getAbsolutePath());
     }
     File file = fileChooser.showOpenDialog(((Node) actionEvent.getSource()).getScene().getWindow());

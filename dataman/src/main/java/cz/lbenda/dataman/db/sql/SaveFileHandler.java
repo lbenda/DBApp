@@ -60,6 +60,7 @@ public class SaveFileHandler extends AbstractAction {
     fileChooser.setTitle(msgDialogTitle);
     fileChooser.getExtensionFilters().addAll(Constants.sqlFilter);
     if (sqlEditorController.lastFile() != null) {
+      fileChooser.setInitialDirectory(sqlEditorController.lastFile().getParentFile());
       sqlEditorController.saveToFile(sqlEditorController.lastFile());
     } else {
       File file = DialogHelper.getInstance().canBeOverwriteDialog(
