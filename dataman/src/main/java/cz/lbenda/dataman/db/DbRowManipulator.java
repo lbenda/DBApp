@@ -216,7 +216,6 @@ public class DbRowManipulator {
    * @param auditType audit configuration
    * @return auditor, never return null */
   private Auditor auditorForAudit(AuditType auditType) {
-    System.out.println(auditType);
     switch (auditType == null || auditType.getType() == null ? AuditTypeType.NONE : auditType.getType()) {
       case NONE : return AuditorNone.getInstance();
       case SQL_LOG_TO_LOG: return SqlLogToLogAuditor.getInstance();

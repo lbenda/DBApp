@@ -306,7 +306,6 @@ public class RowDesc implements Observable {
       } else if (columnDesc.getDataType() == ColumnType.BYTE_ARRAY
           || columnDesc.getDataType() == ColumnType.BLOB
           || columnDesc.getDataType() == ColumnType.CLOB) {
-        System.out.println(newValue);
         setColumnValue(columnDesc, newValue);
       } else {
         setColumnValue(columnDesc, newValue);

@@ -55,11 +55,8 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   public final List<RowDesc> readTableData(TableDesc td, int from, int to) {
     try (Connection conn = connectionProvider.getConnection()) {
       try (Statement st = conn.createStatement()) {
-        System.out.println("-1");
         String sql = String.format("SELECT * FROM \"%s\".\"%s\"", td.getSchema(), td.getName());
-        System.out.println("SQL: " + sql);
         ResultSet rs = st.executeQuery(sql);
-        System.out.println("0");
         final List<RowDesc> result;
         if (from > -1) { result = new ArrayList<>(to - from); }
         else { result = new ArrayList<>(); }

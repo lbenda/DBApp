@@ -159,7 +159,6 @@ public class RibbonMainButton extends Control {
       mi.setSelected(options.isChecked(it));
       m.getItems().add(mi);
       mi.setOnAction(event -> {
-        System.out.println("It selected: " + it);
         options.setSelect(it);
         options.handle(event);
       });

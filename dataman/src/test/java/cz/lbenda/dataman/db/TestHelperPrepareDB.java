@@ -127,7 +127,6 @@ public class TestHelperPrepareDB {
     try (Statement st = connection.createStatement()) {
       for (String[] sqls : SQL_COMMANDS) {
         if (sqls.length == 1) {
-          System.out.println(dbDriver + ": " + replaceSql(sqls[0], dbDriver));
           st.addBatch(replaceSql(sqls[0], dbDriver));
         } else {
           boolean apply = false;
@@ -137,7 +136,6 @@ public class TestHelperPrepareDB {
             }
           }
           if (apply) {
-            System.out.println(dbDriver + ": " + replaceSql(sqls[sqls.length - 1], dbDriver));
             st.addBatch(replaceSql(sqls[sqls.length - 1], dbDriver));
           }
         }

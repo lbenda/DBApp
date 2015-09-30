@@ -1,20 +1,58 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.collections.FXCollections?>
 
+<?import javafx.scene.image.Image?>
 <BorderPane fx:id="mainPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
             prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8"
             xmlns:fx="http://javafx.com/fxml/1" fx:controller="cz.lbenda.gui.controls.TextAreaFrmController">
   <top>
-    <HBox>
-      <fx:define>
-        <ToggleGroup fx:id="tgTextType" />
-      </fx:define>
-      <ToggleButton fx:id="tbPlain" text="Plain" toggleGroup="$tgTextType" selected="true" />
-      <ToggleButton fx:id="tbSQL" text="SQL" toggleGroup="$tgTextType" />
-      <ToggleButton fx:id="tbXML" text="XML" toggleGroup="$tgTextType" />
-      <ToggleButton fx:id="tbJava" text="Java" toggleGroup="$tgTextType" />
+    <HBox alignment="CENTER_LEFT">
+      <Button fx:id="btnLoad">
+        <graphic>
+          <ImageView>
+            <Image url="@document-open24.png"/>
+          </ImageView>
+        </graphic>
+        <tooltip>
+          <Tooltip text="Open" />
+        </tooltip>
+      </Button>
+      <Button fx:id="btnSave">
+        <graphic>
+          <ImageView>
+            <Image url="@document-save24.png"/>
+          </ImageView>
+        </graphic>
+        <tooltip>
+          <Tooltip text="Save" />
+        </tooltip>
+      </Button>
+      <Button fx:id="btnSaveAs">
+        <graphic>
+          <ImageView>
+            <Image url="@document-save-as24.png"/>
+          </ImageView>
+        </graphic>
+        <tooltip>
+          <Tooltip text="Save As" />
+        </tooltip>
+      </Button>
+      <Label text="   Text type: " />
+      <ComboBox fx:id="textType">
+        <items>
+          <FXCollections fx:factory="observableArrayList">
+            <String fx:value="Plain"  />
+            <String fx:value="SQL" />
+            <String fx:value="XML" />
+            <String fx:value="Java" />
+          </FXCollections>
+        </items>
+      </ComboBox>
     </HBox>
   </top>
   <bottom>

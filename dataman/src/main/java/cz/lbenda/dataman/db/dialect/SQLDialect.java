@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /** @author Lukas Benda <lbenda at lbenda.cz> */
+@SuppressWarnings("unused")
 public interface SQLDialect {
 
   Set<SQLDialect> DIALECTS = new HashSet<>();
@@ -43,7 +44,7 @@ public interface SQLDialect {
   default String columnNullable() { return "IS_NULLABLE"; }
   default String columnAutoIncrement() { return "IS_AUTOINCREMENT"; }
   default String columnGenerated() { return "IS_GENERATEDCOLUMN"; }
-  default String columnRemarsk() { return "REMARKS"; }
+  default String columnRemarks() { return "REMARKS"; }
 
   default String pkColumnName() { return "COLUMN_NAME"; }
 
@@ -88,9 +89,7 @@ public interface SQLDialect {
       case Types.BLOB : return ColumnType.BLOB;
       case Types.ARRAY : return ColumnType.ARRAY;
       case Types.OTHER :
-      default :
-        System.out.println("Unresolved dataType: " + dataType);
-        return ColumnType.OBJECT;
+      default : return ColumnType.OBJECT;
     }
   }
 }

@@ -66,10 +66,6 @@ public class ColumnDesc {
     this.columnTypeName = mtd.getColumnTypeName(position);
     this.dataType = dialect.columnTypeFromSQL(mtd.getColumnType(position), this.columnTypeName, this.size);
     this.javaClassName = mtd.getColumnClassName(position);
-    /*
-    System.out.println(
-        name + ": " + mtd.getColumnType(position) + ": " + dataType + " - " + javaClassName + " , columnTypeName: " + columnTypeName);
-    */
     this.nullable = ResultSetMetaData.columnNullable == mtd.isNullable(position) ? Boolean.TRUE :
         (ResultSetMetaData.columnNoNulls == mtd.isNullable(position) ? Boolean.FALSE : null);
 
@@ -94,7 +90,7 @@ public class ColumnDesc {
     this.schema = td.getSchema();
     this.table = td.getName();
     this.name = confValue(dialect.columnName(), rs);
-    this.label = confValue(dialect.columnRemarsk(), rs);
+    this.label = confValue(dialect.columnRemarks(), rs);
     this.size = confValue(dialect.columnSize(), rs);
     this.columnTypeName = confValue(dialect.columnTypeName(), rs);
     this.nullable = confBool(dialect.columnNullable(), rs);

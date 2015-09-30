@@ -15,9 +15,11 @@
  */
 package cz.lbenda.gui.controls;
 
+import cz.lbenda.common.Constants;
 import cz.lbenda.common.Tuple2;
 import cz.lbenda.gui.editor.*;
 import cz.lbenda.rcp.DialogHelper;
+import cz.lbenda.rcp.ExceptionMessageFrmController;
 import cz.lbenda.rcp.IconFactory;
 import cz.lbenda.rcp.localization.Message;
 import cz.lbenda.rcp.localization.MessageFactory;
@@ -30,19 +32,18 @@ import javafx.fxml.JavaFXBuilderFactory;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.scene.control.Button;
-import javafx.scene.control.ToggleButton;
-import javafx.scene.control.ToggleGroup;
-import javafx.scene.control.Tooltip;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
@@ -58,6 +59,11 @@ public class TextAreaFrmController implements Initializable {
   public final static String msgDefaultWindowTitle = "Text editor";
   @Message
   public final static String msgBtnOpenInEditor_tooltip = "Open in editor window";
+  @Message
+  public final static String msgLoadFile_title = "Open file";
+  @Message
+  public final static String msgSaveFile_title = "Save to file";
+
   static {
     MessageFactory.initializeMessages(TextFieldArea.class);
   }
@@ -69,15 +75,13 @@ public class TextAreaFrmController implements Initializable {
   @FXML
   private BorderPane mainPane; public BorderPane getMainPane() { return mainPane; }
   @FXML
-  private ToggleGroup tgTextType;
+  private Button btnLoad;
   @FXML
-  private ToggleButton tbPlain;
+  private Button btnSave;
   @FXML
-  private ToggleButton tbSQL;
+  private Button btnSaveAs;
   @FXML
-  private ToggleButton tbXML;
-  @FXML
-  private ToggleButton tbJava;
+  private ComboBox<String> textType;
   @FXML
   private Button btnOk;
   @FXML
@@ -85,6 +89,7 @@ public class TextAreaFrmController implements Initializable {
 
   private StringProperty text = new SimpleStringProperty(); public StringProperty textProperty() { return text; }
   private TextEditor textEditor; /* public TextEditor getTextEditor() { return textEditor; }*/
+  private File lastFile;
 
   @Override
   public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -92,16 +97,62 @@ public class TextAreaFrmController implements Initializable {
     mainPane.setCenter(textEditor.createCodeArea());
     text.addListener((observer, oldValue, newValue) -> textEditor.changeText(newValue));
 
+    FileChooser fileChooser = new FileChooser();
+    fileChooser.getExtensionFilters().addAll(Constants.allFilesFilter);
+    btnLoad.setOnAction(event -> {
+      fileChooser.setTitle(msgLoadFile_title);
+      if (lastFile != null) { fileChooser.setInitialDirectory(lastFile.getParentFile()); }
+      File file = fileChooser.showOpenDialog(mainPane.getScene().getWindow());
+      if (file != null) {
+        lastFile = file;
+        try (FileReader reader = new FileReader(file)) {
+          textEditor.changeText(IOUtils.toString(reader));
+        } catch (IOException e) {
+          ExceptionMessageFrmController.showException("The file " + lastFile.getAbsolutePath() + " isn't openable.", e);
+        }
+      }
+    });
+    btnSave.setOnAction(event -> {
+      File file = lastFile;
+      if (lastFile == null) {
+        fileChooser.setTitle(msgSaveFile_title);
+        file = fileChooser.showSaveDialog(mainPane.getScene().getWindow());
+      }
+      if (file != null) {
+        lastFile = file;
+        try (OutputStream writer = new FileOutputStream(lastFile)) {
+          IOUtils.copy(IOUtils.toInputStream(textEditor.getText()), writer);
+        } catch (IOException e) {
+          ExceptionMessageFrmController.showException("The file " + lastFile.getAbsolutePath() + " isn't writable.", e);
+        }
+      }
+    });
+    btnSaveAs.setOnAction(event -> {
+      fileChooser.setTitle(msgSaveFile_title);
+      if (lastFile != null) { fileChooser.setInitialDirectory(lastFile.getParentFile()); }
+      File file = fileChooser.showSaveDialog(mainPane.getScene().getWindow());
+      if (file != null) {
+        lastFile = file;
+        try (OutputStream writer = new FileOutputStream(lastFile)) {
+          IOUtils.copy(IOUtils.toInputStream(textEditor.getText()), writer);
+        } catch (IOException e) {
+          ExceptionMessageFrmController.showException("The file " + lastFile.getAbsolutePath() + " isn't writable.", e);
+        }
+      }
+    });
+
     btnCancel.setOnAction(event -> ((Stage) btnCancel.getScene().getWindow()).close());
     btnOk.setOnAction(event -> {
       text.setValue(textEditor.getText());
       ((Stage) btnCancel.getScene().getWindow()).close();
     });
-    tgTextType.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
-      if (newValue == tbPlain) { textEditor.changeHighlighter(new HighlighterPlain()); }
-      else if (newValue == tbSQL) { textEditor.changeHighlighter(new HighlighterSQL()); }
-      else if (newValue == tbXML) { textEditor.changeHighlighter(new HighlighterXml()); }
-      else if (newValue == tbJava) { textEditor.changeHighlighter(new HighlighterJava()); }
+
+    textType.getSelectionModel().select(0);
+    textType.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+      if ("Plain".equals(newValue)) { textEditor.changeHighlighter(new HighlighterPlain()); }
+      else if ("SQL".equals(newValue)) { textEditor.changeHighlighter(new HighlighterSQL()); }
+      else if ("XML".equals(newValue)) { textEditor.changeHighlighter(new HighlighterXml()); }
+      else if ("Java".equals(newValue)) { textEditor.changeHighlighter(new HighlighterJava()); }
     });
   }
 
