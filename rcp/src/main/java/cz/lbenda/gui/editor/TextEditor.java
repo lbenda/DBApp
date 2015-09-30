@@ -64,7 +64,11 @@ public class TextEditor {
   public void changeHighlighter(Highlighter highlighter) {
     this.highlighter = highlighter;
     getScene().getStylesheets().clear();
-    if (highlighter != null) { getScene().getStylesheets().add(highlighter.stylesheetPath()); }
+    if (highlighter != null) {
+      synchronized (LOG) {
+        getScene().getStylesheets().add(highlighter.stylesheetPath());
+      }
+    }
     if (codeArea != null) {
       computeHighlightingAsync().setOnSucceeded(event -> {
         //noinspection unchecked
