@@ -152,6 +152,11 @@ public class ColumnDesc {
     return tableDescription.getColumnExtensions(this);
   }
 
+  /** Inform if this column is editable. */
+  public boolean isEditable() {
+    return this.tableDescription != null && this.tableDescription.isEditable() && !this.isGenerated();
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

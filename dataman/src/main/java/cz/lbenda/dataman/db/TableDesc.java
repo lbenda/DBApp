@@ -189,6 +189,11 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
     unregister();
   }
 
+  /** Inform if table is editable. But event the table is editable can contains some uneditable column */
+  public boolean isEditable() {
+    return this.getTableType() == TableType.TABLE;
+  }
+
   @Override
   public int hashCode() {
     int hash = 7;

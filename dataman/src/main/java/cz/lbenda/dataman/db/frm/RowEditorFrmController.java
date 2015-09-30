@@ -57,7 +57,7 @@ public class RowEditorFrmController {
   public void setRowValue(RowDesc row) {
     sheet.getItems().clear();
     for (ColumnDesc columnDesc : tableViewObjectProperty.getValue().getSqlQueryRows().getMetaData().getColumns()) {
-      RowPropertyItem item = new RowPropertyItem(columnDesc, row, true);
+      RowPropertyItem item = new RowPropertyItem(columnDesc, row, columnDesc.isEditable());
       sheet.getItems().add(item);
     }
   }
