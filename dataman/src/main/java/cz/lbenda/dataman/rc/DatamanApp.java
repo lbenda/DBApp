@@ -24,6 +24,7 @@ import cz.lbenda.dataman.db.frm.RowEditorFrmController;
 import cz.lbenda.dataman.db.handler.*;
 import cz.lbenda.dataman.rc.frm.AboutApplicationHandler;
 import cz.lbenda.rcp.DialogHelper;
+import cz.lbenda.rcp.ExceptionMessageFrmController;
 import cz.lbenda.rcp.IconFactory;
 import cz.lbenda.rcp.action.SavableRegistry;
 import cz.lbenda.rcp.ribbon.Ribbon;
@@ -182,6 +183,9 @@ public class DatamanApp extends Application {
   @SuppressWarnings("unchecked")
   @Override
   public void start(Stage primaryStage) throws Exception {
+    Thread.currentThread().setUncaughtExceptionHandler((thread, throwable) ->  ExceptionMessageFrmController
+        .showException(MessageFactory.getInstance().getMessage("UncaughtException"), throwable));
+
     ribbon = new Ribbon(MessageFactory.getInstance().getMessage("app.name"),
         IconFactory.getInstance().image(this, "dataman.png", IconFactory.IconLocation.APP_ICON));
 
