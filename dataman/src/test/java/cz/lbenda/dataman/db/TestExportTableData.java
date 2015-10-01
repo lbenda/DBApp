@@ -31,7 +31,10 @@ public class TestExportTableData {
 
   @Test
   public void saveToXLSX() {
-    TableDesc tableDesc = new TableDesc("catalog", "scheme", "TABLE", "table");
+    CatalogDesc catalogDesc = new CatalogDesc("catalog");
+    SchemaDesc schemaDesc = new SchemaDesc(catalogDesc, "schema");
+    catalogDesc.getSchemas().add(schemaDesc);
+    TableDesc tableDesc = new TableDesc(schemaDesc, "TABLE", "table");
     ColumnDesc cd1 = new ColumnDesc(tableDesc, "id", null, Types.INTEGER, "", 10, false, true, true, new HSQLDBDialect());
     cd1.setPosition(0);
     ColumnDesc cd2 = new ColumnDesc(tableDesc, "column2", null, Types.VARCHAR, "", 250, true, false, false, new HSQLDBDialect());

@@ -27,6 +27,8 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ObservableValue;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.SingleSelectionModel;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -180,6 +182,9 @@ public class RowDesc implements Observable {
 
   /** Return set value for given column */
   public <T> void setColumnValue(ColumnDesc column, T value) {
+    if (value instanceof SingleSelectionModel) {
+      throw new ClassCastException("The value of column can't be selection model type.");
+    }
     newValues[column.getPosition() - 1] = value;
 
     if (RowDescState.LOADED == state
@@ -274,6 +279,10 @@ public class RowDesc implements Observable {
         break;
     }
     result.addListener((observable, oldValue, newValue) -> {
+      if (newValue instanceof  SingleSelectionModel) {
+        throw new ClassCastException("The selection model isn't right new value for row");
+      }
+
       if (observable instanceof SimpleLocalDateProperty) {
         setColumnValue(columnDesc, ((SimpleLocalDateProperty) observable).getSQLDate());
       } else if (observable instanceof SimpleLocalDateTimeProperty) {

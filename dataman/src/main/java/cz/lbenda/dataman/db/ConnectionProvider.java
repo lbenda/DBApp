@@ -15,6 +15,7 @@
  */
 package cz.lbenda.dataman.db;
 
+import cz.lbenda.common.Tuple2;
 import cz.lbenda.dataman.User;
 import cz.lbenda.dataman.UserImpl;
 import cz.lbenda.dataman.db.dialect.SQLDialect;
@@ -28,17 +29,19 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.function.Consumer;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 27.9.15.
  * Class which work with connection */
-public class ConnectionProvider {
+public class ConnectionProvider implements SQLExecutor {
 
   private static final Logger LOG = LoggerFactory.getLogger(ConnectionProvider.class);
 
   private DbConfig dbConfig;
   private DBAppDataSource dataSource = null;
-  private User user; public User getUser() { return user; }
+  private User user; public @Nonnull User getUser() { return user; } public void setUser(User user) { this.user = user; }
   public final BooleanProperty connected = new SimpleBooleanProperty(false);
   /** Savable register for whole db config. */
   private final SavableRegistry savableRegistry = SavableRegistry.newInstance();
@@ -46,9 +49,6 @@ public class ConnectionProvider {
 
   public ConnectionProvider(@Nonnull DbConfig dbConfig) {
     this.dbConfig = dbConfig;
-    if (dbConfig.getJdbcConfiguration() != null) {
-      user = new UserImpl(dbConfig.getJdbcConfiguration().getUsername());
-    }
   }
 
   /** Inform if the reader is prepared for read data - the session configuration exist */
@@ -94,6 +94,18 @@ public class ConnectionProvider {
     } catch (SQLException e) {
       LOG.error("Filed to get connection", e);
       throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public void onPreparedStatement(String sql, Consumer<Tuple2<PreparedStatement, SQLException>> consumer) {
+    try (Connection connection = getConnection()) {
+      try (PreparedStatement ps = connection.prepareCall(sql)) {
+        consumer.accept(new Tuple2<>(ps, null));
+      }
+    } catch (SQLException e) {
+      LOG.debug("The sql fall down", e);
+      consumer.accept(new Tuple2<>(null, e));
     }
   }
 }

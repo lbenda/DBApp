@@ -23,13 +23,16 @@ import org.testng.annotations.Test;
 import java.sql.Types;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 20.9.15.
- * Test RowDesc implmentation */
+ * Test RowDesc implementation */
 public class TestRowDesc {
 
   @Test
   public void stateChange() {
     RowDesc row = new RowDesc("id", new Object[] { "value1", 15, Boolean.TRUE }, RowDesc.RowDescState.LOADED);
-    TableDesc td = new TableDesc("CATALOG", "SCHEMA", "TABLE", "table1");
+    CatalogDesc catalogDesc = new CatalogDesc("CATALOG");
+    SchemaDesc schemaDesc = new SchemaDesc(catalogDesc, "SCHEMA");
+    catalogDesc.getSchemas().add(schemaDesc);
+    TableDesc td = new TableDesc(schemaDesc, "TABLE", "table1");
     ColumnDesc cd = new ColumnDesc(td, "col1", null, Types.VARCHAR, "", 12, true, false, false, new HSQLDBDialect());
     cd.setPosition(0);
     ColumnDesc cd1 = new ColumnDesc(td, "col2", null, Types.INTEGER, "", 12, true, false, false, new HSQLDBDialect());

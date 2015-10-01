@@ -28,15 +28,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.net.URL;
-import java.util.Optional;
-import java.util.ResourceBundle;
+import java.util.Stack;
 
-/** Created by Lukas Benda <lbenda @ lbenda.cz> on 16.9.15.
- *
- */
+/** Created by Lukas Benda <lbenda @ lbenda.cz> on 16.9.15.*/
 public class ExceptionMessageFrmController {
 
+  @SuppressWarnings("unused")
   private static Logger LOG = LoggerFactory.getLogger(ExceptionMessageFrmController.class);
 
   private TextArea stackTrace;
@@ -49,7 +46,7 @@ public class ExceptionMessageFrmController {
     stackTrace = new TextArea();
   }
 
-  /** Create new instance return main node and controller of this node and subnodes */
+  /** Create new instance return main node and controller of this node and sub-nodes */
   public static Tuple2<Parent, ExceptionMessageFrmController> createNewInstance() {
     ExceptionMessageFrmController controller = new ExceptionMessageFrmController();
     return new Tuple2<>(controller.stackTrace, controller);
@@ -64,7 +61,21 @@ public class ExceptionMessageFrmController {
     dialog.setTitle(controller.msgAppErrorHeader);
     dialog.setHeaderText(message);
     StringWriter sw = new StringWriter();
-    e.printStackTrace(new PrintWriter(sw));
+
+    Throwable ex = e;
+    Stack<Throwable> exceptions = new Stack<>();
+    while (ex != null) {
+      //noinspection ThrowableResultOfMethodCallIgnored
+      exceptions.push(ex);
+      ex = ex.getCause();
+    }
+    int i = 0;
+    PrintWriter writer = new PrintWriter(sw);
+    while ((ex = exceptions.pop()) != null) {
+      writer.write("Distance from root exception: " + i + "\n");
+      ex.printStackTrace(writer);
+      i++;
+    }
     controller.stackTrace.setText(sw.toString());
 
     dialog.getDialogPane().setContent(tuple.get1());
@@ -72,7 +83,7 @@ public class ExceptionMessageFrmController {
     dialog.getDialogPane().getButtonTypes().add(buttonTypeOk);
     dialog.getDialogPane().setPadding(new Insets(0, 0, 0, 0));
 
-    Optional<Object> result = dialog.showAndWait();
+    dialog.showAndWait();
   }
 
   public static void showException(final Throwable exception) {
@@ -92,6 +103,6 @@ public class ExceptionMessageFrmController {
     dialog.getDialogPane().getButtonTypes().add(buttonTypeOk);
     dialog.getDialogPane().setPadding(new Insets(0, 0, 0, 0));
 
-    Optional<Object> result = dialog.showAndWait();
+    dialog.showAndWait();
   }
 }

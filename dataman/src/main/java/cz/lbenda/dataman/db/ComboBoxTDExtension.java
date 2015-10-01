@@ -36,7 +36,7 @@ public class ComboBoxTDExtension implements TableDescriptionExtension {
   private static final Logger LOG = LoggerFactory.getLogger(ComboBoxTDExtension.class);
 
   private final TableDesc td; public final TableDesc getTableDescription() { return td; }
-  /** Name of column which is substitued by select box */
+  /** Name of column which is substitution by select box */
   private String columnName; public final String getColumnName() { return columnName; } public final void setColumnName(final String columnName) { this.columnName = columnName; }
   /** SQL which return three fields with identifier which is write to column, showed value and tool tipe. */
   private String tableOfKeySQL; public final String getTableOfKeySQL() { return tableOfKeySQL; } public final void setTableOfKeySQL(final String tableOfKeySQL) { this.tableOfKeySQL = tableOfKeySQL; }
@@ -85,7 +85,7 @@ public class ComboBoxTDExtension implements TableDescriptionExtension {
     initialized = true;
     LOG.trace("load data to select box");
     final List<Object[]> rows;
-    String sql = td.getDbConfig().getTableOfKeysSQL().get(this.tableOfKeySQL);
+    String sql = td.getDbConfig().getExtConfFactory().getTableOfKeysSQL().get(this.tableOfKeySQL);
     if (columnValue == null || columnChoice == null || columnTooltip == null) {
       LOG.info("The name of column isn't defined, so the position of column 1, 2 and 3 is used.");
       rows = td.getDbConfig().getReader().getSQLRows(sql, 1, 2, 3);
@@ -98,7 +98,7 @@ public class ComboBoxTDExtension implements TableDescriptionExtension {
       items.add(new ComboBoxItem(row[0], (String) row[1], (String) row[2]));
     }
   }
-
+/*
   @Override
   public void tableWasChanged(TableDesc td, TableAction action) {
     switch (action) {
@@ -113,6 +113,7 @@ public class ComboBoxTDExtension implements TableDescriptionExtension {
         } break;
     }
   }
+  */
 
   public final ComboBoxType storeToComboBox() {
     ObjectFactory of = new ObjectFactory();

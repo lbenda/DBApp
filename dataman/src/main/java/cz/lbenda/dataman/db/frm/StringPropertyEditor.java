@@ -137,7 +137,7 @@ public class StringPropertyEditor implements PropertyEditor<Object> {
       }
       return ldt;
     }
-    if (comboBox != null) { return comboBox.selectionModelProperty().getValue(); }
+    if (comboBox != null) { return comboBox.selectionModelProperty().getValue().getSelectedItem().getValue(); }
     return converter.fromString(textFieldArea.textProperty().getValue());
   }
 

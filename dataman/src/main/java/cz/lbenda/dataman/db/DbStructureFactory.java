@@ -15,7 +15,6 @@
  */
 package cz.lbenda.dataman.db;
 
-import cz.lbenda.common.Tuple2;
 import cz.lbenda.dataman.db.dialect.SQLDialect;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -23,9 +22,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,13 +31,13 @@ import javax.annotation.Nonnull;
 
 /** Class for reading data structure from JDBC. The first method which must be call is
  * @author Lukas Benda <lbenda at lbenda.cz> */
-public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExceptionListener, SQLExecutor {
+public class DbStructureFactory implements DBAppDataSource.DBAppDataSourceExceptionListener {
 
-  private static final Logger LOG = LoggerFactory.getLogger(DbStructureReader.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DbStructureFactory.class);
   private final ConnectionProvider connectionProvider;
   private final DbConfig dbConfig;
 
-  public DbStructureReader(@Nonnull DbConfig dbConfig) {
+  public DbStructureFactory(@Nonnull DbConfig dbConfig) {
     // this.setDbConfig(dbConfig);
     this.dbConfig = dbConfig;
     this.connectionProvider = dbConfig.getConnectionProvider();
@@ -85,7 +82,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   @SuppressWarnings("unused")
   public final List<TableRow> getJoinedRows(final ForeignKey fk, final TableRow selectedRow) {
     final Object fkValue;
-    final String tbSchema;
+    final SchemaDesc tbSchema;
     final String tbName;
     final String tbColumn;
     final TableDesc td;
@@ -104,7 +101,7 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
     }
 
     String sql = String.format("SELECT * FROM \"%s\".\"%s\" WHERE \"%s\"=?",
-            tbSchema, tbName, tbColumn);
+            tbSchema.getName(), tbName, tbColumn);
     LOG.debug(sql);
     try (Connection conn = connectionProvider.getConnection()) {
       try (PreparedStatement ps = conn.prepareCall(sql)) {
@@ -128,19 +125,39 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
 
   public void generateStructure() {
     try (Connection conn = connectionProvider.getConnection()) {
+      Map<String, CatalogDesc> catalogs = new HashMap<>();
+
       DatabaseMetaData dmd = conn.getMetaData();
       SQLDialect dialect = dbConfig.getDialect();
       try (ResultSet tabs = dmd.getTables(null, null, null, null)) {
         while (tabs.next()) {
-          TableDesc td = this.dbConfig.getOrCreateTableDescription(tabs.getString(dialect.tableCatalog()),
-              tabs.getString(dialect.tableSchema()), tabs.getString(dialect.tableName()));
-          td.setSavableRegister(connectionProvider.getSavableRegistry());
-          td.setTableType(TableDesc.TableType.fromJDBC(tabs.getString(dialect.tableType())));
-          td.setComment(dialect.tableRemarks());
+          String catalogName = tabs.getString(dialect.tableCatalog());
+          String schemaName = tabs.getString(dialect.tableSchema());
+          String tableName = tabs.getString(dialect.tableName());
+          CatalogDesc catalogDesc = catalogs.get(catalogName);
+          if (catalogDesc == null) {
+            catalogDesc = new CatalogDesc(catalogName);
+            catalogs.put(catalogDesc.getName(), catalogDesc);
+          }
+          SchemaDesc schema = catalogDesc.getSchema(schemaName);
+          if (schema == null) {
+            schema = new SchemaDesc(catalogDesc, schemaName);
+            catalogDesc.getSchemas().add(schema);
+          }
+          TableDesc tableDesc = schema.getTable(tableName);
+          if (tableDesc == null) {
+            tableDesc = new TableDesc(schema, tabs.getString(dialect.tableType()), tableName);
+            tableDesc.setDbConfig(dbConfig);
+            schema.getTables().add(tableDesc);
+          }
+          tableDesc.setSavableRegister(connectionProvider.getSavableRegistry());
+          tableDesc.setComment(dialect.tableRemarks());
         }
-        generateStructureColumns(dmd);
-        generatePKColumns(dmd);
-        generateStrucutreForeignKeys(dmd);
+        generateStructureColumns(catalogs::get, dmd);
+        generatePKColumns(catalogs.values(), dmd);
+        generateStructureForeignKeys(catalogs, dmd);
+        dbConfig.getCatalogs().clear();
+        dbConfig.getCatalogs().addAll(catalogs.values());
       }
     } catch (SQLException e) {
       throw new RuntimeException(e);
@@ -157,29 +174,36 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
   }
   */
 
-  private void generateStructureColumns(DatabaseMetaData dmd) throws SQLException {
+  private void generateStructureColumns(CatalogHolder catalogHolder, DatabaseMetaData dmd) throws SQLException {
     SQLDialect dialect = dbConfig.getJdbcConfiguration().getDialect();
     try (ResultSet rsColumn  = dmd.getColumns(null, null, null, null)) {
       // writeColumnNames(rsColumn.getMetaData());
       while (rsColumn.next()) {
-        TableDesc td = dbConfig.getTableDescription(
-                rsColumn.getString(dialect.columnTableCatalog()), rsColumn.getString(dialect.columnTableSchema()),
-                rsColumn.getString(dialect.columnTableName()));
+        String catalog = rsColumn.getString(dialect.columnTableCatalog());
+        String schema = rsColumn.getString(dialect.columnTableSchema());
+        String table = rsColumn.getString(dialect.columnTableName());
+        TableDesc td = catalogHolder.getCatalog(catalog).getSchema(schema).getTable(table);
         ColumnDesc column = new ColumnDesc(td, rsColumn, dialect);
         td.addColumn(column);
       }
     }
   }
 
-  private void generatePKColumns(DatabaseMetaData dmd) throws SQLException {
+  private void generatePKColumns(Collection<CatalogDesc> catalogs, DatabaseMetaData dmd) throws SQLException {
     SQLDialect di = dbConfig.getJdbcConfiguration().getDialect();
-    for (TableDesc td : dbConfig.getTableDescriptions()) {
-      try (ResultSet rsPk = dmd.getPrimaryKeys(td.getCatalog(), td.getSchema(), td.getName())) {
-        while (rsPk.next()) {
-          ColumnDesc column = td.getColumn(rsPk.getString(di.pkColumnName()));
-          if (column == null) {
-            LOG.error("The primary column not exist in whole column set of table: " + di.pkColumnName());
-          } else { column.setPK(true); }
+    for (CatalogDesc ch : catalogs) {
+      for (SchemaDesc schema : ch.getSchemas()) {
+        for (TableDesc td : schema.getTables()) {
+          try (ResultSet rsPk = dmd.getPrimaryKeys(ch.getName(), schema.getName(), td.getName())) {
+            while (rsPk.next()) {
+              ColumnDesc column = td.getColumn(rsPk.getString(di.pkColumnName()));
+              if (column == null) {
+                LOG.error("The primary column not exist in whole column set of table: " + di.pkColumnName());
+              } else {
+                column.setPK(true);
+              }
+            }
+          }
         }
       }
     }
@@ -222,34 +246,29 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
     return result;
   }
 
-  private void generateStrucutreForeignKeys(DatabaseMetaData dmd) throws SQLException {
+  private void generateStructureForeignKeys(Map<String, CatalogDesc> catalogs, DatabaseMetaData dmd) throws SQLException {
     SQLDialect di = dbConfig.getJdbcConfiguration().getDialect();
-    for (TableDesc td : dbConfig.getTableDescriptions()) {
-      ResultSet rsEx = dmd.getExportedKeys(td.getCatalog(), td.getSchema(), td.getName());
-      while (rsEx.next()) {
-        TableDesc slaveTD = dbConfig.getTableDescription(rsEx.getString(di.fkSlaveTableCatalog()),
-                rsEx.getString(di.fkSlaveTableSchema()), rsEx.getString(di.fkSlaveTableName()));
-        ForeignKey fk = new ForeignKey(td, td.getColumn(rsEx.getString(di.fkMasterColumnName())),
+    for (CatalogDesc ch : catalogs.values()) {
+      for (SchemaDesc schema : ch.getSchemas()) {
+        for (TableDesc td : schema.getTables()) {
+          ResultSet rsEx = dmd.getExportedKeys(ch.getName(), schema.getName(), td.getName());
+          while (rsEx.next()) {
+            String slaveCatalogName = rsEx.getString(di.fkSlaveTableCatalog());
+            String slaveSchemaName = rsEx.getString(di.fkSlaveTableSchema());
+            String slaveTableName = rsEx.getString(di.fkSlaveTableName());
+            TableDesc slaveTD = catalogs.get(slaveCatalogName).getSchema(slaveSchemaName).getTable(slaveTableName);
+            ForeignKey fk = new ForeignKey(td, td.getColumn(rsEx.getString(di.fkMasterColumnName())),
                 slaveTD, slaveTD.getColumn(rsEx.getString(di.fkSlaveColumnName())));
-        td.addForeignKey(fk);
-        slaveTD.addForeignKey(fk);
+            td.addForeignKey(fk);
+            slaveTD.addForeignKey(fk);
+          }
+        }
       }
     }
   }
 
   @Override
   public void onDBAppDataSourceException(Exception e) {
-  }
-
-  @Override
-  public void onPreparedStatement(String sql, Consumer<Tuple2<PreparedStatement, SQLException>> consumer) {
-    try (Connection connection = connectionProvider.getConnection()) {
-      try (PreparedStatement ps = connection.prepareCall(sql)) {
-        consumer.accept(new Tuple2<>(ps, null));
-      }
-    } catch (SQLException e) {
-      consumer.accept(new Tuple2<>(null, e));
-    }
   }
 
   public static class ForeignKey {
@@ -264,5 +283,10 @@ public class DbStructureReader implements DBAppDataSource.DBAppDataSourceExcepti
       this.slaveTable = slaveTable;
       this.slaveColumn = slaveColumn;
     }
+  }
+
+  @FunctionalInterface
+  private interface CatalogHolder {
+    CatalogDesc getCatalog(String name);
   }
 }

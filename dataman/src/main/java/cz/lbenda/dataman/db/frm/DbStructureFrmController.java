@@ -15,6 +15,8 @@
  */
 package cz.lbenda.dataman.db.frm;
 
+import cz.lbenda.dataman.db.CatalogDesc;
+import cz.lbenda.dataman.db.SchemaDesc;
 import cz.lbenda.dataman.db.TableDesc;
 import cz.lbenda.dataman.db.DbConfig;
 import javafx.beans.property.ObjectProperty;
@@ -49,7 +51,7 @@ public class DbStructureFrmController {
     });
     dbConfigProperty.addListener(observable -> {
       DbConfig dbConfig = dbConfigProperty.getValue();
-      TreeItem<String> root = new TreeItem<>();
+      TreeItem<Object> root = new TreeItem<>();
       treeView.setRoot(root);
       root.setExpanded(true);
 
@@ -59,53 +61,65 @@ public class DbStructureFrmController {
     });
   }
 
-  private void createCatalogTreeItems(TreeItem<String> root, DbConfig dbConfig) {
-    dbConfig.getCatalogs().forEach(catalog -> {
-      if (dbConfig.isShowCatalog(catalog)) {
-        TreeItem<String> catalogItem = new TreeItem<>(catalog);
+  private void createCatalogTreeItems(TreeItem<Object> root, DbConfig dbConfig) {
+    long showedCatalog = dbConfig.getCatalogs().stream().filter(catalogDesc -> !catalogDesc.isHidden()).count();
+    if (showedCatalog > 1) {
+      dbConfig.getCatalogs().stream().filter(catalogDesc -> !catalogDesc.isHidden()).forEach(catalog -> {
+        TreeItem<Object> catalogItem = new TreeItem<>(catalog);
         root.getChildren().add(catalogItem);
-        createSchemasTreeItems(catalogItem, dbConfig, catalog);
+        createSchemasTreeItems(catalogItem, catalog);
+      });
+    } else {
+      dbConfig.getCatalogs().stream().filter(catalogDesc -> !catalogDesc.isHidden()).forEach(catalog ->
+          createSchemasTreeItems(root, catalog));
+    }
+  }
+
+  private void createSchemasTreeItems(TreeItem<Object> item, CatalogDesc catalog) {
+    long showedSchemas = catalog.getSchemas().stream().filter(schemaDesc -> !schemaDesc.isHidden()).count();
+    catalog.getSchemas().stream().filter(schemaDesc -> !schemaDesc.isHidden()).forEach(schema -> {
+      if (showedSchemas > 1) {
+        TreeItem<Object> schemaItem = new TreeItem<>(schema);
+        item.getChildren().add(schemaItem);
+        createTableTypesTreeItems(schemaItem, schema);
       } else {
-        createSchemasTreeItems(root, dbConfig, catalog);
+        createTableTypesTreeItems(item, schema);
       }
     });
   }
 
-  private void createSchemasTreeItems(TreeItem<String> item, DbConfig dbConfig, String catalog) {
-    dbConfig.getSchemas(catalog).forEach(schema -> {
-      if (dbConfig.isShowSchema(catalog, schema)) {
-        TreeItem<String> schemaItem = new TreeItem<>(schema);
-        item.getChildren().add(schemaItem);
-        createTableTypesTreeItems(schemaItem, dbConfig, catalog, schema);
-      } else { createTableTypesTreeItems(item, dbConfig, catalog, schema); }
-    });
-  }
-
-  private void createTableTypesTreeItems(TreeItem<String> item, DbConfig dbConfig, String catalog, String schema) {
-    dbConfig.shownTableType(catalog, schema).forEach(tableType -> {
-      final TreeItem<String> ttItem;
+  private void createTableTypesTreeItems(TreeItem<Object> item, SchemaDesc schema) {
+    schema.allTableTypes().forEach(tableType -> {
+      final TreeItem<Object> ttItem;
       ImageView iv = null;
       switch (tableType) {
-        case TABLE : iv = new ImageView(imageTable); break;
-        case VIEW : iv = new ImageView(imageView); break;
+        case TABLE:
+          iv = new ImageView(imageTable);
+          break;
+        case VIEW:
+          iv = new ImageView(imageView);
+          break;
       }
-      if (iv == null) { ttItem = new TreeItem<>(tableType.name()); }
-      else { ttItem = new TreeItem<>(tableType.name(), iv); }
+      if (iv == null) {
+        ttItem = new TreeItem<>(tableType.name());
+      } else {
+        ttItem = new TreeItem<>(tableType.name(), iv);
+      }
       item.getChildren().add(ttItem);
-      createTablesTreeItems(ttItem, dbConfig, catalog, schema, tableType);
+      createTablesTreeItems(ttItem, schema, tableType);
     });
   }
 
   @SuppressWarnings("unchecked")
-  private void createTablesTreeItems(TreeItem item, DbConfig dbConfig, String catalog, String schema, TableDesc.TableType tableType) {
+  private void createTablesTreeItems(TreeItem item, SchemaDesc schema, TableDesc.TableType tableType) {
     final Image image;
     switch (tableType) {
       case TABLE : image = imageTable; break;
       case VIEW : image = imageView; break;
       default: image = null;
     }
-    dbConfig.getTableDescriptions(catalog, schema, tableType).stream().sorted(TableDesc::compareTo).forEach(td -> {
-      if (dbConfig.isShowTable(td)) {
+    schema.tablesByType(tableType).stream().sorted(TableDesc::compareTo).forEach(td -> {
+      if (!td.isHidden()) {
         final TreeItem<TableDesc> tableItem; // TODO apped tooltim from table comment
         if (image != null) { tableItem = new TreeItem<>(td, new ImageView(image)); }
         else { tableItem = new TreeItem<>(td); }

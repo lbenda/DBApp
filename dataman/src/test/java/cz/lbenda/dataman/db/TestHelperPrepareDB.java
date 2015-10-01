@@ -39,7 +39,7 @@ public class TestHelperPrepareDB {
     config.getJdbcConfiguration().setUrl(url);
     config.getJdbcConfiguration().setUsername(USERNAME);
     config.getJdbcConfiguration().setPassword(PASSWORD);
-    config.setReader(new DbStructureReader(config));
+    config.setReader(new DbStructureFactory(config));
     return config;
   }
 
@@ -62,8 +62,12 @@ public class TestHelperPrepareDB {
     return result;
   }
 
+  @SuppressWarnings("unused")
   public enum DBDriver {
-    H2("org.h2.Driver"), HSQL("org.hsqldb.jdbcDriver"), DERBY("org.apache.derby.jdbc.EmbeddedDriver"), SQLITE("org.sqlite.JDBC") ;
+    H2("org.h2.Driver"),
+    HSQL("org.hsqldb.jdbcDriver"),
+    DERBY("org.apache.derby.jdbc.EmbeddedDriver"),
+    SQLITE("org.sqlite.JDBC") ;
     private String driver;
     DBDriver(String driver) {
       this.driver = driver;
@@ -97,7 +101,6 @@ public class TestHelperPrepareDB {
   }
 
   public static Connection getConnection(DBDriver driverClass , String url) {
-    Connection conn = null;
     try {
       Class.forName(driverClass.getDriver());
       return DriverManager.getConnection(url, USERNAME, PASSWORD);

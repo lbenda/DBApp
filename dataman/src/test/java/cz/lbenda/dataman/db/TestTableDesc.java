@@ -27,7 +27,7 @@ public class TestTableDesc extends TestAbstractDB {
   public void testDirtyState(TestHelperPrepareDB.DBDriver driverClass, String url, String catalog) {
     DbConfig config = TestHelperPrepareDB.createConfig(driverClass, url);
     config.getReader().generateStructure();
-    TableDesc tableDesc = config.getTableDescription(catalog, "test", "TABLE1");
+    TableDesc tableDesc = config.getCatalog(catalog).getSchema("test").getTable("TABLE1");
 
     tableDesc.reloadRowsAction();
     Assert.assertFalse(tableDesc.dirtyProperty().getValue());

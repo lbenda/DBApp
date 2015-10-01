@@ -86,8 +86,8 @@ public class ColumnDesc {
   public ColumnDesc(final TableDesc td, ResultSet rs, SQLDialect dialect) throws SQLException {
     this.tableDescription = td;
     this.position = -1;
-    this.catalog = td.getCatalog();
-    this.schema = td.getSchema();
+    this.catalog = td.getSchema().getCatalog().getName();
+    this.schema = td.getSchema().getName();
     this.table = td.getName();
     this.name = confValue(dialect.columnName(), rs);
     this.label = confValue(dialect.columnRemarks(), rs);
@@ -113,8 +113,8 @@ public class ColumnDesc {
                     final SQLDialect dialect) {
     this.tableDescription = td;
     this.position = -1;
-    this.catalog = td.getCatalog();
-    this.schema = td.getSchema();
+    this.catalog = td.getSchema().getCatalog().getName();
+    this.schema = td.getSchema().getName();
     this.table = td.getName();
     this.name = name;
     this.size = size;

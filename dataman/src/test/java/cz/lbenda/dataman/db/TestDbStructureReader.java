@@ -23,7 +23,7 @@ import static org.testng.Assert.*;
  * Testing implementation of data structure reader
  */
 @SuppressWarnings("ConstantConditions")
-public class TestDataStructureReader extends TestAbstractDB {
+public class TestDbStructureReader extends TestAbstractDB {
 
   @Test(dataProviderClass = TestAbstractDB.class, dataProvider = "databases", groups = "database")
   public void readStructureFromDatabase(TestHelperPrepareDB.DBDriver driverClass, String url, String catalog) {
@@ -31,23 +31,24 @@ public class TestDataStructureReader extends TestAbstractDB {
     config.getReader().generateStructure();
     // writeStructure(config); // Could be uncommented for seeing read struct
 
-    assertNotNull(config.getSchemas(catalog));
-    assertTrue(config.getSchemas(catalog).contains("test"));
-    assertNotNull(config.getTableDescription(catalog, "test", "TABLE1"));
-    assertTrue(config.getTableDescription(catalog, "test", "TABLE1").getColumn("ID").isAutoincrement());
-    assertTrue(config.getTableDescription(catalog, "test", "TABLE1").getColumn("ID").isPK());
+    assertNotNull(config.getCatalog(catalog).getSchemas());
+    assertTrue(config.getCatalog(catalog).getSchemas().stream().anyMatch(schema -> "test".equals(schema.getName())));
+    SchemaDesc schemaDesc = config.getCatalog(catalog).getSchema("test");
+    assertNotNull(schemaDesc.getTable("TABLE1"));
+    assertTrue(schemaDesc.getTable("TABLE1").getColumn("ID").isAutoincrement());
+    assertTrue(schemaDesc.getTable("TABLE1").getColumn("ID").isPK());
 
-    assertFalse(config.getTableDescription(catalog, "test", "TABLE2").getColumn("ID").isAutoincrement());
-    assertTrue(config.getTableDescription(catalog, "test", "TABLE2").getColumn("ID").isPK());
+    assertFalse(schemaDesc.getTable("TABLE2").getColumn("ID").isAutoincrement());
+    assertTrue(schemaDesc.getTable("TABLE2").getColumn("ID").isPK());
 
-    assertFalse(config.getTableDescription(catalog, "test", "TABLE3").getColumn("ID1").isAutoincrement());
-    assertTrue(config.getTableDescription(catalog, "test", "TABLE3").getColumn("ID1").isPK());
-    assertFalse(config.getTableDescription(catalog, "test", "TABLE3").getColumn("ID2").isAutoincrement());
-    assertTrue(config.getTableDescription(catalog, "test", "TABLE3").getColumn("ID2").isPK());
+    assertFalse(schemaDesc.getTable("TABLE3").getColumn("ID1").isAutoincrement());
+    assertTrue(schemaDesc.getTable("TABLE3").getColumn("ID1").isPK());
+    assertFalse(schemaDesc.getTable("TABLE3").getColumn("ID2").isAutoincrement());
+    assertTrue(schemaDesc.getTable("TABLE3").getColumn("ID2").isPK());
 
-    assertEquals(config.getTableDescription(catalog, "test", "TABLE1").getPKColumns().size(), 1);
-    assertEquals(config.getTableDescription(catalog, "test", "TABLE2").getPKColumns().size(), 1);
-    assertEquals(config.getTableDescription(catalog, "test", "TABLE3").getPKColumns().size(), 2);
+    assertEquals(schemaDesc.getTable("TABLE1").getPKColumns().size(), 1);
+    assertEquals(schemaDesc.getTable("TABLE2").getPKColumns().size(), 1);
+    assertEquals(schemaDesc.getTable("TABLE3").getPKColumns().size(), 2);
   }
 
   @Test(dataProviderClass = TestAbstractDB.class, dataProvider = "databases", dependsOnMethods = { "readStructureFromDatabase" })
@@ -55,7 +56,7 @@ public class TestDataStructureReader extends TestAbstractDB {
     DbConfig config = TestHelperPrepareDB.createConfig(driverClass, url);
     config.getReader().generateStructure();
 
-    TableDesc tableDesc = config.getTableDescription(catalog, "test", "TABLE1");
+    TableDesc tableDesc = config.getCatalog(catalog).getSchema("test").getTable("TABLE1");
     tableDesc.reloadRowsAction();
     assertEquals(tableDesc.getRows().size(), 3, "In the database must be 3 rows.");
     int i = driverClass == TestHelperPrepareDB.DBDriver.HSQL ? 0 : 1;

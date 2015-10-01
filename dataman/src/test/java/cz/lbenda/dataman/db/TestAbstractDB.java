@@ -40,6 +40,7 @@ public abstract class TestAbstractDB {
 
   @SuppressWarnings("unused")
   protected void writeStructure(DbConfig config) {
+    /*
     for (Map.Entry<String, Map<String, Map<String, TableDesc>>> entry1 : config.getTableDescriptionsMap().entrySet()) {
       System.out.println(entry1.getKey());
       for (Map.Entry<String, Map<String, TableDesc>> entry2 : entry1.getValue().entrySet()) {
@@ -52,5 +53,6 @@ public abstract class TestAbstractDB {
         }
       }
     }
+    */
   }
 }

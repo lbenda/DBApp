@@ -17,7 +17,7 @@ package cz.lbenda.dataman.db.frm;
 
 import cz.lbenda.common.AbstractHelper;
 import cz.lbenda.dataman.db.ColumnDesc;
-import cz.lbenda.dataman.db.DbStructureReader;
+import cz.lbenda.dataman.db.DbStructureFactory;
 import cz.lbenda.dataman.db.RowDesc;
 import cz.lbenda.dataman.db.TableDesc;
 import javafx.scene.control.ScrollPane;
@@ -39,7 +39,7 @@ public class ConnectedTablesFrmController {
   private VBox vBox = new VBox();
   @Nonnull
   public ScrollPane getMainPane() { return mainPane; }
-  private Map<DbStructureReader.ForeignKey, Predicate<RowDesc>> filters = new ConcurrentHashMap<>();
+  private Map<DbStructureFactory.ForeignKey, Predicate<RowDesc>> filters = new ConcurrentHashMap<>();
 
   public ConnectedTablesFrmController(@Nonnull DataTableView masterTableView) {
     mainPane.setContent(vBox);
@@ -49,7 +49,7 @@ public class ConnectedTablesFrmController {
   }
 
   private void prepareView(@Nonnull TableDesc masterTD) {
-    for (DbStructureReader.ForeignKey fk : masterTD.getForeignKeys()) {
+    for (DbStructureFactory.ForeignKey fk : masterTD.getForeignKeys()) {
       TableDesc mtd = fk.getMasterTable();
       TableDesc std = fk.getSlaveTable();
       TableDesc slaveTD = masterTD.equals(mtd) ? std : mtd;
@@ -64,7 +64,7 @@ public class ConnectedTablesFrmController {
   }
 
   private void selectRow(@Nonnull TableDesc masterTD, RowDesc row) {
-    for (DbStructureReader.ForeignKey fk : masterTD.getForeignKeys()) {
+    for (DbStructureFactory.ForeignKey fk : masterTD.getForeignKeys()) {
       Predicate<RowDesc> predicate = filters.get(fk);
 
       TableDesc mtd = fk.getMasterTable();

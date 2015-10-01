@@ -45,17 +45,21 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
 
   private DbConfig dbConfig;  public final DbConfig getDbConfig() { return dbConfig; } public final void setDbConfig(DbConfig dbConfig) { this.dbConfig = dbConfig; }
 
+  private final SchemaDesc schema; public final SchemaDesc getSchema() { return schema; }
   private final String name; public final String getName() { return name; }
-  private final String schema; public final String getSchema() { return schema; }
-  private final String catalog; public final String getCatalog() { return catalog; }
   private TableType tableType; public final TableType getTableType() { return tableType; } public final void setTableType(TableType tableType) { this.tableType = tableType; }
   private String comment;
   @SuppressWarnings("unused")
   public final String getComment() { return comment; }
   public final void setComment(String comment) { this.comment = comment; }
 
+  private BooleanProperty hidden = new SimpleBooleanProperty(false);
+  public boolean isHidden() { return hidden.get(); }
+  public void setHidden(boolean hidden) { this.hidden.set(hidden); }
+  public BooleanProperty hiddenProperty() { return this.hidden; }
+
   /** List of all foreign keys in table */
-  private final List<DbStructureReader.ForeignKey> foreignKeys = new ArrayList<>(); public final List<DbStructureReader.ForeignKey> getForeignKeys() { return foreignKeys; }
+  private final List<DbStructureFactory.ForeignKey> foreignKeys = new ArrayList<>(); public final List<DbStructureFactory.ForeignKey> getForeignKeys() { return foreignKeys; }
 
   /** All rows, loaded new added and removed etc. */
   private SQLQueryRows rows; public SQLQueryRows getQueryRow() { return rows; }
@@ -80,11 +84,10 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
   public ObjectProperty<Boolean> loadedProperty() { return loaded; }
   public boolean isLoaded() { return Boolean.TRUE.equals(loaded.getValue()); }
 
-  public TableDesc(String catalog, String schema, String tableType, String name) {
-    this.catalog = catalog;
+  public TableDesc(SchemaDesc schema, String tableType, String name) {
     this.schema = schema;
     this.name = name;
-    if (tableType != null) { this.tableType = TableType.valueOf(tableType); }
+    if (tableType != null) { this.tableType = TableType.fromJDBC(tableType); }
     rows = new SQLQueryRows();
     rows.getRows().addListener((ListChangeListener<RowDesc>) change -> {
       while (change.next()) {
@@ -115,7 +118,7 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
     });
   }
 
-  public final void addForeignKey(DbStructureReader.ForeignKey foreignKey) {
+  public final void addForeignKey(DbStructureFactory.ForeignKey foreignKey) {
     this.foreignKeys.add(foreignKey);
   }
 
@@ -153,8 +156,8 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
 
   @Override
   public final int compareTo(@Nonnull TableDesc other) {
-    return AbstractHelper.compareArrayNull(new Comparable[]{catalog, schema, tableType, name},
-        new Comparable[]{other.getCatalog(), other.getSchema(), other.getTableType(), other.getName()});
+    return AbstractHelper.compareArrayNull(new Comparable[]{schema, tableType, name},
+        new Comparable[]{ other.getSchema(), other.getTableType(), other.getName() });
   }
 
   public ObservableList<RowDesc> getRows() { return rows.getRows(); }
@@ -199,14 +202,14 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
     int hash = 7;
     hash = 41 * hash + (this.name != null ? this.name.hashCode() : 0);
     hash = 41 * hash + (this.schema != null ? this.schema.hashCode() : 0);
-    hash = 41 * hash + (this.catalog != null ? this.catalog.hashCode() : 0);
     hash = 41 * hash + (this.tableType != null ? this.tableType.hashCode() : 0);
     return hash;
   }
 
   @Override
   public @Nonnull String displayName() {
-    return String.format("%s: %s.%s.%s", getDbConfig().getId(), getCatalog(), getSchema(), getName());
+    return String.format("%s: %s.%s.%s", getDbConfig().getId(),
+        schema.getCatalog().getName(), schema.getName(), name);
   }
 
   @Override
@@ -224,13 +227,11 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
     if ((this.name == null) ? (other.name != null) : !this.name.equals(other.name)) { return false; }
     if ((this.schema == null) ? (other.schema != null) : !this.schema.equals(other.schema)) { return false; }
     //noinspection SimplifiableIfStatement
-    if ((this.catalog == null) ? (other.catalog != null) : !this.catalog.equals(other.catalog)) { return false; }
     return this.tableType == null ? (other.tableType == null) : this.tableType.equals(other.tableType);
   }
 
   @Override
   public String toString() {
-    if (getName() != null) { return getName(); }
-    return super.toString();
+    return name;
   }
 }

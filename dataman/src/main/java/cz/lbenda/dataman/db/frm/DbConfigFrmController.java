@@ -97,9 +97,9 @@ public class DbConfigFrmController implements Initializable {
     lvLibraries.getItems().clear();
     lvLibraries.getItems().addAll(dbConfig.getLibrariesPaths());
 
-    tfExtendConfigPath.setText(StringUtils.defaultString(dbConfig.getExtendedConfigurationPath()));
-    cbExtendConfigType.getSelectionModel().select(dbConfig.getExtendedConfigType() == null ?
-        ExtendedConfigTypeType.NONE : dbConfig.getExtendedConfigType());
+    tfExtendConfigPath.setText(StringUtils.defaultString(dbConfig.getExtConfFactory().getPath()));
+    cbExtendConfigType.getSelectionModel().select(dbConfig.getExtConfFactory().getConfigType() == null ?
+        ExtendedConfigTypeType.NONE : dbConfig.getExtConfFactory().getConfigType());
   }
 
   @Override
@@ -128,20 +128,20 @@ public class DbConfigFrmController implements Initializable {
     });
   }
 
-  public void storeDataToSessionConfiguration(DbConfig sc) {
-    sc.setId(tfName.getText());
-    sc.getJdbcConfiguration().setUrl(tfUrl.getText());
-    sc.getJdbcConfiguration().setDriverClass(tfDriverClass.getText());
-    sc.getJdbcConfiguration().setUsername(tfUsername.getText());
-    sc.getJdbcConfiguration().setPassword(pfPassword.getText());
-    if (StringUtils.isBlank(tfTimeout.getText())) { sc.setConnectionTimeout(-1); }
-    else { sc.setConnectionTimeout(Integer.parseInt(tfTimeout.getText())); }
+  public void storeDataToSessionConfiguration(DbConfig dbConfig) {
+    dbConfig.setId(tfName.getText());
+    dbConfig.getJdbcConfiguration().setUrl(tfUrl.getText());
+    dbConfig.getJdbcConfiguration().setDriverClass(tfDriverClass.getText());
+    dbConfig.getJdbcConfiguration().setUsername(tfUsername.getText());
+    dbConfig.getJdbcConfiguration().setPassword(pfPassword.getText());
+    if (StringUtils.isBlank(tfTimeout.getText())) { dbConfig.setConnectionTimeout(-1); }
+    else { dbConfig.setConnectionTimeout(Integer.parseInt(tfTimeout.getText())); }
 
-    sc.getLibrariesPaths().clear();
-    sc.getLibrariesPaths().addAll(lvLibraries.getItems());
+    dbConfig.getLibrariesPaths().clear();
+    dbConfig.getLibrariesPaths().addAll(lvLibraries.getItems());
 
-    sc.setExtendedConfigType(cbExtendConfigType.getSelectionModel().getSelectedItem());
-    sc.setExtendedConfigurationPath(tfExtendConfigPath.getText());
+    dbConfig.getExtConfFactory().setConfigType(cbExtendConfigType.getSelectionModel().getSelectedItem());
+    dbConfig.getExtConfFactory().setPath(tfExtendConfigPath.getText());
   }
 
   /** Create new instance return main node and controller of this node and subnodes */

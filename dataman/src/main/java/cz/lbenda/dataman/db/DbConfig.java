@@ -15,29 +15,19 @@
  */
 package cz.lbenda.dataman.db;
 
-import cz.lbenda.common.AbstractHelper;
-
 import java.io.*;
 import java.net.URL;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
+import cz.lbenda.dataman.UserImpl;
 import cz.lbenda.dataman.db.dialect.SQLDialect;
 import cz.lbenda.dataman.rc.DbConfigFactory;
 import cz.lbenda.dataman.schema.dataman.*;
-import cz.lbenda.dataman.schema.exconf.*;
-import cz.lbenda.dataman.schema.exconf.ObjectFactory;
-import cz.lbenda.rcp.ExceptionMessageFrmController;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -60,23 +50,21 @@ public class DbConfig {
     return jdbcConfiguration;
   }
   public final void setJdbcConfiguration(final JDBCConfiguration jdbcConfiguration) { this.jdbcConfiguration = jdbcConfiguration; }
-  /** Map of table of keys. Every table of key have name as key and SQL which must have defined string. */
-  private final Map<String, String> tableOfKeysSQL = new HashMap<>(); public final Map<String, String> getTableOfKeysSQL() { return tableOfKeysSQL; }
-  /** Map which contains description rules for tables */
-  private final List<TableDesc> tableDescriptions = new ArrayList<>(); public final List<TableDesc> getTableDescriptions() { return tableDescriptions; }
   /** List with path to file with libraries for JDBC driver load */
   private final List<String> librariesPaths = new ArrayList<>(); public final List<String> getLibrariesPaths() { return librariesPaths; }
-  /** Type of extended configuration */
-  private ExtendedConfigTypeType extendedConfigType = ExtendedConfigTypeType.NONE; public final ExtendedConfigTypeType getExtendedConfigType() { return extendedConfigType; }
-  /** Path to configuration where is the found extended */
-  private String extendedConfigurationPath; public final String getExtendedConfigurationPath() { return this.extendedConfigurationPath; }
   /** Showed schemas */
-  private final Map<String, List<String>> shownSchemas = new HashMap<>();
+  private final ObservableList<CatalogDesc> catalogs = FXCollections.observableArrayList();
+  public final ObservableList<CatalogDesc> getCatalogs() { return catalogs; }
+  /** Return catalog by name */
+  public final CatalogDesc getCatalog(@Nonnull String name) {
+    List<CatalogDesc> cats = catalogs.stream().filter(catalogDesc -> name.equals(catalogDesc.getName())).collect(Collectors.toList());
+    return cats.size() == 0 ? null : cats.get(0);
+  }
 
   /** SQLDialect for this db configuration */
   public final SQLDialect getDialect() { return getJdbcConfiguration().getDialect(); }
   /** Connection provider */
-  public final ConnectionProvider connectionProvider = new ConnectionProvider(this);
+  public ConnectionProvider connectionProvider = new ConnectionProvider(this);
   /** Connection provider */
   public @Nonnull ConnectionProvider getConnectionProvider() { return connectionProvider; }
   /** Object which can modify database row */
@@ -84,74 +72,15 @@ public class DbConfig {
   /** Manipulator of DB */
   public final @Nonnull DbRowManipulator getDbRowManipulator() { return dbRowManipulator; }
   /** Instance of DB reader for this session */
-  private DbStructureReader reader = new DbStructureReader(this);
-  public final @Nonnull DbStructureReader getReader() { return reader; }
-  final void setReader(@Nonnull DbStructureReader reader) { this.reader = reader; }
-
+  private DbStructureFactory reader = new DbStructureFactory(this);
+  public final @Nonnull
+  DbStructureFactory getReader() { return reader; }
+  final void setReader(@Nonnull DbStructureFactory reader) { this.reader = reader; }
   /** Timeout when unused connection will be closed */
   private int connectionTimeout; public int getConnectionTimeout() { return connectionTimeout; } public void setConnectionTimeout(int connectionTimeout) { this.connectionTimeout = connectionTimeout; }
-  /** Table description map */
-  private final Map<String, Map<String, Map<String, TableDesc>>> tableDescriptionsMap = new HashMap<>();
-  public Map<String, Map<String, Map<String, TableDesc>>> getTableDescriptionsMap() { return tableDescriptionsMap; }
 
-  public final void setExtendedConfigType(ExtendedConfigTypeType extendedConfigType) {
-    this.extendedConfigType = extendedConfigType;
-  }
-
-  public final void setExtendedConfigurationPath(String extendedConfigurationPath) {
-    if (!AbstractHelper.nullEquals(extendedConfigurationPath, this.extendedConfigurationPath)) {
-      this.extendedConfigurationPath = extendedConfigurationPath;
-      if (connectionProvider.isConnected()) { loadExtendedConfiguration(); }
-    }
-  }
-
-  /** Check if table will be show to user
-   * @param td table description
-   * @return true if table is shown
-   */
-  public final boolean isShowTable(final TableDesc td) {
-    return shownSchemas.isEmpty() || shownSchemas.containsKey(td.getCatalog())
-        && shownSchemas.get(td.getCatalog()).contains(td.getSchema());
-  }
-
-  /** Inform if the catalog will be show.
-   * @param catalog catalog which is show
-   * @return catalog is show or not
-   */
-  public final boolean isShowCatalog(final String catalog) {
-    return getCatalogs().size() > 1 &&
-        catalog != null && (shownSchemas.isEmpty() || shownSchemas.containsKey(catalog) && shownSchemas.size() > 1);
-  }
-
-  /** Inform if the catalog will be show.
-   * @param catalog catalog which is show
-   * @param schema schema which is show
-   * @return catalog is show or not
-   */
-  public final boolean isShowSchema(final String catalog, final String schema) {
-    return schema == null || shownSchemas.isEmpty() || shownSchemas.containsKey(catalog)
-        && shownSchemas.get(catalog).contains(schema) && shownSchemas.get(catalog).size() > 1;
-  }
-
-  /** List of shown table type (sorted)
-   * @param catalog catalog which is show
-   * @param schema schema which is show
-   * @return catalog is show or not
-   */
-  public final List<TableDesc.TableType> shownTableType(final String catalog, final String schema) {
-    Set<TableDesc.TableType> set = new HashSet<>(2);
-    set.addAll(this.tableDescriptionsMap.get(catalog).get(schema).values().stream().filter(this::isShowTable)
-        .map(TableDesc::getTableType).collect(Collectors.toList()));
-    set.forEach(r -> {
-      if (r == null) {
-        set.remove(null);
-        set.add(TableDesc.TableType.NULL);
-      }
-    });
-    List<TableDesc.TableType> result = new ArrayList<>(set);
-    Collections.sort(result);
-    return result;
-  }
+  private ExtConfFactory extConfFactory = new ExtConfFactory(this);
+  public ExtConfFactory getExtConfFactory() { return extConfFactory; }
 
   public final SessionType storeToSessionType() {
     cz.lbenda.dataman.schema.dataman.ObjectFactory of = new cz.lbenda.dataman.schema.dataman.ObjectFactory();
@@ -164,15 +93,14 @@ public class DbConfig {
     result.setLibraries(of.createLibrariesType());
     result.getLibraries().getLibrary().addAll(getLibrariesPaths());
 
-    result.setExtendedConfig(of.createExtendedConfigType());
-    result.getExtendedConfig().setType(this.getExtendedConfigType());
-    result.getExtendedConfig().setValue(this.getExtendedConfigurationPath());
+    result.setExtendedConfig(this.extConfFactory.getExtendedConfigType());
     return result;
   }
 
   private void loadJdbcConfiguration(JdbcType jdbcType) {
     jdbcConfiguration = new JDBCConfiguration();
     jdbcConfiguration.load(jdbcType);
+    this.getConnectionProvider().setUser(new UserImpl(jdbcConfiguration.getUsername()));
   }
 
   public void fromSessionType(final SessionType session, boolean readId) {
@@ -185,125 +113,7 @@ public class DbConfig {
     if (session.getLibraries() != null) {
       session.getLibraries().getLibrary().forEach(this.librariesPaths::add);
     }
-
-    ExtendedConfigType ed = session.getExtendedConfig();
-    if (ed != null) {
-      setExtendedConfigType(ed.getType());
-      setExtendedConfigurationPath(ed.getValue());
-    }
-  }
-
-  private void loadExtendedConfiguration() {
-    if (StringUtils.isBlank(extendedConfigurationPath)) {
-      loadExtendedConfiguration(null);
-      LOG.debug("No extend configuration for load");
-      return;
-    }
-    if (reader == null) {
-      this.reloadStructure();
-      return;
-    }
-
-    switch (getExtendedConfigType()) {
-      case FILE:
-        try (FileReader fileReader = new FileReader(new File(extendedConfigurationPath))) {
-          loadExtendedConfiguration(fileReader);
-        } catch (IOException e) {
-          LOG.error("Problem with read extend config from file: " + extendedConfigurationPath, e);
-          ExceptionMessageFrmController.showException("Problem with read extend config from file: " + extendedConfigurationPath, e);
-        }
-        break;
-      case DATABASE:
-        String extendConfiguration = null;
-        try (Connection connection = connectionProvider.getConnection()) {
-          //noinspection SqlNoDataSourceInspection,SqlDialectInspection
-          try (PreparedStatement ps = connection.prepareCall("select usr, exConf from "
-              + extendedConfigurationPath + " where (usr = ? or usr is null or usr = '')")) {
-            ps.setString(1, connectionProvider.getUser().getUsername());
-            try (ResultSet rs = ps.executeQuery()) {
-              while (rs.next()) {
-                if (rs.getString(1) == null && extendConfiguration == null) { // The null user is used only if no specific user configuration is read
-                  extendConfiguration = rs.getString(2);
-                } else if (rs.getString(1) != null ) {
-                  extendConfiguration = rs.getString(2);
-                }
-              }
-            }
-          }
-        } catch (SQLException e) {
-          LOG.error("Problem with read extend config from table: " + extendedConfigurationPath, e);
-          ExceptionMessageFrmController.showException("Problem with read extend config from table: " + extendedConfigurationPath, e);
-        }
-        if (!StringUtils.isBlank(extendConfiguration)) {
-          loadExtendedConfiguration(new StringReader(extendConfiguration));
-        } else { StringUtils.isBlank(null); }
-    }
-  }
-
-  private void tableOfKeysSQLFromElement(final TableOfKeySQLsType tableOfKeySQLs) {
-    LOG.trace("load table of keys sql");
-    if (tableOfKeySQLs == null || tableOfKeySQLs.getTableOfKeySQL().isEmpty()) {
-      LOG.debug("No table of keys in configuration");
-      return;
-    }
-    tableOfKeysSQL.clear();
-    for (TableOfKeySQLType tableOfKey : tableOfKeySQLs.getTableOfKeySQL()) {
-      this.tableOfKeysSQL.put(tableOfKey.getId(), tableOfKey.getValue());
-    }
-  }
-
-  public final TableDesc getOrCreateTableDescription(String catalog, String schema, String table) {
-    for (TableDesc td : getTableDescriptions()) {
-      if (AbstractHelper.nullEquals(td.getCatalog(), catalog)
-              && AbstractHelper.nullEquals(td.getSchema(), schema)
-              && AbstractHelper.nullEquals(td.getName(), table)) {
-        return td;
-      }
-    }
-    TableDesc td = new TableDesc(catalog, schema, null, table);
-    td.setDbConfig(this);
-    getTableDescriptions().add(td);
-    Collections.sort(getTableDescriptions());
-
-    Map<String, Map<String, TableDesc>> catgMap = tableDescriptionsMap.get(td.getCatalog());
-    if (catgMap == null) {
-      catgMap = new HashMap<>();
-      tableDescriptionsMap.put(td.getCatalog(), catgMap);
-    }
-    Map<String, TableDesc> schMap = catgMap.get(td.getSchema());
-    if (schMap == null) {
-      schMap = new HashMap<>();
-      catgMap.put(td.getSchema(), schMap);
-    }
-    schMap.put(td.getName(), td);
-
-    return td;
-  }
-
-  private void readTableConf(final ExConfType exConf) {
-    TableDescriptionExtension.XMLReaderWriterHelper.loadExtensions(this, exConf);
-  }
-
-  /** Load schemas which will be showed */
-  private void loadSchemas(final SchemasType schemas) {
-    shownSchemas.clear();
-    if (schemas == null || schemas.getSchema().isEmpty()) {
-      LOG.debug("No schemas to configure");
-      return;
-    }
-    schemas.getSchema().forEach(this::loadSchema);
-  }
-
-  /** Load schema which will be show */
-  private void loadSchema(final SchemaType schema) {
-    String catalog = schema.getCatalog();
-    String sche = schema.getSchema();
-    List<String> list = shownSchemas.get(catalog);
-    if (list == null) {
-      list = new ArrayList<>();
-      shownSchemas.put(catalog, list);
-    }
-    list.add(sche);
+    extConfFactory.setExtendedConfigType(session.getExtendedConfig());
   }
 
   public final void setId(final String id) {
@@ -317,39 +127,9 @@ public class DbConfig {
     }
   }
 
-  private void loadExtendedConfiguration(Reader reader) {
-    if (reader == null) {
-      loadSchemas(null);
-      tableOfKeysSQLFromElement(null);
-      readTableConf(null);
-    } else {
-      try {
-        JAXBContext jc = JAXBContext.newInstance(ObjectFactory.class);
-        Unmarshaller u = jc.createUnmarshaller();
-        JAXBElement o = (JAXBElement) u.unmarshal(reader);
-        if (o.getValue() instanceof ExConfType) {
-          ExConfType exConf = (ExConfType) o.getValue();
-          loadSchemas(exConf.getSchemas());
-          tableOfKeysSQLFromElement(exConf.getTableOfKeySQLs());
-          readTableConf(exConf);
-        } else {
-          LOG.error("The file didn't contains expected configuration: " + o.getClass().getName());
-        }
-      } catch (JAXBException e) {
-        LOG.error("Problem with reading extended configuration: " + e.toString(), e);
-      }
-    }
-  }
-
-  public final TableDesc getTableDescription(String catalog, String schema, String table) {
-    return tableDescriptionsMap.get(catalog).get(schema).get(table);
-  }
-
   public void reloadStructure() {
-    this.tableDescriptionsMap.clear();
-    this.tableDescriptions.clear();
-    loadExtendedConfiguration();
     reader.generateStructure();
+    this.extConfFactory.load();
   }
 
   /** Close connection to database */
@@ -362,35 +142,6 @@ public class DbConfig {
     } catch (SQLException e) {
       LOG.warn("The connection can't be closed.");
     }
-  }
-
-  /** Return all catalogs in table */
-  public Set<String> getCatalogs() {
-    return tableDescriptionsMap.keySet();
-  }
-
-  /** return all schemas of given catalog name */
-  public Set<String> getSchemas(String catalog) {
-    if (tableDescriptionsMap.get(catalog) == null) { return Collections.emptySet(); }
-    return tableDescriptionsMap.get(catalog).keySet();
-  }
-
-  /** Return all table types in given catalog and schema */
-  @SuppressWarnings("unused")
-  public Set<TableDesc.TableType> getTableTypes(String catalog, String schema) {
-    Set<TableDesc.TableType> result = new HashSet<>();
-    tableDescriptionsMap.get(catalog).get(schema).values().forEach(td -> result.add(td.getTableType()));
-    return result;
-  }
-
-  /** Return all tables of table type */
-  public List<TableDesc> getTableDescriptions(String catalog, String schema, TableDesc.TableType tableType) {
-    List<TableDesc> result = new ArrayList<>();
-    tableDescriptionsMap.get(catalog).get(schema).values().forEach(td -> {
-      if (AbstractHelper.nullEquals(tableType, td.getTableType())) {
-        result.add(td);
-      }});
-    return result;
   }
 
   public void save(Writer writer) throws IOException {

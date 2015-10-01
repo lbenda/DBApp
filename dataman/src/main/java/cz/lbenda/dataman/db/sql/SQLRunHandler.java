@@ -71,7 +71,7 @@ public class SQLRunHandler extends AbstractAction {
       sqlQueryResult.setSql(sql);
       if (dbConfigProperty.getValue() != null
           && dbConfigProperty.getValue().connectionProvider.isConnected()) {
-        dbConfigProperty.getValue().getReader().onPreparedStatement(sql,
+        dbConfigProperty.getValue().getConnectionProvider().onPreparedStatement(sql,
             tuple2 -> this.statementToSQLQueryResult(sqlQueryResult, tuple2));
         sqlEditorController.addQueryResult(sqlQueryResult);
       }
