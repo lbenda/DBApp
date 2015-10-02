@@ -24,6 +24,7 @@ import cz.lbenda.gui.editor.TextEditor;
 import cz.lbenda.rcp.ExceptionMessageFrmController;
 import cz.lbenda.rcp.localization.Message;
 import cz.lbenda.rcp.localization.MessageFactory;
+import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -162,12 +163,11 @@ public class SQLEditorController {
         msg.append("Affected rows: ").append(result.getAffectedRow()).append("<br />\n");
       }
       consoleMessages.append("<div class=\"msg\">\n").append(msg).append("</div>\n");
-      webView.getEngine().loadContent(String.format(HTML, consoleMessages.toString()));
+      Platform.runLater(() -> webView.getEngine().loadContent(String.format(HTML, consoleMessages.toString())));
     } else {
       DataTableFrmController dataTableController = new DataTableFrmController(result);
-
       String title = result.getSql() == null ? "" : (result.getSql().length() > 50 ? result.getSql().substring(1, 45) + "..." : result.getSql());
-      nodeShower.addNode(dataTableController.getTabView(), title, true);
+      Platform.runLater(() -> nodeShower.addNode(dataTableController.getTabView(), title, true));
     }
   }
 

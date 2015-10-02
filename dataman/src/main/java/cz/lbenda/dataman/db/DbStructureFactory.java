@@ -24,6 +24,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 
+import cz.lbenda.dataman.db.frm.DbStructureFrmController;
+import cz.lbenda.rcp.StatusHelper;
+import cz.lbenda.rcp.localization.Message;
+import cz.lbenda.rcp.localization.MessageFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +38,24 @@ import javax.annotation.Nonnull;
 public class DbStructureFactory implements DBAppDataSource.DBAppDataSourceExceptionListener {
 
   private static final Logger LOG = LoggerFactory.getLogger(DbStructureFactory.class);
+
+  @Message
+  public static final String TASK_NAME = "Read database structure";
+  @Message
+  public static final String STEP_READ_TABLES = "Read tables";
+  @Message
+  public static final String STEP_READ_COLUMNS = "Read columns";
+  @Message
+  public static final String STEP_READ_PRIMARY_KEYS = "Read primary keys";
+  @Message
+  public static final String STEP_READ_FOREIGN_KEYS = "Read foreign keys";
+  @Message
+  public static final String STEP_FINISH = "Structure of databse was readed.";
+
+  static {
+    MessageFactory.initializeMessages(DbStructureFrmController.class);
+  }
+
   private final ConnectionProvider connectionProvider;
   private final DbConfig dbConfig;
 
@@ -47,8 +69,7 @@ public class DbStructureFactory implements DBAppDataSource.DBAppDataSourceExcept
    * @param td table which is read
    * @param from first row where to start with read. If -1 is set, then return whole table
    * @param to last row where stop read
-   * @return list of object from db
-   */
+   * @return list of object from db */
   public final List<RowDesc> readTableData(TableDesc td, int from, int to) {
     try (Connection conn = connectionProvider.getConnection()) {
       try (Statement st = conn.createStatement()) {
@@ -123,14 +144,24 @@ public class DbStructureFactory implements DBAppDataSource.DBAppDataSourceExcept
     }
   }
 
+  private static final double progressStepCount = 4;
+
   public void generateStructure() {
     try (Connection conn = connectionProvider.getConnection()) {
       Map<String, CatalogDesc> catalogs = new HashMap<>();
 
       DatabaseMetaData dmd = conn.getMetaData();
       SQLDialect dialect = dbConfig.getDialect();
+      StatusHelper.getInstance().progressStart(this, TASK_NAME, progressStepCount);
+      try (ResultSet tabs = dmd.getTables(null, null, null, null)) {
+        tabs.last();
+        StatusHelper.getInstance().progressNextStep(this, STEP_READ_TABLES, tabs.getRow());
+      } catch (SQLException e) {
+        StatusHelper.getInstance().progressNextStep(this, STEP_READ_TABLES, 200);
+      }
       try (ResultSet tabs = dmd.getTables(null, null, null, null)) {
         while (tabs.next()) {
+          StatusHelper.getInstance().progress(this);
           String catalogName = tabs.getString(dialect.tableCatalog());
           String schemaName = tabs.getString(dialect.tableSchema());
           String tableName = tabs.getString(dialect.tableName());
@@ -158,6 +189,7 @@ public class DbStructureFactory implements DBAppDataSource.DBAppDataSourceExcept
         generateStructureForeignKeys(catalogs, dmd);
         dbConfig.getCatalogs().clear();
         dbConfig.getCatalogs().addAll(catalogs.values());
+        StatusHelper.getInstance().progressFinish(this, STEP_FINISH);
       }
     } catch (SQLException e) {
       throw new RuntimeException(e);
@@ -177,8 +209,16 @@ public class DbStructureFactory implements DBAppDataSource.DBAppDataSourceExcept
   private void generateStructureColumns(CatalogHolder catalogHolder, DatabaseMetaData dmd) throws SQLException {
     SQLDialect dialect = dbConfig.getJdbcConfiguration().getDialect();
     try (ResultSet rsColumn  = dmd.getColumns(null, null, null, null)) {
+      rsColumn.last();
+      StatusHelper.getInstance().progressNextStep(this, STEP_READ_COLUMNS, rsColumn.getRow());
+    } catch (SQLException e) {
+      StatusHelper.getInstance().progressNextStep(this, STEP_READ_COLUMNS, 500);
+    }
+    try (ResultSet rsColumn  = dmd.getColumns(null, null, null, null)) {
+
       // writeColumnNames(rsColumn.getMetaData());
       while (rsColumn.next()) {
+        StatusHelper.getInstance().progress(this);
         String catalog = rsColumn.getString(dialect.columnTableCatalog());
         String schema = rsColumn.getString(dialect.columnTableSchema());
         String table = rsColumn.getString(dialect.columnTableName());
@@ -191,9 +231,15 @@ public class DbStructureFactory implements DBAppDataSource.DBAppDataSourceExcept
 
   private void generatePKColumns(Collection<CatalogDesc> catalogs, DatabaseMetaData dmd) throws SQLException {
     SQLDialect di = dbConfig.getJdbcConfiguration().getDialect();
+
+    StatusHelper.getInstance().progressNextStep(this, STEP_READ_PRIMARY_KEYS,
+        catalogs.stream()
+            .mapToInt(cat -> cat.getSchemas().stream()
+                .mapToInt(schema -> schema.getTables().size()).sum()).sum());
     for (CatalogDesc ch : catalogs) {
       for (SchemaDesc schema : ch.getSchemas()) {
         for (TableDesc td : schema.getTables()) {
+          StatusHelper.getInstance().progress(this);
           try (ResultSet rsPk = dmd.getPrimaryKeys(ch.getName(), schema.getName(), td.getName())) {
             while (rsPk.next()) {
               ColumnDesc column = td.getColumn(rsPk.getString(di.pkColumnName()));
@@ -248,9 +294,14 @@ public class DbStructureFactory implements DBAppDataSource.DBAppDataSourceExcept
 
   private void generateStructureForeignKeys(Map<String, CatalogDesc> catalogs, DatabaseMetaData dmd) throws SQLException {
     SQLDialect di = dbConfig.getJdbcConfiguration().getDialect();
+    StatusHelper.getInstance().progressNextStep(this, STEP_READ_FOREIGN_KEYS,
+        catalogs.values().stream()
+            .mapToInt(cat -> cat.getSchemas().stream()
+                .mapToInt(schema -> schema.getTables().size()).sum()).sum());
     for (CatalogDesc ch : catalogs.values()) {
       for (SchemaDesc schema : ch.getSchemas()) {
         for (TableDesc td : schema.getTables()) {
+          StatusHelper.getInstance().progress(this);
           ResultSet rsEx = dmd.getExportedKeys(ch.getName(), schema.getName(), td.getName());
           while (rsEx.next()) {
             String slaveCatalogName = rsEx.getString(di.fkSlaveTableCatalog());

@@ -19,16 +19,19 @@ import cz.lbenda.common.StringConverterHolder;
 import cz.lbenda.dataman.db.*;
 import cz.lbenda.rcp.IconFactory;
 import javafx.beans.property.ObjectProperty;
+import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
+import javax.annotation.Nonnull;
 import java.util.function.Consumer;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 12.9.15.
  * Controller for frame which show structure of database */
+@SuppressWarnings("unchecked")
 public class DbStructureFrmController {
 
   private final static Image imageBlank = IconFactory.getInstance().image(DbStructureFrmController.class, "blank.png",
@@ -47,30 +50,46 @@ public class DbStructureFrmController {
   public Node getControlledNode() { return treeView; }
 
   private TreeView treeView;
+  private ObjectProperty<DbConfig> dbConfigProperty;
+  private final ListChangeListener<CatalogDesc> catalogChangeListener = change -> {
+    while (change.next()) {
+      if (change.wasAdded()) {
+        TreeItem root = new TreeItem();
+        treeView.setRoot(root);
+        DbConfig dbConfig = dbConfigProperty.getValue();
+        createCatalogTreeItems(root, dbConfig);
+      }
+    }
+  };
 
-  @SuppressWarnings("unchecked")
-  public DbStructureFrmController(ObjectProperty<DbConfig> dbConfigProperty, Consumer<TableDesc> tableShower) {
+  public DbStructureFrmController(@Nonnull ObjectProperty<DbConfig> dbConfigProperty,
+                                  @Nonnull Consumer<TableDesc> tableShower) {
+    this.dbConfigProperty = dbConfigProperty;
     treeView = new TreeView<>();
     treeView.setShowRoot(false);
     treeView.setOnMouseClicked(event -> {
       if (event.getClickCount() == 2) {
         TreeItem<TableDesc> item = (TreeItem<TableDesc>) treeView.getSelectionModel().getSelectedItem();
-        tableShower.accept(item.getValue()); // FIXME Exception in thread "JavaFX Application Thread" java.lang.ClassCastException: java.lang.String cannot be cast to cz.lbenda.dataman.db.TableDesc
+        tableShower.accept(item.getValue());
       }
     });
-    dbConfigProperty.addListener(observable -> {
-      DbConfig dbConfig = dbConfigProperty.getValue();
-      TreeItem<Object> root = new TreeItem<>();
+    dbConfigProperty.addListener((observable, oldValue, newValue) -> {
+      if (oldValue != null) {
+        oldValue.getCatalogs().removeListener(catalogChangeListener);
+      }
+      TreeItem root = new TreeItem();
       treeView.setRoot(root);
       root.setExpanded(true);
-
-      if (dbConfig != null && dbConfig.connectionProvider.isConnected()) {
-        createCatalogTreeItems(root, dbConfig);
+      if (newValue != null) {
+        newValue.getCatalogs().addListener(catalogChangeListener);
+        if (newValue.connectionProvider.isConnected()) {
+          createCatalogTreeItems(root, newValue);
+        }
       }
     });
   }
 
-  private void createCatalogTreeItems(TreeItem<Object> root, DbConfig dbConfig) {
+  private void createCatalogTreeItems(TreeItem root, DbConfig dbConfig) {
     long showedCatalog = dbConfig.getCatalogs().stream().filter(catalogDesc -> !catalogDesc.isHidden()).count();
     if (showedCatalog > 1) {
       dbConfig.getCatalogs().stream().filter(catalogDesc -> !catalogDesc.isHidden()).forEach(catalog -> {

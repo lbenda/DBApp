@@ -76,7 +76,9 @@ public class ConnectDatabaseHandler extends AbstractAction {
     if (dbConfigProperty.getValue() != null) {
       DbConfig dbConfig = dbConfigProperty.getValue();
       if (!dbConfig.getConnectionProvider().isConnected()) {
-        dbConfig.reloadStructure();
+        Thread th = new Thread(new DbConfig.Reload(dbConfig));
+        th.start();
+        // dbConfig.reloadStructure();
         dbConfigProperty.setValue(null);
         dbConfigProperty.setValue(dbConfig);
       } else {

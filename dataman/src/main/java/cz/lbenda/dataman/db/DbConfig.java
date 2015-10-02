@@ -28,6 +28,7 @@ import cz.lbenda.dataman.rc.DbConfigFactory;
 import cz.lbenda.dataman.schema.dataman.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -234,6 +235,18 @@ public class DbConfig {
     } catch (IOException e){
       LOG.error("Problem with create copied version of db config", e);
       throw new RuntimeException("Problem with create copied version of db config", e);
+    }
+  }
+
+  public static class Reload extends Task<Void> {
+    private DbConfig dbConfig;
+    public Reload(DbConfig dbConfig) {
+      this.dbConfig = dbConfig;
+    }
+    @Override
+    protected Void call() throws Exception {
+      dbConfig.reloadStructure();
+      return null;
     }
   }
 }

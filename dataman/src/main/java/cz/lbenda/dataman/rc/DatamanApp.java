@@ -26,12 +26,14 @@ import cz.lbenda.dataman.rc.frm.AboutApplicationHandler;
 import cz.lbenda.rcp.DialogHelper;
 import cz.lbenda.rcp.ExceptionMessageFrmController;
 import cz.lbenda.rcp.IconFactory;
+import cz.lbenda.rcp.StatusHelper;
 import cz.lbenda.rcp.action.SavableRegistry;
 import cz.lbenda.rcp.ribbon.Ribbon;
 import cz.lbenda.dataman.db.sql.SQLEditorController;
 import cz.lbenda.rcp.config.ConfigurationRW;
 import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Orientation;
@@ -42,6 +44,7 @@ import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import org.controlsfx.control.StatusBar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +54,7 @@ import java.util.Iterator;
 import java.util.PropertyResourceBundle;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 6.9.15.
- * Stand allone application for dataman */
+ * Stand alone application for dataman */
 public class DatamanApp extends Application {
 
   private static final Logger LOG = LoggerFactory.getLogger(DatamanApp.class);
@@ -78,6 +81,8 @@ public class DatamanApp extends Application {
   private TabPane detailTabs = new TabPane();
   private Accordion rightPane = new Accordion();
   private ObjectProperty<SQLQueryRows> sqlQueryRowsObjectProperty = new SimpleObjectProperty<>();
+  private StatusBar statusBar = new StatusBar();
+
   private NodeShower nodeShower = new NodeShower() {
     @Override public void addNode(Node node, String title, boolean closable) { addRemoveToDetail(title, node, closable); }
     @Override public void removeNode(Node node) { addRemoveToDetail("", node, false); }
@@ -95,6 +100,7 @@ public class DatamanApp extends Application {
     mainPane.setPrefHeight(800.0);
     mainPane.setPrefWidth(1024.0);
     mainPane.getStyleClass().add("background");
+    mainPane.setBottom(statusBar);
 
     mainPane.setTop(ribbon);
 
@@ -183,6 +189,7 @@ public class DatamanApp extends Application {
   @SuppressWarnings("unchecked")
   @Override
   public void start(Stage primaryStage) throws Exception {
+    StatusHelper.getInstance().setStatusBar(statusBar);
     Thread.currentThread().setUncaughtExceptionHandler((thread, throwable) ->  ExceptionMessageFrmController
         .showException(MessageFactory.getInstance().getMessage("UncaughtException"), throwable));
 
@@ -225,14 +232,19 @@ public class DatamanApp extends Application {
     addToCenter(SQLEditorController.WINDOW_TITLE, te.getNode(), false);
 
     DbStructureFrmController dfc = new DbStructureFrmController(currentDbProperty, td -> {
-      DataTableFrmController controller = new DataTableFrmController(td);
-      addToCenter(controller.titleProperty(), controller.getTabView(), true);
+      new Thread(() -> {
+        StatusHelper.getInstance().progressStart(td, DataTableFrmController.TASK_NAME, 2);
+        StatusHelper.getInstance().progressNextStep(td, td.getName(), 0);
+        DataTableFrmController controller = new DataTableFrmController(td);
+        StatusHelper.getInstance().progressNextStep(td, td.getName(), 0);
+        Platform.runLater(() -> addToCenter(controller.titleProperty(), controller.getTabView(), true));
+        StatusHelper.getInstance().progressFinish(td, DataTableFrmController.STEP_FINISH);
+      }).start();
     });
     leftPane.getChildren().add(dfc.getControlledNode());
 
     RowEditorFrmController rowEditorFrmController = new RowEditorFrmController(tableViewObjectProperty);
     addToRight(RowEditorFrmController.WINDOW_TITLE, rowEditorFrmController.getPane());
-
 
     // Scene scene = te.createScene();
     primaryStage.setScene(scene);

@@ -18,11 +18,14 @@ package cz.lbenda.dataman.db.sql;
 import cz.lbenda.common.Tuple2;
 import cz.lbenda.dataman.db.*;
 import cz.lbenda.dataman.db.DbConfig;
+import cz.lbenda.rcp.StatusHelper;
 import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
 import cz.lbenda.rcp.localization.Message;
+import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.event.ActionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,35 +50,60 @@ import java.util.function.Consumer;
 )
 public class SQLRunHandler extends AbstractAction {
 
+  @Message
+  public static final String TASK_NAME = "Execute sql";
+  @Message
+  public static final String STEP_FINISH = "SQL command finish";
+  static {
+    MessageFactory.initializeMessages(SQLRunHandler.class);
+  }
+
   private static Logger LOG = LoggerFactory.getLogger(SQLRunHandler.class);
   private SQLEditorController sqlEditorController;
   private ObjectProperty<DbConfig> dbConfigProperty;
   /** Function which is call when something is write to console and should be show */
   private Consumer<SQLRunHandler> consoleShower;
+  private ChangeListener<Boolean> connectionListener = (observableValue, oldValue, newValue) -> setEnable(newValue);
 
   public SQLRunHandler(ObjectProperty<DbConfig> dbConfigProperty, SQLEditorController sqlEditorController,
                        Consumer<SQLRunHandler> consoleShower) {
     this.sqlEditorController = sqlEditorController;
     this.dbConfigProperty = dbConfigProperty;
     this.consoleShower = consoleShower;
-    dbConfigProperty.addListener(observable -> setEnable(dbConfigProperty.getValue() != null
-        && dbConfigProperty.getValue().connectionProvider.isConnected()));
+    dbConfigProperty.addListener((observable, oldValue, newValue) -> {
+      if (oldValue != null) {
+        oldValue.getConnectionProvider().connectedProperty().removeListener(connectionListener);
+      }
+      if (newValue == null) {
+        setEnable(false);
+      } else {
+        setEnable(newValue.connectionProvider.isConnected());
+        newValue.connectionProvider.connectedProperty().addListener(connectionListener);
+      }
+    });
   }
 
   @Override
   public void handle(ActionEvent e) {
     String[] sqls = sqlEditorController.getExecutedText();
 
-    for (String sql : sqls) {
-      SQLQueryResult sqlQueryResult = new SQLQueryResult();
-      sqlQueryResult.setSql(sql);
-      if (dbConfigProperty.getValue() != null
-          && dbConfigProperty.getValue().connectionProvider.isConnected()) {
-        dbConfigProperty.getValue().getConnectionProvider().onPreparedStatement(sql,
-            tuple2 -> this.statementToSQLQueryResult(sqlQueryResult, tuple2));
-        sqlEditorController.addQueryResult(sqlQueryResult);
+    new Thread(() -> {
+      StatusHelper.getInstance().progressStart(this, TASK_NAME, sqls.length);
+      int i = 0;
+      for (String sql : sqls) {
+        i++;
+        StatusHelper.getInstance().progressNextStep(this, i + ": " + sql, 0);
+        SQLQueryResult sqlQueryResult = new SQLQueryResult();
+        sqlQueryResult.setSql(sql);
+        if (dbConfigProperty.getValue() != null
+            && dbConfigProperty.getValue().connectionProvider.isConnected()) {
+          dbConfigProperty.getValue().getConnectionProvider().onPreparedStatement(sql,
+              tuple2 -> this.statementToSQLQueryResult(sqlQueryResult, tuple2));
+          sqlEditorController.addQueryResult(sqlQueryResult);
+        }
       }
-    }
+      StatusHelper.getInstance().progressFinish(this, STEP_FINISH);
+    }).start();
   }
 
   public void statementToSQLQueryResult(SQLQueryResult result, Tuple2<PreparedStatement, SQLException> tuple) {
