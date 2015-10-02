@@ -15,10 +15,9 @@
  */
 package cz.lbenda.dataman.db.frm;
 
-import cz.lbenda.dataman.db.CatalogDesc;
-import cz.lbenda.dataman.db.SchemaDesc;
-import cz.lbenda.dataman.db.TableDesc;
-import cz.lbenda.dataman.db.DbConfig;
+import cz.lbenda.common.StringConverterHolder;
+import cz.lbenda.dataman.db.*;
+import cz.lbenda.rcp.IconFactory;
 import javafx.beans.property.ObjectProperty;
 import javafx.scene.Node;
 import javafx.scene.control.TreeItem;
@@ -32,8 +31,18 @@ import java.util.function.Consumer;
  * Controller for frame which show structure of database */
 public class DbStructureFrmController {
 
-  private final Image imageTable = new Image(getClass().getResourceAsStream("table.png"));
-  private final Image imageView = new Image(getClass().getResourceAsStream("view.png"));
+  private final static Image imageBlank = IconFactory.getInstance().image(DbStructureFrmController.class, "blank.png",
+      IconFactory.IconLocation.INDICATOR);
+  private final static Image imageTable = IconFactory.getInstance().image(DbStructureFrmController.class, "table.png",
+      IconFactory.IconLocation.INDICATOR);
+  private final static Image imageView = IconFactory.getInstance().image(DbStructureFrmController.class, "view.png",
+      IconFactory.IconLocation.INDICATOR);
+  private final static Image imagePrimaryKey = IconFactory.getInstance().image(DbStructureFrmController.class, "key-golden.png",
+      IconFactory.IconLocation.INDICATOR);
+  private final static Image imageForeignKey = IconFactory.getInstance().image(DbStructureFrmController.class, "key-blue.png",
+      IconFactory.IconLocation.INDICATOR);
+  private final static Image imagePrimaryAndForeignKey = IconFactory.getInstance().image(DbStructureFrmController.class, "key-goldenAndBlue.png",
+      IconFactory.IconLocation.INDICATOR);
 
   public Node getControlledNode() { return treeView; }
 
@@ -116,15 +125,31 @@ public class DbStructureFrmController {
     switch (tableType) {
       case TABLE : image = imageTable; break;
       case VIEW : image = imageView; break;
-      default: image = null;
+      default: image = imageBlank;
     }
     schema.tablesByType(tableType).stream().sorted(TableDesc::compareTo).forEach(td -> {
       if (!td.isHidden()) {
-        final TreeItem<TableDesc> tableItem; // TODO apped tooltim from table comment
-        if (image != null) { tableItem = new TreeItem<>(td, new ImageView(image)); }
-        else { tableItem = new TreeItem<>(td); }
+        final TreeItem<TableDesc> tableItem; // TODO append tooltip from table comment
+        tableItem = new TreeItem<>(td, new ImageView(image));
         item.getChildren().add(tableItem);
+        createColumnTreeItems(tableItem, td);
       }
+    });
+  }
+
+  private void createColumnTreeItems(TreeItem item, TableDesc tableDesc) {
+    tableDesc.getColumns().forEach(columnDesc -> {
+      final TreeItem columnItem; // TODO append tooltip from table comment
+      Image image = null;
+      if (columnDesc.isPK()) { image = imagePrimaryKey; }
+      if (columnDesc.isFk()) {
+        if (image == null) { image = imageForeignKey; }
+        else { image = imagePrimaryAndForeignKey; }
+      }
+      if (image == null) { image = imageBlank; }
+      columnItem = new TreeItem<>(new StringConverterHolder<>(columnDesc, columnDesc::getName), new ImageView(image));
+      //noinspection unchecked
+      item.getChildren().add(columnItem);
     });
   }
 }

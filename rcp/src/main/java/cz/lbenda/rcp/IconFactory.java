@@ -46,6 +46,7 @@ public class IconFactory {
     private IconSize iconSize;
     IconLocation(IconSize iconSize) { this.iconSize = iconSize; }
     public IconSize getIconSize() { return iconSize; }
+    @SuppressWarnings("unused")
     public void setIconSize(IconSize iconSize) { this.iconSize = iconSize; }
   }
 

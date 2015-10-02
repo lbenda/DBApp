@@ -28,9 +28,9 @@ import java.util.*;
  */
 public class ColumnDesc {
 
-  private TableDesc tableDescription;
+  private TableDesc tableDesc;
   @SuppressWarnings("unused")
-  public final TableDesc getTableDescription() { return tableDescription; }
+  public final TableDesc getTableDesc() { return tableDesc; }
   private final String catalog; public String getCatalog() { return catalog; }
   private final String schema; public String getSchema() { return schema; }
   private final String table; public String getTable() { return table; }
@@ -84,7 +84,7 @@ public class ColumnDesc {
 
   /** Create column description and fill it with data which is from result set */
   public ColumnDesc(final TableDesc td, ResultSet rs, SQLDialect dialect) throws SQLException {
-    this.tableDescription = td;
+    this.tableDesc = td;
     this.position = -1;
     this.catalog = td.getSchema().getCatalog().getName();
     this.schema = td.getSchema().getName();
@@ -111,7 +111,7 @@ public class ColumnDesc {
   public ColumnDesc(final TableDesc td, final String name, final String label, final int dataType, final String columnTypeName,
                     final int size, final boolean nullable, final boolean autoincrement, final boolean generated,
                     final SQLDialect dialect) {
-    this.tableDescription = td;
+    this.tableDesc = td;
     this.position = -1;
     this.catalog = td.getSchema().getCatalog().getName();
     this.schema = td.getSchema().getName();
@@ -128,9 +128,9 @@ public class ColumnDesc {
   /** Set primary key and add this column to set of primary column in to metadata */
   public final void setPK(boolean pk) {
     this.pk = pk;
-    if (tableDescription != null && tableDescription.getQueryRow() != null) {
-      if (pk) { tableDescription.getQueryRow().getMetaData().getPKColumns().add(this); }
-      else { tableDescription.getQueryRow().getMetaData().getPKColumns().remove(this); }
+    if (tableDesc != null && tableDesc.getQueryRow() != null) {
+      if (pk) { tableDesc.getQueryRow().getMetaData().getPKColumns().add(this); }
+      else { tableDesc.getQueryRow().getMetaData().getPKColumns().remove(this); }
     }
   }
 
@@ -144,13 +144,21 @@ public class ColumnDesc {
    * @return if no extension is defined return empty list */
   @Nonnull
   public List<TableDescriptionExtension> getExtensions() {
-    if (tableDescription == null) { return Collections.emptyList(); }
-    return tableDescription.getColumnExtensions(this);
+    if (tableDesc == null) { return Collections.emptyList(); }
+    return tableDesc.getColumnExtensions(this);
   }
 
   /** Inform if this column is editable. */
   public boolean isEditable() {
-    return this.tableDescription != null && this.tableDescription.isEditable() && !this.isGenerated();
+    return this.tableDesc != null && this.tableDesc.isEditable() && !this.isGenerated();
+  }
+
+  /** Return true if column is consumer of foreign key (on this table is constraint) */
+  public boolean isFk() {
+    if (tableDesc != null) {
+      return tableDesc.getForeignKeys().stream().anyMatch(fk -> this.equals(fk.getSlaveColumn()));
+    }
+    return false;
   }
 
   @Override
