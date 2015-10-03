@@ -16,7 +16,12 @@
 package cz.lbenda.gui.editor;
 
 import javafx.concurrent.Task;
+import javafx.event.Event;
+import javafx.scene.Cursor;
 import javafx.scene.Scene;
+import javafx.scene.control.IndexRange;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.StackPane;
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
@@ -96,6 +101,27 @@ public class TextEditor {
         .awaitLatest(textChanges)
         .map(Try::get)
         .subscribe(this::applyHighlighting);
+
+    codeArea.setOnDragOver(event -> {
+      if (event.getGestureSource() != codeArea && event.getDragboard().hasString()) {
+        event.acceptTransferModes(TransferMode.COPY);
+      }
+      event.consume();
+    });
+    codeArea.setOnDragEntered(Event::consume);
+    codeArea.setOnDragExited(Event::consume);
+    codeArea.setOnDragDropped(event -> {
+      Dragboard db = event.getDragboard();
+      boolean success = false;
+      if (db.hasString()) {
+        Integer position = codeArea.anchorProperty().getValue();
+        IndexRange indexRange = new IndexRange(position.intValue(), position.intValue());
+        codeArea.replaceText(indexRange, db.getString());
+        codeArea.requestFocus();
+        success = true;
+      }
+      event.setDropCompleted(success);
+    });
     scene = codeArea.getScene();
     return codeArea;
   }

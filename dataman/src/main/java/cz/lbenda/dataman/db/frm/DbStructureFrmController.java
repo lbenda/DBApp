@@ -25,6 +25,9 @@ import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 
 import javax.annotation.Nonnull;
 import java.util.function.Consumer;
@@ -71,6 +74,28 @@ public class DbStructureFrmController {
       if (event.getClickCount() == 2) {
         TreeItem<TableDesc> item = (TreeItem<TableDesc>) treeView.getSelectionModel().getSelectedItem();
         tableShower.accept(item.getValue());
+      }
+    });
+    treeView.setOnDragDetected(event -> {
+      if (event.getSource() instanceof TreeView) {
+        TreeView source = (TreeView) event.getSource();
+        TreeItem item = (TreeItem<TableDesc>) source.getSelectionModel().getSelectedItem();
+        Dragboard db = treeView.startDragAndDrop(TransferMode.ANY);
+
+        ClipboardContent content = new ClipboardContent();
+        if (item.getValue() instanceof SchemaDesc) {
+          content.putString("\"" + ((SchemaDesc) item.getValue()).getName() + "\"");
+        } else if (item.getValue() instanceof TableDesc) {
+          TableDesc td = (TableDesc) item.getValue();
+          content.putString("\"" + td.getSchema().getName() + "\".\"" + td.getName() + "\"");
+        } else if (item.getValue() instanceof StringConverterHolder) {
+          StringConverterHolder holder = (StringConverterHolder) item.getValue();
+          if (holder.getItem() instanceof ColumnDesc) {
+            content.putString("\"" + holder.toString() + "\"");
+          }
+        }
+        db.setContent(content);
+        event.consume();
       }
     });
     dbConfigProperty.addListener((observable, oldValue, newValue) -> {
