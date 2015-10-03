@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 2.10.15.
  * System which help to show status messages and progress */
+@SuppressWarnings("unused")
 public class StatusHelper {
 
   private static final StatusHelper instance = new StatusHelper();

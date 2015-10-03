@@ -16,12 +16,8 @@
 package cz.lbenda.dataman.db;
 
 import cz.lbenda.dataman.db.dialect.SQLDialect;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+
+import java.sql.*;
 import java.util.*;
 
 import cz.lbenda.dataman.db.frm.DbStructureFrmController;
@@ -196,7 +192,6 @@ public class DbStructureFactory implements DBAppDataSource.DBAppDataSourceExcept
     }
   }
 
-  /*
   private void writeColumnNames(ResultSetMetaData metaData) throws SQLException {
     for (int i = 1; i <= metaData.getColumnCount(); i++) {
       System.out.print(metaData.getColumnName(i));
@@ -204,7 +199,6 @@ public class DbStructureFactory implements DBAppDataSource.DBAppDataSourceExcept
       System.out.println(metaData.getColumnLabel(i));
     }
   }
-  */
 
   private void generateStructureColumns(CatalogHolder catalogHolder, DatabaseMetaData dmd) throws SQLException {
     SQLDialect dialect = dbConfig.getJdbcConfiguration().getDialect();
@@ -216,7 +210,7 @@ public class DbStructureFactory implements DBAppDataSource.DBAppDataSourceExcept
     }
     try (ResultSet rsColumn  = dmd.getColumns(null, null, null, null)) {
 
-      // writeColumnNames(rsColumn.getMetaData());
+      writeColumnNames(rsColumn.getMetaData());
       while (rsColumn.next()) {
         StatusHelper.getInstance().progress(this);
         String catalog = rsColumn.getString(dialect.columnTableCatalog());

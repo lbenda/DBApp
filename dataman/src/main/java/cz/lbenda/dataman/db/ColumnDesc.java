@@ -43,6 +43,7 @@ public class ColumnDesc {
   private final boolean autoincrement; public final boolean isAutoincrement() { return autoincrement; }
   private final Boolean generated; public final Boolean isGenerated() { return generated; }
   private final String label; public final String getLabel() { return label; }
+  private final int scale; public int getScale() {return scale; }
   private String columnTypeName;
   @SuppressWarnings("unused")
   public String getColumnTypeName() { return columnTypeName; }
@@ -63,6 +64,7 @@ public class ColumnDesc {
     this.schema = mtd.getSchemaName(position);
     this.table = mtd.getTableName(position);
     this.size = mtd.getColumnDisplaySize(position);
+    this.scale = mtd.getScale(position);
     this.columnTypeName = mtd.getColumnTypeName(position);
     this.dataType = dialect.columnTypeFromSQL(mtd.getColumnType(position), this.columnTypeName, this.size);
     this.javaClassName = mtd.getColumnClassName(position);
@@ -92,6 +94,7 @@ public class ColumnDesc {
     this.name = confValue(dialect.columnName(), rs);
     this.label = confValue(dialect.columnRemarks(), rs);
     this.size = confValue(dialect.columnSize(), rs);
+    this.scale = confValue(dialect.columnDecimalDigits(), rs);
     this.columnTypeName = confValue(dialect.columnTypeName(), rs);
     this.nullable = confBool(dialect.columnNullable(), rs);
     this.autoincrement = confBool(dialect.columnAutoIncrement(), rs);
@@ -118,6 +121,7 @@ public class ColumnDesc {
     this.table = td.getName();
     this.name = name;
     this.size = size;
+    this.scale = 0;
     this.nullable = nullable;
     this.autoincrement = autoincrement;
     this.generated = generated;
@@ -155,10 +159,7 @@ public class ColumnDesc {
 
   /** Return true if column is consumer of foreign key (on this table is constraint) */
   public boolean isFk() {
-    if (tableDesc != null) {
-      return tableDesc.getForeignKeys().stream().anyMatch(fk -> this.equals(fk.getSlaveColumn()));
-    }
-    return false;
+    return tableDesc != null && tableDesc.getForeignKeys().stream().anyMatch(fk -> this.equals(fk.getSlaveColumn()));
   }
 
   @Override

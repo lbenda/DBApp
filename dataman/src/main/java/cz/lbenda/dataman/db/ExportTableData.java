@@ -16,6 +16,8 @@
 package cz.lbenda.dataman.db;
 
 import cz.lbenda.dataman.Constants;
+import cz.lbenda.dataman.schema.export.*;
+import cz.lbenda.dataman.schema.export.ColumnType;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.io.FilenameUtils;
@@ -28,9 +30,14 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.jopendocument.dom.spreadsheet.SpreadSheet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -44,8 +51,10 @@ import java.util.stream.Collectors;
  * Class which give ability to export data table */
 public class ExportTableData {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ExportTableData.class);
+
   public enum SpreadsheetFormat {
-    XLSX("xlsx"), XLS("xls"), ODS("ods"), CSV("csv"), TXT("txt"), SQL("sql"), ;
+    XLSX("xlsx"), XLS("xls"), ODS("ods"), CSV("csv"), TXT("txt"), XMLv1("xml"), SQL("sql"), ;
     private static Map<String, SpreadsheetFormat> extensionsMap = new HashMap<>();
     static {
       Arrays.stream(SpreadsheetFormat.values()).forEach(s -> extensionsMap.put(s.getExtension(), s));
@@ -62,6 +71,7 @@ public class ExportTableData {
     switch (format) {
       case XLSX: writeSqlQueryRowsToXLSX(sqlQueryRows, sheetName, outputStream); break;
       case XLS: writeSqlQueryRowsToXLS(sqlQueryRows, sheetName, outputStream); break;
+      case XMLv1: writeSqlQueryRowsToXMLv1(sqlQueryRows, outputStream); break;
       case CSV: writeSqlQueryRowsToCSV(sqlQueryRows, outputStream); break;
       case TXT: writeSqlQueryRowsToTXT(sqlQueryRows, outputStream); break;
       case ODS: writeSqlQueryRowsToODS(sqlQueryRows, sheetName, outputStream); break;
@@ -176,5 +186,62 @@ public class ExportTableData {
     }
     TableModel model = new DefaultTableModel(rows, header);
     SpreadSheet.createEmpty(model).getPackage().save(outputStream);
+  }
+
+  private static DataTypeType columnTypeToDataTypeType(cz.lbenda.dataman.db.dialect.ColumnType columnType) {
+    return DataTypeType.fromValue(columnType.name());
+  }
+
+  private static String columnId(ColumnDesc cd) {
+    return cd.getCatalog() + "." + cd.getSchema() + "." + cd.getTable() + "." + cd.getName();
+  }
+
+  /** Write rows from sql query to output stream
+   * @param sqlQueryRows rows
+   * @param outputStream stream to which are data write */
+  public static void writeSqlQueryRowsToXMLv1(SQLQueryRows sqlQueryRows, OutputStream outputStream) {
+    ObjectFactory of = new ObjectFactory();
+    ExportType export = of.createExportType();
+    ColumnsType columnsType = of.createColumnsType();
+    export.setColumns(columnsType);
+    Map<ColumnDesc, ColumnType> ctsMap = new HashMap<>();
+
+    sqlQueryRows.getMetaData().getColumns().forEach(cd -> {
+      ColumnType ct = of.createColumnType();
+      ctsMap.put(cd, ct);
+      ct.setId(columnId(cd));
+      ct.setCatalog(cd.getCatalog());
+      ct.setSchema(cd.getSchema());
+      ct.setTable(cd.getTable());
+      ct.setColumn(cd.getName());
+      ct.setDataType(columnTypeToDataTypeType(cd.getDataType()));
+      ct.setLength(cd.getSize());
+      ct.setScale(cd.getScale());
+      ct.setValue(cd.getLabel());
+      columnsType.getColumn().add(ct);
+    });
+
+    sqlQueryRows.getRows().forEach(row -> {
+      RowType rowType = of.createRowType();
+      sqlQueryRows.getMetaData().getColumns().forEach(cd -> {
+        FieldType field = of.createFieldType();
+        field.setColumn(ctsMap.get(cd));
+        if (row.isColumnNull(cd)) { field.setNull(true); }
+        else { field.setValue(row.getColumnValueStr(cd)); }
+        rowType.getField().add(field);
+      });
+      export.getRow().add(rowType);
+    });
+
+    try {
+      JAXBContext jc = JAXBContext.newInstance(cz.lbenda.dataman.schema.export.ObjectFactory.class);
+      Marshaller m = jc.createMarshaller();
+      m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.FALSE);
+      m.marshal(of.createExport(export), outputStream);
+    } catch (JAXBException e) {
+
+      LOG.error("Problem with write exporting data: " + e.toString(), e);
+      throw new RuntimeException("Problem with write exporting data: " + e.toString(), e);
+    }
   }
 }

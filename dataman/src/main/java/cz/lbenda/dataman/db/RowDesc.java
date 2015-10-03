@@ -27,7 +27,6 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ObservableValue;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.SingleSelectionModel;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -197,6 +196,12 @@ public class RowDesc implements Observable {
       }
       if (noChanged) { setState(RowDescState.LOADED); }
     }
+  }
+
+  /** True if value in column is NULL */
+  public boolean isColumnNull(ColumnDesc column) {
+    Object o = getColumnValue(column);
+    return o == null || o instanceof BinaryData && ((BinaryData) o).isNull();
   }
 
   @Override

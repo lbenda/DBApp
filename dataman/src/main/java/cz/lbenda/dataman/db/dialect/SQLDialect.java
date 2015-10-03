@@ -41,6 +41,8 @@ public interface SQLDialect {
   default String columnDateType() { return "DATA_TYPE"; }
   default String columnTypeName() { return "TYPE_NAME"; }
   default String columnSize() { return "COLUMN_SIZE"; }
+  default String columnDecimalDigits() { return "DECIMAL_DIGITS"; }
+  default String columnNumPrecRadix() { return "NUM_PREC_RADIX"; }
   default String columnNullable() { return "IS_NULLABLE"; }
   default String columnAutoIncrement() { return "IS_AUTOINCREMENT"; }
   default String columnGenerated() { return "IS_GENERATEDCOLUMN"; }

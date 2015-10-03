@@ -21,32 +21,16 @@ import cz.lbenda.dataman.db.dialect.SQLDialectsHelper;
 
 import cz.lbenda.dataman.schema.dataman.JdbcType;
 import cz.lbenda.dataman.schema.dataman.ObjectFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Instance of this object hold information about connection to JDBC, and cane generate some default connection URL's
  * @author Lukas Benda <lbenda at lbenda.cz>
  */
 public class JDBCConfiguration {
 
-  private static final Logger LOG = LoggerFactory.getLogger(JDBCConfiguration.class);
-
   private String username = ""; public void setUsername(final String username) { this.username = username; } public String getUsername() { return this.username; }
   private String password = ""; public void setPassword(final String password) { this.password = password; } public String getPassword() { return this.password; }
   private String driverClass = ""; public void setDriverClass(final String driverClass) { this.driverClass = driverClass; } public String getDriverClass() { return this.driverClass; }
   private String url = ""; public void setUrl(final String url) { this.url = url; } public String getUrl() { return this.url; }
-
-  public void setUrlMySQL(final String serverName, final Integer portNumber) {
-    if (portNumber != null) {
-      this.url = String.format("jdbc:mysql://%s:%s/", serverName, portNumber);
-    } else {
-      this.url = String.format("jdbc:mysql://%s/", serverName);
-    }
-  }
-
-  public void setUrlDerbyStandAlone(final String fileName) {
-    this.url = String.format("jdbc:derby:%s;create=true", fileName);
-  }
 
   public final void load(JdbcType jdbc) {
     setPassword(jdbc.getPassword() == null ? "" : Obfuscate.deobfuscate(jdbc.getPassword()));

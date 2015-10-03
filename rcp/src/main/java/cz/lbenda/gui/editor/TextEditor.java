@@ -17,7 +17,6 @@ package cz.lbenda.gui.editor;
 
 import javafx.concurrent.Task;
 import javafx.event.Event;
-import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.IndexRange;
 import javafx.scene.input.Dragboard;

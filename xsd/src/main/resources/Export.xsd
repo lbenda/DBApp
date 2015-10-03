@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Copyright 2015 Lukas Benda <lbenda at lbenda.cz>.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<xsd:schema version="1.0"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:ex="http://www.lbenda.cz/dataman/schema/Export"
+            targetNamespace="http://www.lbenda.cz/dataman/schema/Export"
+            elementFormDefault="qualified">
+
+  <xsd:element name="export" type="ex:exportType"/>
+
+  <xsd:complexType name="exportType">
+    <xsd:sequence>
+      <xsd:element name="columns" type="ex:columnsType" minOccurs="1" maxOccurs="1"/>
+      <xsd:element name="row" type="ex:rowType" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+    <xsd:attribute name="sql" type="xsd:string">
+      <xsd:annotation><xsd:documentation>SQL command which return this data</xsd:documentation></xsd:annotation>
+    </xsd:attribute>
+  </xsd:complexType>
+
+  <xsd:complexType name="columnsType">
+    <xsd:sequence>
+      <xsd:element name="column" type="ex:columnType" minOccurs="1" maxOccurs="unbounded">
+        <xsd:annotation>
+          <xsd:documentation>Description of columns which was returned</xsd:documentation>
+        </xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="columnType">
+    <xsd:annotation><xsd:documentation>Description of column. In the value of column description is label/comment of column.</xsd:documentation></xsd:annotation>
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:string">
+        <xsd:attribute name="id" type="xsd:ID" use="required">
+          <xsd:annotation><xsd:documentation>Identifier of column for binding with column. Whole path: catalog.schema.table.columnName</xsd:documentation></xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="catalog" type="xsd:string" use="required">
+          <xsd:annotation><xsd:documentation>Catalog from which is schema</xsd:documentation></xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="schema" type="xsd:string" use="required">
+          <xsd:annotation><xsd:documentation>Schema from which is table</xsd:documentation></xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="table" type="xsd:string" use="required">
+          <xsd:annotation><xsd:documentation>Table from which is column</xsd:documentation></xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="column" type="xsd:string" use="required">
+          <xsd:annotation><xsd:documentation>Name of column</xsd:documentation></xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="dataType" type="ex:dataTypeType" use="required">
+          <xsd:annotation><xsd:documentation>Data type of column</xsd:documentation></xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="length" type="xsd:int" use="required">
+          <xsd:annotation><xsd:documentation>Length of column</xsd:documentation></xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="scale" type="xsd:int" use="optional">
+          <xsd:annotation><xsd:documentation>Scale for decimal value</xsd:documentation></xsd:annotation>
+        </xsd:attribute>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+
+  <xsd:simpleType name="dataTypeType">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="STRING"><xsd:annotation><xsd:documentation>Java string type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="SHORT"><xsd:annotation><xsd:documentation>Java short type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="BYTE"><xsd:annotation><xsd:documentation>Java byte type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="INTEGER"><xsd:annotation><xsd:documentation>Java integer type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="LONG"><xsd:annotation><xsd:documentation>Java long type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="BYTE_ARRAY"><xsd:annotation><xsd:documentation>Java byte[] type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="UUID"><xsd:annotation><xsd:documentation>Java UUID type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="ARRAY"><xsd:annotation><xsd:documentation>Java custom array type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="BIT"><xsd:annotation><xsd:documentation>Java number with value 0/1</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="BIT_ARRAY"><xsd:annotation><xsd:documentation>Bit mask: example 0100 1100 1001 1010</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="FLOAT"><xsd:annotation><xsd:documentation>Java float type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="DOUBLE"><xsd:annotation><xsd:documentation>Java double type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="DECIMAL"><xsd:annotation><xsd:documentation>Java BigDecimal type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="BOOLEAN"><xsd:annotation><xsd:documentation>Java Boolean type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="DATE"><xsd:annotation><xsd:documentation>Java Date type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="TIME"><xsd:annotation><xsd:documentation>Java Time type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="TIMESTAMP"><xsd:annotation><xsd:documentation>Java Timestamp type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="BLOB"><xsd:annotation><xsd:documentation>Java Blob type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="CLOB"><xsd:annotation><xsd:documentation>Java Clob type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="OBJECT"><xsd:annotation><xsd:documentation>Java serialized object</xsd:documentation></xsd:annotation></xsd:enumeration>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <xsd:complexType name="rowType">
+    <xsd:annotation><xsd:documentation>Holder of row value.</xsd:documentation></xsd:annotation>
+    <xsd:sequence>
+      <xsd:element name="field" type="ex:fieldType" minOccurs="1" maxOccurs="unbounded">
+        <xsd:annotation>
+          <xsd:documentation>Fields values in row</xsd:documentation>
+        </xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="fieldType">
+    <xsd:annotation><xsd:documentation>Holder of value field. The value is in text of entity.</xsd:documentation></xsd:annotation>
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:string">
+        <xsd:attribute name="column" type="xsd:IDREF" use="required">
+          <xsd:annotation><xsd:documentation>Identifier of column for binding with column</xsd:documentation></xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="null" type="xsd:boolean" use="optional">
+          <xsd:annotation><xsd:documentation>If is set to true, then value of field is null.</xsd:documentation></xsd:annotation>
+        </xsd:attribute>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+
+</xsd:schema>

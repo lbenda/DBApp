@@ -29,6 +29,7 @@
       <xsd:element name="tableOfKeySQLs" type="ec:tableOfKeySQLsType" minOccurs="0" maxOccurs="1"/>
       <xsd:element name="tables" type="ec:tablesType" minOccurs="0"
                    maxOccurs="1"/>
+      <xsd:element name="exports" type="ec:exportsType" minOccurs="0" maxOccurs="1"/>
     </xsd:sequence>
   </xsd:complexType>
 
@@ -180,5 +181,75 @@
       </xsd:annotation>
     </xsd:attribute>
   </xsd:complexType>
+
+  <xsd:complexType name="exportsType">
+    <xsd:sequence>
+      <xsd:element name="export" type="ec:exportType" minOccurs="1" maxOccurs="unbounded">
+        <xsd:annotation>
+          <xsd:documentation>Configuration of export</xsd:documentation>
+        </xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="exportType">
+    <xsd:annotation>
+      <xsd:documentation>Configuration of export which transform data</xsd:documentation>
+    </xsd:annotation>
+    <!--
+    <xsd:sequence>
+    </xsd:sequence>
+    -->
+    <xsd:attribute name="id" type="xsd:ID" use="required">
+      <xsd:annotation><xsd:documentation>Identification for export</xsd:documentation></xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="type" type="ec:exportTypeType" use="required">
+      <xsd:annotation><xsd:documentation>Type of export</xsd:documentation></xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="file" type="xsd:string">
+      <xsd:annotation><xsd:documentation>File to which is write export - if isn't filed then is user asked to select file. System use apache common vfs2 so you can use prefix like ftp:// etc.</xsd:documentation></xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="noReplace" type="xsd:boolean">
+      <xsd:annotation><xsd:documentation>No replace file and crate new file with Index suffix. Or replace. If isn't set then it mean replace file.</xsd:documentation></xsd:annotation>
+    </xsd:attribute>
+  </xsd:complexType>
+
+  <xsd:simpleType name="exportTypeType">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="CSV">
+        <xsd:annotation><xsd:documentation>Export to CSV file - CSV</xsd:documentation></xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="XLSX">
+        <xsd:annotation><xsd:documentation>Export to excel - XLSX.</xsd:documentation></xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="XLS">
+        <xsd:annotation><xsd:documentation>Export to excel - XLS.</xsd:documentation></xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="ODS">
+        <xsd:annotation><xsd:documentation>Export to open document format spreadsheet - ODS.</xsd:documentation></xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="TXT">
+        <xsd:annotation><xsd:documentation>Export to fixed size column type file - TXT.</xsd:documentation></xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="XML">
+        <xsd:annotation><xsd:documentation>Export to XML file - XML.</xsd:documentation></xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="XSLT">
+        <xsd:annotation><xsd:documentation>Export to XML which is transformed with XSLT.</xsd:documentation></xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="VELOCITY">
+        <xsd:annotation><xsd:documentation>Export and transform with VELOCITY.</xsd:documentation></xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="FREEMARKER">
+        <xsd:annotation><xsd:documentation>Export and transform with FREEMARKER.</xsd:documentation></xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="THYMELEAF">
+        <xsd:annotation><xsd:documentation>Export and transform with THYMELEAF.</xsd:documentation></xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="SQL">
+        <xsd:annotation><xsd:documentation>Export data as SQL inserts - SQL.</xsd:documentation></xsd:annotation>
+      </xsd:enumeration>
+    </xsd:restriction>
+  </xsd:simpleType>
 
 </xsd:schema>

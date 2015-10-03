@@ -55,11 +55,12 @@ public class Constants {
       }));
   public static List<ExtensionFilter> spreadSheetFilter = new ArrayList<>(Arrays.asList(
       new ExtensionFilter[] {
-          new ExtensionFilter("All spreadsheets (ODS, XLSX, XLS, CSV, TXT)", "*.ods", "*.xlsx", "*.xls", "*.csv", "*.txt"),
+          new ExtensionFilter("All spreadsheets (ODS, XLSX, XLS, CSV, TXT, XML)", "*.ods", "*.xlsx", "*.xls", "*.csv", "*.txt", "*.xml"),
           new ExtensionFilter("Open document format (ODS)", "*.ods"),
-          new ExtensionFilter("Excel XLSX files (XLSX)", "*.xlsx", "*.xls"),
+          new ExtensionFilter("Excel XLSX files (XLSX, XLS)", "*.xlsx", "*.xls"),
           new ExtensionFilter("Comma separated values (CSV)", "*.csv"),
           new ExtensionFilter("Fixed length column (TXT)", "*.txt"),
+          new ExtensionFilter("XML v1 and v2 (XML)", "*.xml"),
           new ExtensionFilter("All files", "*.*")
       }));
 

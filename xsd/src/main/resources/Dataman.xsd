@@ -46,7 +46,7 @@
       <xsd:element name="jdbc" type="dmc:jdbcType" minOccurs="1" maxOccurs="1">
         <xsd:annotation><xsd:documentation>JDBC configuration</xsd:documentation></xsd:annotation>
       </xsd:element>
-      <xsd:element name="extendedConfig" type="dmc:configType" minOccurs="0" maxOccurs="1">
+      <xsd:element name="extendedConfig" type="dmc:extendedConfigType" minOccurs="0" maxOccurs="1">
         <xsd:annotation><xsd:documentation>Extended configuration of session</xsd:documentation></xsd:annotation>
       </xsd:element>
       <xsd:element name="libraries" type="dmc:librariesType" minOccurs="1" maxOccurs="1">
@@ -58,7 +58,7 @@
     </xsd:attribute>
   </xsd:complexType>
 
-  <xsd:complexType name="configType">
+  <xsd:complexType name="extendedConfigType">
     <xsd:annotation><xsd:documentation>Link to extended configuration</xsd:documentation></xsd:annotation>
     <xsd:simpleContent>
       <xsd:extension base="xsd:string">
