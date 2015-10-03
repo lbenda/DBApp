@@ -78,7 +78,7 @@ public class DbConfigMenuOptions implements MenuOptions<DbConfig> {
       dbConfigProperty.setValue(null);
       dbConfigProperty.setValue(item);
     } else {
-      item.getConnectionProvider().close(AbstractAction.extractStage(event));
+      item.getConnectionProvider().close();
       if (!item.getConnectionProvider().isConnected()) {
         dbConfigProperty.setValue(null);
         dbConfigProperty.setValue(item);

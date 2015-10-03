@@ -19,7 +19,6 @@ import cz.lbenda.rcp.DialogHelper;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
-import javafx.stage.Stage;
 
 import javax.annotation.Nonnull;
 import java.util.Collections;
@@ -79,8 +78,8 @@ public class SavableRegistry {
 
   /** Close with open dialog
    * @return true when registry was closed */
-  public boolean close(Stage parentStage) {
-    boolean result = DialogHelper.getInstance().showUnsavedObjectDialog(parentStage, this);
+  public boolean close() {
+    boolean result = DialogHelper.getInstance().showUnsavedObjectDialog(this);
     if (result) { closeWithoutAsking(); }
     return result;
   }

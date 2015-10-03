@@ -118,6 +118,7 @@ public class SQLRunHandler extends AbstractAction {
           try (ResultSet rs = tuple.get1().getResultSet()) {
             ResultSetMetaData mtd = rs.getMetaData();
             SQLQueryRows sqlRows = new SQLQueryRows();
+            sqlRows.setSQL(result.getSql());
             result.setSqlQueryRows(sqlRows);
             int columnCount = mtd.getColumnCount();
             ColumnDesc columns[] = new ColumnDesc[columnCount];

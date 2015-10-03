@@ -18,6 +18,9 @@ package cz.lbenda.dataman.db;
 import cz.lbenda.dataman.Constants;
 import cz.lbenda.dataman.schema.export.*;
 import cz.lbenda.dataman.schema.export.ColumnType;
+import cz.lbenda.rcp.DialogHelper;
+import cz.lbenda.rcp.localization.Message;
+import cz.lbenda.rcp.localization.MessageFactory;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.io.FilenameUtils;
@@ -29,6 +32,9 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.output.XMLOutputter;
 import org.jopendocument.dom.spreadsheet.SpreadSheet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,9 +48,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 20.9.15.
@@ -53,25 +57,41 @@ public class ExportTableData {
 
   private static final Logger LOG = LoggerFactory.getLogger(ExportTableData.class);
 
+  @Message
+  public static final String CHOOSE_FORMAT = "Choose format for export";
+  static { MessageFactory.initializeMessages(ExportTableData.class); }
+
   public enum SpreadsheetFormat {
-    XLSX("xlsx"), XLS("xls"), ODS("ods"), CSV("csv"), TXT("txt"), XMLv1("xml"), SQL("sql"), ;
-    private static Map<String, SpreadsheetFormat> extensionsMap = new HashMap<>();
+    XLSX("xlsx"), XLS("xls"), ODS("ods"), CSV("csv"), TXT("txt"), XMLv1("xml"), XMLv2("xml"), SQL("sql"), ;
+    private static Map<String, List<SpreadsheetFormat>> extensionsMap = new HashMap<>();
     static {
-      Arrays.stream(SpreadsheetFormat.values()).forEach(s -> extensionsMap.put(s.getExtension(), s));
+      Arrays.stream(SpreadsheetFormat.values()).forEach(s -> {
+        List<SpreadsheetFormat> list = extensionsMap.get(s.getExtension());
+        if (list == null) {
+          list = new ArrayList<>();
+          extensionsMap.put(s.getExtension(), list);
+        }
+        list.add(s);
+      });
     }
     private String extension; public String getExtension() { return extension; }
     SpreadsheetFormat(String extension) { this.extension = extension; }
-    public static SpreadsheetFormat byExtension(String extension) { return extensionsMap.get(extension); }
+    public static List<SpreadsheetFormat> byExtension(String extension) { return extensionsMap.get(extension); }
   }
 
   public static void writeSqlQueryRows(String fileName, SQLQueryRows sqlQueryRows, String sheetName, OutputStream outputStream) throws IOException {
     String extension = FilenameUtils.getExtension(fileName);
-    SpreadsheetFormat format = SpreadsheetFormat.byExtension(extension);
-    if (format == null) { format = SpreadsheetFormat.CSV; }
+    List<SpreadsheetFormat> formatList = SpreadsheetFormat.byExtension(extension);
+    final SpreadsheetFormat format;
+    if (formatList == null) { format = DialogHelper.chooseSingOption(CHOOSE_FORMAT, SpreadsheetFormat.values()); }
+    else if (formatList.size() == 1) { format = formatList.get(0); }
+    else { format = DialogHelper.chooseSingOption(CHOOSE_FORMAT, formatList); }
+    if (format == null) { return; }
     switch (format) {
       case XLSX: writeSqlQueryRowsToXLSX(sqlQueryRows, sheetName, outputStream); break;
       case XLS: writeSqlQueryRowsToXLS(sqlQueryRows, sheetName, outputStream); break;
       case XMLv1: writeSqlQueryRowsToXMLv1(sqlQueryRows, outputStream); break;
+      case XMLv2: writeSqlQueryRowsToXMLv2(sqlQueryRows, outputStream); break;
       case CSV: writeSqlQueryRowsToCSV(sqlQueryRows, outputStream); break;
       case TXT: writeSqlQueryRowsToTXT(sqlQueryRows, outputStream); break;
       case ODS: writeSqlQueryRowsToODS(sqlQueryRows, sheetName, outputStream); break;
@@ -202,6 +222,8 @@ public class ExportTableData {
   public static void writeSqlQueryRowsToXMLv1(SQLQueryRows sqlQueryRows, OutputStream outputStream) {
     ObjectFactory of = new ObjectFactory();
     ExportType export = of.createExportType();
+    export.setSql(sqlQueryRows.getSQL());
+    export.setVersion("1");
     ColumnsType columnsType = of.createColumnsType();
     export.setColumns(columnsType);
     Map<ColumnDesc, ColumnType> ctsMap = new HashMap<>();
@@ -243,5 +265,31 @@ public class ExportTableData {
       LOG.error("Problem with write exporting data: " + e.toString(), e);
       throw new RuntimeException("Problem with write exporting data: " + e.toString(), e);
     }
+  }
+
+  /** Write rows from sql query to output stream
+   * @param sqlQueryRows rows
+   * @param outputStream stream to which are data write */
+  public static void writeSqlQueryRowsToXMLv2(SQLQueryRows sqlQueryRows, OutputStream outputStream) throws IOException {
+    Element root = new Element("export");
+    root.setAttribute("sql", sqlQueryRows.getSQL());
+    root.setAttribute("version", "2");
+    List<Element> rows = new ArrayList<>(sqlQueryRows.getRows().size());
+
+    sqlQueryRows.getRows().forEach(rowDesc -> {
+      Element row = new Element("row");
+      List<Element> cols = new ArrayList<>(sqlQueryRows.getMetaData().getColumns().size());
+      sqlQueryRows.getMetaData().getColumns().forEach(columnDesc -> {
+        Element element = new Element(columnDesc.getName());
+        if (rowDesc.isColumnNull(columnDesc)) { element.setAttribute("null", "true"); }
+        else { element.setText(rowDesc.getColumnValueStr(columnDesc)); }
+        cols.add(element);
+      });
+      row.addContent(cols);
+      rows.add(row);
+    });
+    root.addContent(rows);
+    XMLOutputter xmlOutputter = new XMLOutputter();
+    xmlOutputter.output(new Document(root), outputStream);
   }
 }

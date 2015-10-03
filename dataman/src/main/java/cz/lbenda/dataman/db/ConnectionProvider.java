@@ -17,13 +17,11 @@ package cz.lbenda.dataman.db;
 
 import cz.lbenda.common.Tuple2;
 import cz.lbenda.dataman.User;
-import cz.lbenda.dataman.UserImpl;
 import cz.lbenda.dataman.db.dialect.SQLDialect;
 import cz.lbenda.rcp.action.SavableRegistry;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,9 +66,9 @@ public class ConnectionProvider implements SQLExecutor {
   }
 
   /** Close all connections */
-  public void close(@Nonnull Stage stage) {
+  public void close() {
     if (this.savableRegistry != null) {
-      if (!this.savableRegistry.close(stage)) { return; }
+      if (!this.savableRegistry.close()) { return; }
     }
     if (dataSource != null) {
       try {

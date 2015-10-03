@@ -60,7 +60,7 @@ public class SaveAllTableHandler extends AbstractAction {
   public void handle(ActionEvent event) {
     DbConfig dbConfig = dbConfigProperty.getValue();
     if (dbConfig != null) {
-      dbConfig.getConnectionProvider().close((Stage) ((Node) event.getSource()).getScene().getWindow());
+      dbConfig.getConnectionProvider().close();
     }
   }
 }

@@ -47,7 +47,7 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
 
   private final SchemaDesc schema; public final SchemaDesc getSchema() { return schema; }
   private final String name; public final String getName() { return name; }
-  private TableType tableType; public final TableType getTableType() { return tableType; } public final void setTableType(TableType tableType) { this.tableType = tableType; }
+  private TableType tableType; public final TableType getTableType() { return tableType; }
   private String comment;
   @SuppressWarnings("unused")
   public final String getComment() { return comment; }
@@ -55,7 +55,9 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
 
   private BooleanProperty hidden = new SimpleBooleanProperty(false);
   public boolean isHidden() { return hidden.get(); }
+  @SuppressWarnings("unused")
   public void setHidden(boolean hidden) { this.hidden.set(hidden); }
+  @SuppressWarnings("unused")
   public BooleanProperty hiddenProperty() { return this.hidden; }
 
   /** List of all foreign keys in table */
@@ -183,6 +185,7 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
   public void reloadRowsAction() {
     getRows().clear();
     dbConfig.getReader().readTableData(this, -1, -1).forEach(row -> getRows().add(row));
+    this.getQueryRow().setSQL(String.format("select * from \"%s\".\"%s\"", getSchema().getName(), getName()));
     this.loaded.setValue(Boolean.TRUE);
   }
 

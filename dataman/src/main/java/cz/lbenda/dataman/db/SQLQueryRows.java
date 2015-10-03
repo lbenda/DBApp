@@ -21,6 +21,10 @@ import javafx.collections.ObservableList;
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 13.9.15.
  * Result from SQL query which return rows */
 public class SQLQueryRows {
+  /** SQL which was executed for getting this data */
+  private String sql; public String getSQL() { return sql; } public void setSQL(String sql) { this.sql = sql; }
+  /** Metadata for table and columns in rows */
   private SQLQueryMetaData metaData = new SQLQueryMetaData(); public SQLQueryMetaData getMetaData() { return metaData; }
+  /** List of rows in result of SQL query */
   private ObservableList<RowDesc> rows = FXCollections.observableArrayList(); public ObservableList<RowDesc> getRows() { return rows; }
 }

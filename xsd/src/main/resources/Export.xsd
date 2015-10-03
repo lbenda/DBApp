@@ -31,6 +31,9 @@
     <xsd:attribute name="sql" type="xsd:string">
       <xsd:annotation><xsd:documentation>SQL command which return this data</xsd:documentation></xsd:annotation>
     </xsd:attribute>
+    <xsd:attribute name="version" type="xsd:string" use="required">
+      <xsd:annotation><xsd:documentation>Version of export</xsd:documentation></xsd:annotation>
+    </xsd:attribute>
   </xsd:complexType>
 
   <xsd:complexType name="columnsType">

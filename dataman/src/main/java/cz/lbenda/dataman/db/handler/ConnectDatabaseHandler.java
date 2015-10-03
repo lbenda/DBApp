@@ -82,7 +82,7 @@ public class ConnectDatabaseHandler extends AbstractAction {
         dbConfigProperty.setValue(null);
         dbConfigProperty.setValue(dbConfig);
       } else {
-        dbConfig.getConnectionProvider().close(extractStage(e));
+        dbConfig.getConnectionProvider().close();
         if (!dbConfig.getConnectionProvider().isConnected()) {
           dbConfigProperty.setValue(null);
           dbConfigProperty.setValue(dbConfig);

@@ -31,6 +31,7 @@ import org.apache.commons.io.FilenameUtils;
 
 import javax.annotation.Nonnull;
 import java.io.File;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -46,30 +47,31 @@ public class DialogHelper {
   }
 
   @Message
-  public String msgCanOverwriteTitle = "File overwrite";
+  public static final String msgCanOverwriteTitle = "File overwrite";
   @Message
-  public String msgCanOverwriteContent = "The file '%s' already exist, should be overwrite? ";
+  public static final String msgCanOverwriteContent = "The file '%s' already exist, should be overwrite? ";
   @Message
-  public String msgFileNotExistTitle = "File not exist";
+  public static final String msgFileNotExistTitle = "File not exist";
   @Message
-  public String msgFileNotExistHeader = "The file '%s' not exist.";
+  public static final String msgFileNotExistHeader = "The file '%s' not exist.";
   @Message
-  public String msgFileNotExistContent = "For importing configuration from file, the file must exist.";
+  public static final String msgFileNotExistContent = "For importing configuration from file, the file must exist.";
   @Message
-  public String msgNotSavedObjectsTitle = "Some object wasn't saved.";
+  public static final String msgNotSavedObjectsTitle = "Some object wasn't saved.";
   @Message
-  public String msgNotSavedObjectsHeader = "Some object aren't saved. You can choose if changes will be saved or not.";
+  public static final String msgNotSavedObjectsHeader = "Some object aren't saved. You can choose if changes will be saved or not.";
 
   @Message
-  public String button_cancel = "Cancel";
+  public static final String button_cancel = "Cancel";
   @Message
-  public String button_saveAndClose = "Save and close";
+  public static final String button_saveAndClose = "Save and close";
   @Message
-  public String button_closeWithoutSave = "Close without save";
+  public static final String button_closeWithoutSave = "Close without save";
 
-  private DialogHelper() {
-    MessageFactory.initializeMessages(this);
-  }
+  @Message
+  public static final String chooseSingleOption_title = "Choose one option";
+
+  static { MessageFactory.initializeMessages(DialogHelper.class); }
 
   /** Ask user if file can be overwrite if file exist */
   @SuppressWarnings("unused")
@@ -121,10 +123,9 @@ public class DialogHelper {
   }
 
   /** Show unsaved object if aren't saved. if user want cancel the closing then return false, elserwhere return true
-   * @param parentStage stage which will be close
    * @param savableRegistry register which hold unsaved data
    * @return true if window/object can be closed */
-  public boolean showUnsavedObjectDialog(Stage parentStage, SavableRegistry savableRegistry) {
+  public boolean showUnsavedObjectDialog(SavableRegistry savableRegistry) {
     Set<Savable> savables = savableRegistry.dirtySavables();
     if (savables.size() == 0) { return true; }
     Dialog<?> dialog = new Dialog<>();
@@ -197,5 +198,47 @@ public class DialogHelper {
           + getClass().getName() + " but compared object is: " + o.getClass().getName()); }
       return getSavable().displayName().compareTo(o.getSavable().displayName());
     }
+  }
+
+
+  /** Open dialog with chooser when user can choose single option
+   * @param question question which is show to user
+   * @param items list of items which user can choose
+   * @param <T> type of item
+   * @return null if user click on cancel or don't choose anything, elsewhere choosed item */
+  public static <T> T chooseSingOption(String question, List<T> items) {
+    //noinspection unchecked
+    return chooseSingOption(question, (T[]) items.toArray());
+  }
+
+  /** Open dialog with chooser when user can choose single option
+   * @param question question which is show to user
+   * @param items list of items which user can choose
+   * @param <T> type of item
+   * @return null if user click on cancel or don't choose anything, elsewhere choosed item */
+  @SuppressWarnings("unchecked")
+  public static <T> T chooseSingOption(String question, T... items) {
+    if (items.length == 0) { return null; }
+    Dialog<T> dialog = new Dialog<>();
+    dialog.setResizable(false);
+    dialog.setTitle(chooseSingleOption_title);
+    dialog.setHeaderText(question);
+
+    ComboBox<T> comboBox = new ComboBox<>();
+    comboBox.getItems().addAll(items);
+    dialog.getDialogPane().setContent(comboBox);
+
+    ButtonType btCancel = ButtonType.CANCEL;
+    ButtonType btOk = ButtonType.OK;
+    dialog.getDialogPane().getButtonTypes().addAll(btCancel, btOk);
+
+    Optional<T> result = dialog.showAndWait();
+    if (result.isPresent()) {
+      if (btCancel == result.get()) { return null; }
+      if (btOk == result.get()) {
+        return comboBox.getSelectionModel().getSelectedItem();
+      }
+    } else { return null; }
+    return result.get();
   }
 }

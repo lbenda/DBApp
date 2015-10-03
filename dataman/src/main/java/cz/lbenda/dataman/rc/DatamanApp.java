@@ -231,16 +231,14 @@ public class DatamanApp extends Application {
 
     addToCenter(SQLEditorController.WINDOW_TITLE, te.getNode(), false);
 
-    DbStructureFrmController dfc = new DbStructureFrmController(currentDbProperty, td -> {
-      new Thread(() -> {
-        StatusHelper.getInstance().progressStart(td, DataTableFrmController.TASK_NAME, 2);
-        StatusHelper.getInstance().progressNextStep(td, td.getName(), 0);
-        DataTableFrmController controller = new DataTableFrmController(td);
-        StatusHelper.getInstance().progressNextStep(td, td.getName(), 0);
-        Platform.runLater(() -> addToCenter(controller.titleProperty(), controller.getTabView(), true));
-        StatusHelper.getInstance().progressFinish(td, DataTableFrmController.STEP_FINISH);
-      }).start();
-    });
+    DbStructureFrmController dfc = new DbStructureFrmController(currentDbProperty, td -> new Thread(() -> {
+      StatusHelper.getInstance().progressStart(td, DataTableFrmController.TASK_NAME, 2);
+      StatusHelper.getInstance().progressNextStep(td, td.getName(), 0);
+      DataTableFrmController controller = new DataTableFrmController(td);
+      StatusHelper.getInstance().progressNextStep(td, td.getName(), 0);
+      Platform.runLater(() -> addToCenter(controller.titleProperty(), controller.getTabView(), true));
+      StatusHelper.getInstance().progressFinish(td, DataTableFrmController.STEP_FINISH);
+    }).start());
     leftPane.getChildren().add(dfc.getControlledNode());
 
     RowEditorFrmController rowEditorFrmController = new RowEditorFrmController(tableViewObjectProperty);
@@ -249,7 +247,7 @@ public class DatamanApp extends Application {
     // Scene scene = te.createScene();
     primaryStage.setScene(scene);
     primaryStage.setOnCloseRequest(event -> {
-      if (!DialogHelper.getInstance().showUnsavedObjectDialog(primaryStage, SavableRegistry.getInstance())) {
+      if (!DialogHelper.getInstance().showUnsavedObjectDialog(SavableRegistry.getInstance())) {
         event.consume();
       }
     });
