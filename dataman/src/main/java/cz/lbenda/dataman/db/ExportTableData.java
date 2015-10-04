@@ -22,6 +22,8 @@ import cz.lbenda.rcp.DialogHelper;
 import cz.lbenda.rcp.ExceptionMessageFrmController;
 import cz.lbenda.rcp.localization.Message;
 import cz.lbenda.rcp.localization.MessageFactory;
+import freemarker.cache.TemplateLoader;
+import freemarker.template.*;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.io.FilenameUtils;
@@ -124,8 +126,8 @@ public class ExportTableData {
                                        @Nonnull InputStream template, @Nonnull OutputStream outputStream)
       throws IOException {
     switch (format) {
-   /*   case FREEMARKER: writeSqlQueryRowsToXLSX(sqlQueryRows, template, outputStream); break;
-      case THYMELEAF: writeSqlQueryRowsToXLS(sqlQueryRows, template, outputStream); break;
+      case FREEMARKER: writeSqlQueryRowsToFreemarker(sqlQueryRows, template, outputStream); break;
+   /*   case THYMELEAF: writeSqlQueryRowsToXLS(sqlQueryRows, template, outputStream); break;
       case VELOCITY: writeSqlQueryRowsToXMLv1(sqlQueryRows, template, outputStream); break;*/
       case XLST_XMLv1: writeSqlQueryRowsToXLSTXMLv1(sqlQueryRows, template, outputStream); break;
       case XLST_XMLv2: writeSqlQueryRowsToXLSTXMLv2(sqlQueryRows, template, outputStream); break;
@@ -346,18 +348,61 @@ public class ExportTableData {
   /** Write rows from sql query to output stream
    * @param sqlQueryRows rows
    * @param outputStream stream to which are data write */
-  public static void writeSqlQueryRowsToXLSTXMLv1(SQLQueryRows sqlQueryRows, InputStream inputStream, OutputStream outputStream) {
+  public static void writeSqlQueryRowsToXLSTXMLv1(SQLQueryRows sqlQueryRows, InputStream template, OutputStream outputStream) {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     writeSqlQueryRowsToXMLv1(sqlQueryRows, baos);
-    transformXSLT(inputStream, baos, outputStream);
+    transformXSLT(template, baos, outputStream);
   }
 
   /** Write rows from sql query to output stream
    * @param sqlQueryRows rows
    * @param outputStream stream to which are data write */
-  public static void writeSqlQueryRowsToXLSTXMLv2(SQLQueryRows sqlQueryRows, InputStream inputStream, OutputStream outputStream) throws IOException {
+  public static void writeSqlQueryRowsToXLSTXMLv2(SQLQueryRows sqlQueryRows, InputStream tempalte, OutputStream outputStream) throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     writeSqlQueryRowsToXMLv2(sqlQueryRows, baos);
-    transformXSLT(inputStream, baos, outputStream);
+    transformXSLT(tempalte, baos, outputStream);
+  }
+
+  public static void writeSqlQueryRowsToFreemarker(SQLQueryRows sqlQueryRows, InputStream template, OutputStream outputStream) throws IOException {
+    Configuration cfg = new Configuration();
+    cfg.setTemplateLoader(new TemplateLoader() {
+      @Override @SuppressWarnings("RedundantThrowsDeclaration")
+      public Object findTemplateSource(String s) throws IOException { return template; }
+      @Override
+      public long getLastModified(Object o) { return 0; }
+      @Override @SuppressWarnings("RedundantThrowsDeclaration")
+      public Reader getReader(Object o, String s) throws IOException { return new InputStreamReader(template); }
+      @Override @SuppressWarnings("RedundantThrowsDeclaration")
+      public void closeTemplateSource(Object o) throws IOException {}
+    });
+    cfg.setIncompatibleImprovements(new Version(2, 3, 20));
+    cfg.setDefaultEncoding("UTF-8");
+    cfg.setLocale(Locale.US);
+    cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
+    Template freemarkerTemplate = cfg.getTemplate("template");
+    Map<String, Object> input = new HashMap<>();
+    input.put("sql", sqlQueryRows.getSQL());
+    input.put("columns", sqlQueryRows.getMetaData().getColumns());
+    List<List<Object>> rows = new ArrayList<>();
+    input.put("rows", rows);
+    sqlQueryRows.getRows().forEach(rowDesc -> {
+      List<Object> row = new ArrayList<>();
+      sqlQueryRows.getMetaData().getColumns().forEach(columnDesc -> {
+        if (rowDesc.isColumnNull(columnDesc)) {
+          row.add(null);
+        } else {
+          row.add(rowDesc.getColumnValue(columnDesc));
+        }
+      });
+      rows.add(row);
+    });
+
+    input.put("sqlQueryRows", sqlQueryRows);
+    try {
+      freemarkerTemplate.process(input, new OutputStreamWriter(outputStream));
+    } catch (TemplateException e) {
+      LOG.error("Problem with transforming input stream.", e);
+      ExceptionMessageFrmController.showException("Problem with transforming input stream.", e);
+    }
   }
 }
