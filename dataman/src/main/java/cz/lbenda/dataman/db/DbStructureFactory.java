@@ -31,7 +31,7 @@ import javax.annotation.Nonnull;
 
 /** Class for reading data structure from JDBC. The first method which must be call is
  * @author Lukas Benda <lbenda at lbenda.cz> */
-public class DbStructureFactory implements DBAppDataSource.DBAppDataSourceExceptionListener {
+public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExceptionListener {
 
   private static final Logger LOG = LoggerFactory.getLogger(DbStructureFactory.class);
 

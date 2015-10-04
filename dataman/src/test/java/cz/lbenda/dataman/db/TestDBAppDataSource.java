@@ -39,7 +39,7 @@ public class TestDBAppDataSource {
     /// jdbc.setUrl("jdbc:hsqldb:hsql://localhost");
     sc.getLibrariesPaths().add("/opt/hsqldb/lib/hsqldb.jar");
 
-    DBAppDataSource ds = new DBAppDataSource(sc);
+    DatamanDataSource ds = new DatamanDataSource(sc);
     try {
       ds.getConnection();
     } catch (Exception e) {

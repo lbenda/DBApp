@@ -15,11 +15,7 @@
  */
 package cz.lbenda.dataman.db;
 
-import java.io.File;
 import java.io.PrintWriter;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.SQLException;
@@ -35,15 +31,16 @@ import java.util.WeakHashMap;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
 
+import cz.lbenda.common.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jackrabbit.test.LogPrintWriter;
 
 /** Implementation of data source
  * Created by Lukas Benda <lbenda @ lbenda.cz> on 9/23/14.
  */
-public class DBAppDataSource implements DataSource {
+public class DatamanDataSource implements DataSource {
 
-  private final static org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(DBAppDataSource.class);
+  private final static org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(DatamanDataSource.class);
 
   public interface DBAppDataSourceExceptionListener {
     void onDBAppDataSourceException(Exception e);
@@ -52,7 +49,7 @@ public class DBAppDataSource implements DataSource {
   private final DbConfig dbConfig;
   private final List<DBAppDataSourceExceptionListener> listeners = new ArrayList<>();
 
-  public DBAppDataSource(DbConfig dbConfig) {
+  public DatamanDataSource(DbConfig dbConfig) {
     this.dbConfig = dbConfig;
   }
 
@@ -116,36 +113,21 @@ public class DBAppDataSource implements DataSource {
   }
 
   private static final Map<DbConfig, Driver> drivers = new WeakHashMap<>();
-  private static final Map<DbConfig, DBAppConnection> connections = new WeakHashMap<>();
-  private static final Map<DBAppConnection, Date> lastConnectionUse = new WeakHashMap<>();
+  private static final Map<DbConfig, DatamanConnection> connections = new WeakHashMap<>();
+  private static final Map<DatamanConnection, Date> lastConnectionUse = new WeakHashMap<>();
 
   private Driver getDriver(DbConfig sc) throws SQLException {
     Driver driver = drivers.get(sc);
     if (driver != null) { return driver; }
 
-    URL[] urls = new URL[sc.getLibrariesPaths().size()];
-    int i = 0;
-    for (String lib : sc.getLibrariesPaths()) {
-      try {
-        urls[i] = (new File(lib)).toURI().toURL();
-      } catch (MalformedURLException e) {
-        getLogWriter().print("Problem with create URL from file: " + lib);
-        e.printStackTrace(getLogWriter());
-        SQLException ex = new SQLException("Problem with create URL from file" + lib, e);
-        onException(ex);
-        throw ex;
-      }
-      i++;
-    }
-
     try {
-      URLClassLoader urlCl = new URLClassLoader(urls, System.class.getClassLoader());
       if (StringUtils.isBlank(sc.getJdbcConfiguration().getDriverClass())) {
         throw new IllegalStateException("The driver must point to class");
       }
       Class driverCls;
       try {
-        driverCls = urlCl.loadClass(sc.getJdbcConfiguration().getDriverClass());
+        driverCls = ClassLoaderHelper.getClassFromLibs(sc.getJdbcConfiguration().getDriverClass(),
+            sc.getLibrariesPaths(), true);
       } catch (ClassNotFoundException ce) {
         try {
           driverCls = this.getClass().getClassLoader().loadClass(sc.getJdbcConfiguration().getDriverClass());
@@ -167,7 +149,7 @@ public class DBAppDataSource implements DataSource {
     }
   }
 
-  private void scheduleUnconect(DBAppConnection connection) {
+  private void scheduleUnconnect(DatamanConnection connection) {
     lastConnectionUse.put(connection, new Date());
     if (connection.getConnectionTimeout() > 0) {
       (new Timer()).schedule(new timerTask(), connection.getConnectionTimeout());
@@ -175,9 +157,9 @@ public class DBAppDataSource implements DataSource {
   }
 
   private Connection createConnection(String username, String password) throws SQLException {
-    DBAppConnection connection = connections.get(dbConfig);
+    DatamanConnection connection = connections.get(dbConfig);
     if (connection != null && !connection.isClosed()) {
-      scheduleUnconect(connection);
+      scheduleUnconnect(connection);
       return connection;
     }
     Properties connectionProps = new Properties();
@@ -185,10 +167,10 @@ public class DBAppDataSource implements DataSource {
     if (!StringUtils.isEmpty(password)) { connectionProps.put("password", password); }
     Driver driver = getDriver(dbConfig);
     try {
-      connection = new DBAppConnection(driver.connect(dbConfig.getJdbcConfiguration().getUrl(), connectionProps));
+      connection = new DatamanConnection(driver.connect(dbConfig.getJdbcConfiguration().getUrl(), connectionProps));
       connection.setConnectionTimeout(dbConfig.getConnectionTimeout());
       connections.put(dbConfig, connection);
-      scheduleUnconect(connection);
+      scheduleUnconnect(connection);
       return connection;
     } catch (SQLException e) {
       getLogWriter().print("Filed to create connection");
@@ -215,7 +197,7 @@ public class DBAppDataSource implements DataSource {
 
   /** Close all connection in pool */
   public void closeAllConnections() throws SQLException {
-    DBAppConnection connection = connections.get(dbConfig);
+    DatamanConnection connection = connections.get(dbConfig);
     connection.realyClose();
   }
 
@@ -223,9 +205,9 @@ public class DBAppDataSource implements DataSource {
     @Override
     public void run() {
       Date now = new Date();
-      List<DBAppConnection> remove = new ArrayList<>();
+      List<DatamanConnection> remove = new ArrayList<>();
       synchronized (lastConnectionUse) {
-        for (Map.Entry<DBAppConnection, Date> entry : lastConnectionUse.entrySet()) {
+        for (Map.Entry<DatamanConnection, Date> entry : lastConnectionUse.entrySet()) {
           try {
             if (entry.getKey().getConnectionTimeout() > 0) {
               if ((now.getTime() - entry.getValue().getTime() >= entry.getKey().getConnectionTimeout())) {

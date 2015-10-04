@@ -241,7 +241,7 @@ public class DialogHelper {
     return result.get();
   }
 
-  /** Create dialog with applicaiton icon */
+  /** Create dialog with application icon */
   public static <T> Dialog<T> createDialog() {
     return createDialog(null, null);
   }

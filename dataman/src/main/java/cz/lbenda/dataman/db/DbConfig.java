@@ -138,7 +138,7 @@ public class DbConfig {
   public void close() {
     try {
       if (connectionProvider.getConnection() != null && !connectionProvider.getConnection().isClosed()) {
-        ((DBAppConnection) connectionProvider.getConnection()).realyClose();
+        ((DatamanConnection) connectionProvider.getConnection()).realyClose();
       }
     } catch (SQLException e) {
       LOG.warn("The connection can't be closed.");

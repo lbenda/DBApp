@@ -29,17 +29,17 @@ import java.util.logging.Logger;
 /** Un-closable connection
  * @author Lukas Benda <lbenda at lbenda.cz>
  */
-public class DBAppConnection implements Connection {
+public class DatamanConnection implements Connection {
 
-  private static final Logger LOG = Logger.getLogger(DBAppConnection.class.getName());
+  private static final Logger LOG = Logger.getLogger(DatamanConnection.class.getName());
 
   private Connection connection;
   private int connectionTimeout; public int getConnectionTimeout() { return connectionTimeout; } public void setConnectionTimeout(int connectionTimeout) { this.connectionTimeout = connectionTimeout; }
   private static int connectionId = 0;
 
-  public DBAppConnection(Connection connection) {
+  public DatamanConnection(Connection connection) {
     this.connection = connection;
-    this.connectionId++;
+    connectionId++;
     LOG.info("New connectionID is created: " + connectionId);
   }
 
@@ -50,12 +50,13 @@ public class DBAppConnection implements Connection {
   }
 
   @Override
-  public void finalize() {
+  public void finalize() throws Throwable {
     try {
       realyClose();
     } catch (SQLException e) {
       LOG.log(Level.SEVERE, "Connection close failed", e);
     }
+    super.finalize();
   }
 
   @Override

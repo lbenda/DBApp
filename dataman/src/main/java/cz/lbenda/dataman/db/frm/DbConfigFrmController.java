@@ -15,7 +15,7 @@
  */
 package cz.lbenda.dataman.db.frm;
 
-import cz.lbenda.common.Tuple2;
+import cz.lbenda.common.*;
 import cz.lbenda.dataman.Constants;
 import cz.lbenda.dataman.rc.DbConfigFactory;
 import cz.lbenda.dataman.db.DbConfig;
@@ -23,6 +23,8 @@ import cz.lbenda.dataman.schema.dataman.ExtendedConfigTypeType;
 import cz.lbenda.rcp.DialogHelper;
 import cz.lbenda.rcp.localization.Message;
 import cz.lbenda.rcp.localization.MessageFactory;
+import javafx.application.Platform;
+import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -61,6 +63,8 @@ public class DbConfigFrmController implements Initializable {
     MessageFactory.initializeMessages(DbConfigFrmController.class);
   }
 
+  private String currentDriverClass;
+
   @FXML
   private Button btnRemoveLibrary;
   @FXML
@@ -72,7 +76,8 @@ public class DbConfigFrmController implements Initializable {
   @FXML
   private TextField tfUrl;
   @FXML
-  private TextField tfDriverClass;
+  private ComboBox<String> cbDriverClass;
+  // private TextField tfDriverClass;
   @FXML
   private TextField tfUsername;
   @FXML
@@ -87,20 +92,34 @@ public class DbConfigFrmController implements Initializable {
   private ComboBox<ExtendedConfigTypeType> cbExtendConfigType;
 
   public void loadDataFromSessionConfiguration(DbConfig dbConfig) {
+    currentDriverClass = dbConfig.getJdbcConfiguration().getDriverClass();
+    lvLibraries.getItems().clear();
+    lvLibraries.getItems().addAll(dbConfig.getLibrariesPaths());
+
     tfName.setText(StringUtils.defaultString(dbConfig.getId()));
     tfUrl.setText(StringUtils.defaultString(dbConfig.getJdbcConfiguration().getUrl()));
-    tfDriverClass.setText(StringUtils.defaultString(dbConfig.getJdbcConfiguration().getDriverClass()));
+
     tfUsername.setText(StringUtils.defaultString(dbConfig.getJdbcConfiguration().getUsername()));
     pfPassword.setText(StringUtils.defaultString(dbConfig.getJdbcConfiguration().getPassword()));
     if (dbConfig.getConnectionTimeout() < 0) {
       tfTimeout.setText(dbConfig.getConnectionTimeout() < 0 ? "" : Integer.toString(dbConfig.getConnectionTimeout()));
     }
-    lvLibraries.getItems().clear();
-    lvLibraries.getItems().addAll(dbConfig.getLibrariesPaths());
 
     tfExtendConfigPath.setText(StringUtils.defaultString(dbConfig.getExtConfFactory().getPath()));
     cbExtendConfigType.getSelectionModel().select(dbConfig.getExtConfFactory().getConfigType() == null ?
         ExtendedConfigTypeType.NONE : dbConfig.getExtConfFactory().getConfigType());
+  }
+
+  private void findDriverClasses() {
+    new Thread(() -> {
+      List<String> drivers = ClassLoaderHelper.instancesOfClass(java.sql.Driver.class, lvLibraries.getItems(), false, false);
+      if (!cbDriverClass.getItems().isEmpty()) { currentDriverClass = cbDriverClass.getSelectionModel().getSelectedItem(); }
+      Platform.runLater(() -> {
+        cbDriverClass.getItems().clear();
+        cbDriverClass.getItems().addAll(drivers);
+        cbDriverClass.getSelectionModel().select(currentDriverClass);
+      });
+    }).start();
   }
 
   @Override
@@ -116,7 +135,9 @@ public class DbConfigFrmController implements Initializable {
       fileChooser.setTitle(msgLibraryChooseTitle);
       fileChooser.getExtensionFilters().addAll(Constants.librariesFilter);
       List<File> files = fileChooser.showOpenMultipleDialog(btnAddLibrary.getScene().getWindow());
-      if (files != null) { files.forEach(file -> lvLibraries.getItems().add(file.getAbsolutePath())); }
+      if (files != null) {
+        files.forEach(file -> lvLibraries.getItems().add(file.getAbsolutePath()));
+      }
     });
     btnRemoveLibrary.setOnAction(event -> lvLibraries.getItems().removeAll(lvLibraries.getSelectionModel().getSelectedItems()));
     btnExtendConfigFindPath.setOnAction(event -> {
@@ -127,25 +148,32 @@ public class DbConfigFrmController implements Initializable {
       File file = fileChooser.showOpenDialog(btnExtendConfigFindPath.getScene().getWindow());
       if (file != null) { tfExtendConfigPath.setText(file.getAbsolutePath()); }
     });
+    lvLibraries.getItems().addListener((ListChangeListener<String>) change -> {
+      while (change.next()) {
+        if (change.wasAdded() || change.wasRemoved()) { findDriverClasses(); }
+      }
+    });
   }
 
   public void storeDataToSessionConfiguration(DbConfig dbConfig) {
     dbConfig.setId(tfName.getText());
     dbConfig.getJdbcConfiguration().setUrl(tfUrl.getText());
-    dbConfig.getJdbcConfiguration().setDriverClass(tfDriverClass.getText());
+
+    dbConfig.getJdbcConfiguration().setDriverClass(cbDriverClass.getSelectionModel().getSelectedItem());
+
     dbConfig.getJdbcConfiguration().setUsername(tfUsername.getText());
     dbConfig.getJdbcConfiguration().setPassword(pfPassword.getText());
     if (StringUtils.isBlank(tfTimeout.getText())) { dbConfig.setConnectionTimeout(-1); }
     else { dbConfig.setConnectionTimeout(Integer.parseInt(tfTimeout.getText())); }
 
-    dbConfig.getLibrariesPaths().clear();
-    dbConfig.getLibrariesPaths().addAll(lvLibraries.getItems());
-
     dbConfig.getExtConfFactory().setConfigType(cbExtendConfigType.getSelectionModel().getSelectedItem());
     dbConfig.getExtConfFactory().setPath(tfExtendConfigPath.getText());
+
+    dbConfig.getLibrariesPaths().clear();
+    dbConfig.getLibrariesPaths().addAll(lvLibraries.getItems());
   }
 
-  /** Create new instance return main node and controller of this node and subnodes */
+  /** Create new instance return main node and controller of this node and sub-nodes */
   public static Tuple2<Parent, DbConfigFrmController> createNewInstance() {
     URL resource = DbConfigFrmController.class.getResource(FXML_RESOURCE);
     try {

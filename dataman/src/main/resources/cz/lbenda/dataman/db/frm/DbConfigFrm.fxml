@@ -1,125 +1,122 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.*?>
-<?import java.lang.*?>
-<?import java.util.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.paint.*?>
-<?import javafx.scene.text.*?>
 
-<TabPane id="mainPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" styleClass="background" tabClosingPolicy="UNAVAILABLE" BorderPane.alignment="CENTER" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cz.lbenda.dataman.db.frm.DbConfigFrmController">
-  <tabs>
-    <Tab text="Basic">
-      <content>
-        <BorderPane>
-          <top>
-            <GridPane alignment="CENTER_LEFT" BorderPane.alignment="CENTER">
-              <columnConstraints>
-                <ColumnConstraints hgrow="NEVER" maxWidth="189.0" minWidth="10.0" prefWidth="143.0" />
-                <ColumnConstraints hgrow="ALWAYS" minWidth="10.0" />
-              </columnConstraints>
-              <rowConstraints>
-                <RowConstraints vgrow="NEVER" />
-                <RowConstraints vgrow="NEVER" />
-                <RowConstraints vgrow="NEVER" />
-                <RowConstraints vgrow="NEVER" />
-                <RowConstraints vgrow="NEVER" />
-                <RowConstraints vgrow="NEVER" />
-              </rowConstraints>
-              <children>
-                <Label text="Config. name" />
-                <Label text="JDBC URL" GridPane.rowIndex="1" />
-                <Label text="Driver class" GridPane.rowIndex="2" />
-                <Label text="Username" GridPane.rowIndex="3" />
-                <Label text="Password" GridPane.rowIndex="4" />
-                <Label text="Timeout" GridPane.rowIndex="5" />
-                <TextField fx:id="tfName" GridPane.columnIndex="1">
-                  <GridPane.margin>
-                    <Insets bottom="5.0" right="0.0" />
-                  </GridPane.margin></TextField>
-                <TextField fx:id="tfUrl" GridPane.columnIndex="1" GridPane.rowIndex="1">
-                  <GridPane.margin>
-                    <Insets bottom="5.0" right="0.0" />
-                  </GridPane.margin></TextField>
-                <TextField fx:id="tfDriverClass" GridPane.columnIndex="1" GridPane.rowIndex="2">
-                  <GridPane.margin>
-                    <Insets bottom="5.0" right="0.0" />
-                  </GridPane.margin></TextField>
-                <TextField fx:id="tfUsername" GridPane.columnIndex="1" GridPane.rowIndex="3">
-                  <GridPane.margin>
-                    <Insets bottom="5.0" right="0.0" />
-                  </GridPane.margin></TextField>
-                <PasswordField fx:id="pfPassword" GridPane.columnIndex="1" GridPane.rowIndex="4">
-                  <GridPane.margin>
-                    <Insets bottom="5.0" right="0.0" />
-                  </GridPane.margin></PasswordField>
-                <TextField fx:id="tfTimeout" GridPane.columnIndex="1" GridPane.rowIndex="5">
-                  <GridPane.margin>
-                    <Insets bottom="5.0" right="0.0" />
-                  </GridPane.margin></TextField>
-              </children>
-            </GridPane>
-          </top>
-          <center>
-            <BorderPane BorderPane.alignment="CENTER">
-              <left>
-                <Label text="Libraries" BorderPane.alignment="CENTER_LEFT" />
-              </left>
-              <right>
-                <HBox alignment="CENTER_RIGHT" prefWidth="351.0" BorderPane.alignment="CENTER">
-                  <children>
-                    <Button fx:id="btnRemoveLibrary" mnemonicParsing="false" text="Remove library">
-                      <HBox.margin>
-                        <Insets right="10.0" />
-                      </HBox.margin>
-                    </Button>
-                    <Button fx:id="btnAddLibrary" mnemonicParsing="false" text="Add library" />
-                  </children>
-                </HBox>
-              </right>
-            </BorderPane>
-          </center>
-          <bottom>
-            <ListView fx:id="lvLibraries" prefHeight="100" BorderPane.alignment="CENTER">
-              <BorderPane.margin><Insets top="5.0" /></BorderPane.margin></ListView>
-          </bottom>
-          <padding>
-            <Insets bottom="0" left="10" right="10" top="5" />
-          </padding>
-        </BorderPane>
-      </content>
-    </Tab>
-    <Tab text="Advanced">
-      <content>
-        <GridPane alignment="TOP_LEFT" BorderPane.alignment="TOP_LEFT">
+<TabPane id="mainPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+         tabClosingPolicy="UNAVAILABLE" BorderPane.alignment="CENTER"
+         xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+         fx:controller="cz.lbenda.dataman.db.frm.DbConfigFrmController">
+  <padding>
+    <Insets bottom="0" left="0" right="0" top="0"/>
+  </padding>
+  <Tab text="Basic">
+    <BorderPane>
+      <top>
+        <GridPane alignment="CENTER_LEFT" BorderPane.alignment="CENTER">
           <columnConstraints>
-            <ColumnConstraints hgrow="NEVER" maxWidth="189.0" minWidth="10.0" prefWidth="143.0" />
-            <ColumnConstraints hgrow="ALWAYS" minWidth="10.0" />
+            <ColumnConstraints hgrow="NEVER" maxWidth="189.0" minWidth="10.0" prefWidth="143.0"/>
+            <ColumnConstraints hgrow="ALWAYS" minWidth="10.0"/>
           </columnConstraints>
           <rowConstraints>
-            <RowConstraints vgrow="NEVER" />
-            <RowConstraints vgrow="NEVER" />
+            <RowConstraints vgrow="NEVER"/>
+            <RowConstraints vgrow="NEVER"/>
+            <RowConstraints vgrow="NEVER"/>
+            <RowConstraints vgrow="NEVER"/>
+            <RowConstraints vgrow="NEVER"/>
+            <RowConstraints vgrow="NEVER"/>
           </rowConstraints>
-          <children>
-            <Label text="Extend config type" />
-            <Label text="Path" GridPane.rowIndex="1" />
-            <ComboBox fx:id="cbExtendConfigType" GridPane.columnIndex="1" />
-            <HBox GridPane.columnIndex="1" GridPane.rowIndex="1">
-              <children>
-                <TextField fx:id="tfExtendConfigPath" />
-                <Button fx:id="btnExtendConfigFindPath" mnemonicParsing="false" text="..." />
-              </children>
-            </HBox>
-          </children>
-          <padding>
-            <Insets bottom="0" left="10" right="10" top="5" />
-          </padding>
+          <Label text="Config. name"/>
+          <Label text="JDBC URL" GridPane.rowIndex="1"/>
+          <Label text="Driver class" GridPane.rowIndex="2"/>
+          <Label text="Username" GridPane.rowIndex="3"/>
+          <Label text="Password" GridPane.rowIndex="4"/>
+          <Label text="Timeout" GridPane.rowIndex="5"/>
+          <TextField fx:id="tfName" GridPane.columnIndex="1">
+            <GridPane.margin>
+              <Insets bottom="5.0" right="0.0"/>
+            </GridPane.margin>
+          </TextField>
+          <TextField fx:id="tfUrl" GridPane.columnIndex="1" GridPane.rowIndex="1">
+            <GridPane.margin>
+              <Insets bottom="5.0" right="0.0"/>
+            </GridPane.margin>
+          </TextField>
+          <ComboBox fx:id="cbDriverClass" GridPane.columnIndex="1" GridPane.rowIndex="2">
+          </ComboBox>
+          <!--
+              <TextField fx:id="tfDriverClass" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                <GridPane.margin>
+                  <Insets bottom="5.0" right="0.0" />
+                </GridPane.margin></TextField>
+              -->
+          <TextField fx:id="tfUsername" GridPane.columnIndex="1" GridPane.rowIndex="3">
+            <GridPane.margin>
+              <Insets bottom="5.0" right="0.0"/>
+            </GridPane.margin>
+          </TextField>
+          <PasswordField fx:id="pfPassword" GridPane.columnIndex="1" GridPane.rowIndex="4">
+            <GridPane.margin>
+              <Insets bottom="5.0" right="0.0"/>
+            </GridPane.margin>
+          </PasswordField>
+          <TextField fx:id="tfTimeout" GridPane.columnIndex="1" GridPane.rowIndex="5">
+            <GridPane.margin>
+              <Insets bottom="5.0" right="0.0"/>
+            </GridPane.margin>
+          </TextField>
         </GridPane>
-      </content>
-    </Tab>
-  </tabs>
-  <padding>
-    <Insets bottom="0" left="0" right="0" top="0" />
-  </padding>
+      </top>
+      <center>
+        <BorderPane BorderPane.alignment="CENTER">
+          <left>
+            <Label text="Libraries" BorderPane.alignment="CENTER_LEFT"/>
+          </left>
+          <right>
+            <HBox alignment="CENTER_RIGHT" prefWidth="351.0" BorderPane.alignment="CENTER">
+              <Button fx:id="btnRemoveLibrary" mnemonicParsing="false" text="Remove library">
+                <HBox.margin>
+                  <Insets right="10.0"/>
+                </HBox.margin>
+              </Button>
+              <Button fx:id="btnAddLibrary" mnemonicParsing="false" text="Add library"/>
+            </HBox>
+          </right>
+        </BorderPane>
+      </center>
+      <bottom>
+        <ListView fx:id="lvLibraries" prefHeight="100" BorderPane.alignment="CENTER">
+          <BorderPane.margin>
+            <Insets top="5.0"/>
+          </BorderPane.margin>
+        </ListView>
+      </bottom>
+      <padding>
+        <Insets bottom="0" left="10" right="10" top="5"/>
+      </padding>
+    </BorderPane>
+  </Tab>
+  <Tab text="Advanced">
+    <GridPane alignment="TOP_LEFT" BorderPane.alignment="TOP_LEFT">
+      <columnConstraints>
+        <ColumnConstraints hgrow="NEVER" maxWidth="189.0" minWidth="10.0" prefWidth="143.0"/>
+        <ColumnConstraints hgrow="ALWAYS" minWidth="10.0"/>
+      </columnConstraints>
+      <rowConstraints>
+        <RowConstraints vgrow="NEVER"/>
+        <RowConstraints vgrow="NEVER"/>
+      </rowConstraints>
+      <padding>
+        <Insets bottom="0" left="10" right="10" top="5"/>
+      </padding>
+      <Label text="Extend config type"/>
+      <Label text="Path" GridPane.rowIndex="1"/>
+      <ComboBox fx:id="cbExtendConfigType" GridPane.columnIndex="1"/>
+      <HBox GridPane.columnIndex="1" GridPane.rowIndex="1">
+        <TextField fx:id="tfExtendConfigPath"/>
+        <Button fx:id="btnExtendConfigFindPath" mnemonicParsing="false" text="..."/>
+      </HBox>
+    </GridPane>
+  </Tab>
 </TabPane>

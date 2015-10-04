@@ -38,7 +38,7 @@ public class ConnectionProvider implements SQLExecutor {
   private static final Logger LOG = LoggerFactory.getLogger(ConnectionProvider.class);
 
   private DbConfig dbConfig;
-  private DBAppDataSource dataSource = null;
+  private DatamanDataSource dataSource = null;
   private User user; public @Nonnull User getUser() { return user; } public void setUser(User user) { this.user = user; }
   public final BooleanProperty connected = new SimpleBooleanProperty(false);
   /** Savable register for whole db config. */
@@ -62,7 +62,7 @@ public class ConnectionProvider implements SQLExecutor {
       throw new IllegalStateException("The DBStructureReader isn't yet prepared for create dataSource. Please check isPrepared() properties");
     }
     if (dataSource != null) { dataSource = null; }
-    dataSource = new DBAppDataSource(dbConfig);
+    dataSource = new DatamanDataSource(dbConfig);
   }
 
   /** Close all connections */

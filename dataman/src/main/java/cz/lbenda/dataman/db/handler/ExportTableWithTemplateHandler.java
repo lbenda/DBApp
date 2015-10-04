@@ -41,7 +41,7 @@ import java.io.IOException;
     priority = 200,
     gui = @ActionGUIConfig(
         iconBase = "database-exportWithTemplate.png",
-        displayName = @Message(id="Export_tableWithTemplate", msg="With template"),
+        displayName = @Message(id="Export_tableWithTemplate", msg="Template"),
         displayTooltip = @Message(id="Export_tableWithTemplate_tooltip", msg="Export with template")
     )
 )
