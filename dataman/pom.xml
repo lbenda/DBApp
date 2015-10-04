@@ -91,6 +91,10 @@
       <artifactId>freemarker</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.thymeleaf</groupId>
+      <artifactId>thymeleaf</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-vfs2</artifactId>
     </dependency>

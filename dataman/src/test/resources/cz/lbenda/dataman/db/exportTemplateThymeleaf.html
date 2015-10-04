@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <style>
+    tr.odd {
+      background-color: #a3bde3;
+    }
+    th, td {
+      border-left: 1px solid silver;
+      border-right: 1px solid silver;
+    }
+  </style>
+</head>
+<body>
+  <h1>SQL Query: <span th:utext="${sql}"></span></h1>
+  <table>
+    <thead>
+      <tr>
+        <th th:each="column : ${columns}" th:utext="${column.name}"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="row,iterStat : ${rows}" th:class="${iterStat.odd} ? 'odd'">
+        <td th:each="field : ${row}" th:utext="${field}"></td>
+      </tr>
+    </tbody>
+  </table>
+</body>
+</html>

@@ -27,6 +27,7 @@ import freemarker.template.*;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -41,6 +42,9 @@ import org.jdom2.output.XMLOutputter;
 import org.jopendocument.dom.spreadsheet.SpreadSheet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.templateresolver.FileTemplateResolver;
 
 import javax.annotation.Nonnull;
 import javax.swing.table.DefaultTableModel;
@@ -86,7 +90,7 @@ public class ExportTableData {
     public static List<SpreadsheetFormat> byExtension(String extension) { return extensionsMap.get(extension); }
   }
   public enum TemplateFormat {
-    XLST_XMLv1, XLST_XMLv2, VELOCITY, FREEMARKER, THYMELEAF, ;
+    XLST_XMLv1, XLST_XMLv2, /* VELOCITY, */FREEMARKER, THYMELEAF, ;
   }
 
   public static class TemplateExportConfig {
@@ -123,14 +127,24 @@ public class ExportTableData {
   }
 
   public static void writeSqlQueryRows(@Nonnull TemplateFormat format, @Nonnull SQLQueryRows sqlQueryRows,
-                                       @Nonnull InputStream template, @Nonnull OutputStream outputStream)
+                                       @Nonnull String templateFile, @Nonnull OutputStream outputStream)
       throws IOException {
-    switch (format) {
-      case FREEMARKER: writeSqlQueryRowsToFreemarker(sqlQueryRows, template, outputStream); break;
-   /*   case THYMELEAF: writeSqlQueryRowsToXLS(sqlQueryRows, template, outputStream); break;
-      case VELOCITY: writeSqlQueryRowsToXMLv1(sqlQueryRows, template, outputStream); break;*/
-      case XLST_XMLv1: writeSqlQueryRowsToXLSTXMLv1(sqlQueryRows, template, outputStream); break;
-      case XLST_XMLv2: writeSqlQueryRowsToXLSTXMLv2(sqlQueryRows, template, outputStream); break;
+    try (FileInputStream fis = new FileInputStream(templateFile)) {
+      switch (format) {
+        case FREEMARKER:
+          writeSqlQueryRowsToFreemarker(sqlQueryRows, fis, outputStream);
+          break;
+        case THYMELEAF:
+          writeSqlQueryRowsToThymeleaf(sqlQueryRows, templateFile, outputStream);
+          break;
+        /*   case VELOCITY: writeSqlQueryRowsToXMLv1(sqlQueryRows, template, outputStream); break;*/
+        case XLST_XMLv1:
+          writeSqlQueryRowsToXLSTXMLv1(sqlQueryRows, fis, outputStream);
+          break;
+        case XLST_XMLv2:
+          writeSqlQueryRowsToXLSTXMLv2(sqlQueryRows, fis, outputStream);
+          break;
+      }
     }
   }
 
@@ -363,6 +377,36 @@ public class ExportTableData {
     transformXSLT(tempalte, baos, outputStream);
   }
 
+  /** Write rows from sql query to output stream
+   * @param sqlQueryRows rows
+   * @param outputStream stream to which are data write */
+  public static void writeSqlQueryRowsToThymeleaf(SQLQueryRows sqlQueryRows, String templateFileName, OutputStream outputStream) throws IOException {
+    Context ctx = new Context(Locale.getDefault());
+    ctx.setVariable("sql", sqlQueryRows.getSQL());
+    ctx.setVariable("columns", sqlQueryRows.getMetaData().getColumns());
+    List<List<Object>> rows = new ArrayList<>();
+    ctx.setVariable("rows", rows);
+    sqlQueryRows.getRows().forEach(rowDesc -> {
+      List<Object> row = new ArrayList<>();
+      sqlQueryRows.getMetaData().getColumns().forEach(columnDesc -> {
+        if (rowDesc.isColumnNull(columnDesc)) {
+          row.add(null);
+        } else {
+          row.add(rowDesc.getColumnValue(columnDesc));
+        }
+      });
+      rows.add(row);
+    });
+    TemplateEngine templateEngine = new TemplateEngine();
+    FileTemplateResolver resolver = new FileTemplateResolver();
+
+    templateEngine.setTemplateResolver(resolver);
+    IOUtils.write(templateEngine.process(templateFileName, ctx), outputStream);
+  }
+
+  /** Write rows from sql query to output stream
+   * @param sqlQueryRows rows
+   * @param outputStream stream to which are data write */
   public static void writeSqlQueryRowsToFreemarker(SQLQueryRows sqlQueryRows, InputStream template, OutputStream outputStream) throws IOException {
     Configuration cfg = new Configuration();
     cfg.setTemplateLoader(new TemplateLoader() {

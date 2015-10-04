@@ -41,8 +41,9 @@ public class IconFactory {
 
   /** Location where is icon used, by this location is size choose */
   public enum IconLocation {
-    INDICATOR(IconSize.XSMALL), MENU_ITEM(IconSize.SMALL), GLOBAL_TOOL_BAR(IconSize.XLARGE), LOCAL_TOOLBAR(IconSize.SMALL),
-    TABLE_CELL(IconSize.SMALL), APP_ICON(IconSize.SMALL), ;
+    INDICATOR(IconSize.XSMALL), MENU_ITEM(IconSize.SMALL), GLOBAL_TOOL_BAR(IconSize.XLARGE),
+    LOCAL_TOOLBAR(IconSize.SMALL), TABLE_CELL(IconSize.SMALL), APP_ICON(IconSize.SMALL),
+    WINDOW_ICON(IconSize.SMALL) ;
     private IconSize iconSize;
     IconLocation(IconSize iconSize) { this.iconSize = iconSize; }
     public IconSize getIconSize() { return iconSize; }
@@ -59,12 +60,12 @@ public class IconFactory {
 
   /** Return image view for given base name. The icon is get from caller class */
   @SuppressWarnings("unused")
-  public <T> ImageView imageView(@Nonnull T caller, @Nonnull String baseName, @Nonnull IconSize iconSize) {
+  public <T> ImageView imageView(T caller, @Nonnull String baseName, @Nonnull IconSize iconSize) {
     return new ImageView(image(caller, baseName, iconSize));
   }
 
   /** Return image view for given base name. The icon is get from caller class */
-  public <T> ImageView imageView(@Nonnull T caller, @Nonnull String baseName, @Nonnull IconLocation location) {
+  public <T> ImageView imageView(T caller, @Nonnull String baseName, @Nonnull IconLocation location) {
     return new ImageView(image(caller, baseName, location.getIconSize()));
   }
 
@@ -76,13 +77,14 @@ public class IconFactory {
     return base;
   }
 
-  public <T> Image image(@Nonnull T caller, @Nonnull String base, @Nonnull IconLocation location) {
+  public <T> Image image(T caller, @Nonnull String base, @Nonnull IconLocation location) {
     return image(caller, base, location.getIconSize());
   }
 
-  public <T> Image image(@Nonnull T caller, String base, IconSize iconSize) {
+  public <T> Image image(T caller, String base, IconSize iconSize) {
     final Class clazz;
-    if (caller instanceof Class) { clazz = (Class) caller; }
+    if (caller == null) { clazz = this.getClass(); }
+    else if (caller instanceof Class) { clazz = (Class) caller; }
     else { clazz = caller.getClass(); }
     String iconName = iconName(base, iconSize);
     InputStream is = clazz.getResourceAsStream(iconName);

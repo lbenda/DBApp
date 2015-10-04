@@ -28,8 +28,6 @@ import javafx.scene.layout.BorderPane;
 @SuppressWarnings("unused")
 public class TextFieldArea {
 
-
-
   private final BorderPane panel = new BorderPane(); public Node getNode() { return panel; }
   private final TextInputControl textInputControl;
   /** Property which set component to editable, or not editable mode */
@@ -44,8 +42,7 @@ public class TextFieldArea {
    * @param useTextField use text field instead of text area */
   public TextFieldArea(String windowTitle, boolean useTextField) {
     this.textInputControl = useTextField ? new TextField() : new TextArea();
-    if (!useTextField) {
-      textInputControl.setPrefHeight(Constants.TEXT_AREA_PREF_HIGH); }
+    if (!useTextField) { textInputControl.setPrefHeight(Constants.TEXT_AREA_PREF_HIGH); }
     this.panel.setCenter(textInputControl);
     BorderPane.setAlignment(textInputControl, Pos.TOP_LEFT);
     this.panel.setRight(TextAreaFrmController.createOpenButton(windowTitle, textInputControl::getText, textInputControl::setText));

@@ -88,8 +88,7 @@ public class DialogHelper {
   /** Ask user if file can be overwrite if file exist
    * @param file file which is rewrite
    * @param defaultExtension if file haven't extension then default is add
-   * @return file if user want rewrite it, or no file with this name exist
-   * */
+   * @return file if user want rewrite it, or no file with this name exist */
   public File canBeOverwriteDialog(File file, String defaultExtension) {
     if (file == null) { return null; }
     if ("".equals(FilenameUtils.getExtension(file.getName()))) {
@@ -240,5 +239,22 @@ public class DialogHelper {
       }
     } else { return null; }
     return result.get();
+  }
+
+  /** Create dialog with applicaiton icon */
+  public static <T> Dialog<T> createDialog() {
+    return createDialog(null, null);
+  }
+
+  /** Create dialog with right icons */
+  public static <T> Dialog<T> createDialog(Object caller, String iconBaseName) {
+    Dialog<T> dialog = new Dialog<>();
+    Stage stage = (Stage) dialog.getDialogPane().getScene().getWindow();
+    if (iconBaseName == null) { iconBaseName = MessageFactory.getInstance().getMessage("app.icon"); }
+    stage.getIcons().add(IconFactory.getInstance().image(caller, iconBaseName, IconFactory.IconSize.SMALL));
+    stage.getIcons().add(IconFactory.getInstance().image(caller, iconBaseName, IconFactory.IconSize.MEDIUM));
+    stage.getIcons().add(IconFactory.getInstance().image(caller, iconBaseName, IconFactory.IconSize.LARGE));
+    stage.getIcons().add(IconFactory.getInstance().image(caller, iconBaseName, IconFactory.IconSize.XLARGE));
+    return dialog;
   }
 }

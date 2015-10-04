@@ -30,7 +30,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -70,9 +69,9 @@ public class ExportTableWithTemplateHandler extends AbstractAction {
     if (templateExportConfig != null && StringUtils.isNoneBlank(templateExportConfig.getFile())
         && StringUtils.isNoneBlank(templateExportConfig.getTemplateFile())) {
       SQLQueryRows sqlQueryRows = sqlQueryRowsObjectProperty.getValue();
-      try (FileOutputStream fos = new FileOutputStream(templateExportConfig.getFile());
-           FileInputStream fis = new FileInputStream(templateExportConfig.getTemplateFile())) {
-        ExportTableData.writeSqlQueryRows(templateExportConfig.getTemplateFormat(), sqlQueryRows, fis, fos);
+      try (FileOutputStream fos = new FileOutputStream(templateExportConfig.getFile())) {
+        ExportTableData.writeSqlQueryRows(templateExportConfig.getTemplateFormat(), sqlQueryRows,
+            templateExportConfig.getTemplateFile(), fos);
       } catch (IOException e) {
         LOG.error("Problem with write files", e);
         ExceptionMessageFrmController.showException("Problem with write files", e);

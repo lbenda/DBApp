@@ -12,15 +12,16 @@
     <Insets bottom="0" left="0" right="0" top="0"/>
   </padding>
   <Tab text="Basic">
-    <VBox>
+    <VBox maxWidth="Infinity">
+      <padding><Insets bottom="10" left="10" right="10" top="10"/></padding>
       <Label text="Template system:"/>
-      <ComboBox fx:id="cbTemplateType"/>
+      <ComboBox fx:id="cbTemplateType" maxWidth="Infinity"/>
       <Label text="Template file:"/>
-      <FileField fx:id="ffTemplateFile">
+      <FileField fx:id="ffTemplateFile" maxWidth="Infinity">
         <save>false</save>
       </FileField>
       <Label text="Export to file:"/>
-      <FileField fx:id="ffFile">
+      <FileField fx:id="ffFile" maxWidth="Infinity">
         <save>true</save>
       </FileField>
     </VBox>

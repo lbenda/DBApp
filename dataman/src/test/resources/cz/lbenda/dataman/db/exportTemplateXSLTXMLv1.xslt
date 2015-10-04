@@ -5,7 +5,7 @@
   <xsl:template match="/ex:export">
     <html>
       <body>
-        <h2>SQL Query: <xsl:value-of select="@sql" /></h2>
+        <h1>SQL Query: <xsl:value-of select="@sql" /></h1>
         <table border="1">
           <thead>
             <tr bgcolor="#9acd32">

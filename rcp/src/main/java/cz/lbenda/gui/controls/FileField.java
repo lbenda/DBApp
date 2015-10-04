@@ -29,6 +29,7 @@ import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import org.apache.commons.lang3.StringUtils;
@@ -118,10 +119,10 @@ public class FileField extends Control {
 
     protected FileFieldSkin(FileField fileField) {
       super(fileField);
-      HBox pane = new HBox();
-      pane.setAlignment(Pos.CENTER_LEFT);
-
+      BorderPane pane = new BorderPane();
+      pane.setMaxWidth(Double.MAX_VALUE);
       TextField tf = new TextField();
+      tf.maxWidth(Double.MAX_VALUE);
       tf.setText(fileField.getFile());
       tf.setEditable(fileField.isEditable());
       Button button = new Button();
@@ -129,7 +130,9 @@ public class FileField extends Control {
       button.setTooltip(new Tooltip(BTN_TOOLTIP));
       button.setGraphic(IconFactory.getInstance().imageView(FileField.class, "threeDots.png",
           IconFactory.IconLocation.LOCAL_TOOLBAR));
-      pane.getChildren().addAll(tf, button);
+      pane.setCenter(tf);
+      BorderPane.setAlignment(tf, Pos.CENTER_LEFT);
+      pane.setRight(button);
       getChildren().add(pane);
 
       fileField.editableProperty().addListener((observable, oldValue, newValue) -> {

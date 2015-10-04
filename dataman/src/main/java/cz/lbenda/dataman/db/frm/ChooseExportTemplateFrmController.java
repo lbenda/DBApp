@@ -19,6 +19,7 @@ import cz.lbenda.common.Tuple2;
 import cz.lbenda.dataman.db.ExportTableData;
 import cz.lbenda.dataman.db.ExportTableData.TemplateExportConfig;
 import cz.lbenda.gui.controls.FileField;
+import cz.lbenda.rcp.DialogHelper;
 import cz.lbenda.rcp.localization.Message;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -90,8 +91,8 @@ public class ChooseExportTemplateFrmController implements Initializable {
 
 
   public static TemplateExportConfig openDialog(final TemplateExportConfig templateExportConfig) {
-    Dialog<TemplateExportConfig> dialog = new Dialog<>();
-    dialog.setResizable(false);
+    Dialog<TemplateExportConfig> dialog = DialogHelper.createDialog();
+    dialog.setResizable(true);
     final Tuple2<Parent, ChooseExportTemplateFrmController> tuple = createNewInstance();
     if (templateExportConfig != null) { tuple.get2().valuesPreset(templateExportConfig); }
     dialog.setTitle(msgDialogTitle);

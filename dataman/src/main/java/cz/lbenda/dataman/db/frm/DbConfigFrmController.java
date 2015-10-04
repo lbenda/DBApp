@@ -20,6 +20,7 @@ import cz.lbenda.dataman.Constants;
 import cz.lbenda.dataman.rc.DbConfigFactory;
 import cz.lbenda.dataman.db.DbConfig;
 import cz.lbenda.dataman.schema.dataman.ExtendedConfigTypeType;
+import cz.lbenda.rcp.DialogHelper;
 import cz.lbenda.rcp.localization.Message;
 import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.fxml.FXML;
@@ -161,7 +162,7 @@ public class DbConfigFrmController implements Initializable {
   }
 
   public static DbConfig openDialog(final DbConfig sc) {
-    Dialog<DbConfig> dialog = new Dialog<>();
+    Dialog<DbConfig> dialog = DialogHelper.createDialog();
     dialog.setResizable(false);
     final Tuple2<Parent, DbConfigFrmController> tuple = createNewInstance();
     if (sc != null) { tuple.get2().loadDataFromSessionConfiguration(sc); }
