@@ -67,7 +67,8 @@ public class DatamanApp extends Application {
     } catch (IOException e) {
       LOG.error("The messages wasn't loaded", e);
     }
-    MessageFactory.createInstanance(prb);
+    MessageFactory.createInstance(prb);
+    MessageFactory.getInstance().initializePackage("cz.lbenda");
     launch(args);
   }
 

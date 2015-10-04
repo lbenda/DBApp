@@ -20,7 +20,6 @@ import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
 import javafx.stage.FileChooser;
@@ -42,10 +41,6 @@ public class OpenFileHandler extends AbstractAction {
 
   @Message
   public static final String msgDialogTitle = "Choose SQL file";
-
-  static {
-    MessageFactory.initializeMessages(OpenFileHandler.class);
-  }
 
   public SQLEditorController sqlEditorController;
 

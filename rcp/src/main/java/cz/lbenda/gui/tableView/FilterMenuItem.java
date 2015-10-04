@@ -17,7 +17,6 @@ package cz.lbenda.gui.tableView;
 
 import cz.lbenda.rcp.IconFactory;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -60,8 +59,6 @@ public class FilterMenuItem extends MenuItem {
   public static final String msgOK = "OK";
   @Message
   public static final String msgCancel = "Cancel";
-
-  static { MessageFactory.initializeMessages(FilterMenuItem.class); }
 
   private final HBox buttonBar = new HBox();
   private final BorderPane quickFilter = new BorderPane();

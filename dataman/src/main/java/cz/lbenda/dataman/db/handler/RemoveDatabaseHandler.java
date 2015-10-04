@@ -21,7 +21,6 @@ import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.ObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.scene.control.Alert;
@@ -47,10 +46,6 @@ public class RemoveDatabaseHandler extends AbstractAction {
   public static final String msgRemoveTitle = "Remove confirm";
   @Message
   public static final String msgRemoveContent = "The configuration '%s' will be removed.\nAre you sure, you want is?";
-
-  static {
-    MessageFactory.initializeMessages(RemoveDatabaseHandler.class);
-  }
 
   /** The holder to which is set session configuration values */
   private ObjectProperty<DbConfig> dbConfigObserver;

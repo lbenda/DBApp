@@ -21,7 +21,6 @@ import cz.lbenda.dataman.schema.export.ColumnType;
 import cz.lbenda.rcp.DialogHelper;
 import cz.lbenda.rcp.ExceptionMessageFrmController;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import freemarker.cache.TemplateLoader;
 import freemarker.template.*;
 import org.apache.commons.csv.CSVFormat;
@@ -70,7 +69,6 @@ public class ExportTableData {
 
   @Message
   public static final String CHOOSE_FORMAT = "Choose format for export";
-  static { MessageFactory.initializeMessages(ExportTableData.class); }
 
   public enum SpreadsheetFormat {
     XLSX("xlsx"), XLS("xls"), ODS("ods"), CSV("csv"), TXT("txt"), XMLv1("xml"), XMLv2("xml"), SQL("sql"), ;

@@ -16,7 +16,6 @@
 package cz.lbenda.common;
 
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.util.StringConverter;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -41,9 +40,6 @@ public class StringConverters {
   public static final String MSG_BIG_VALUE = "<BIG VALUE>";
   @Message
   public static final String MSG_CHARACTER_VALUE = "<CHARACTER VALUE>";
-  static {
-    MessageFactory.initializeMessages(MSG_BIG_VALUE);
-  }
 
   public static StringConverter<LocalDate> LOCALDATE_CONVERTER = new StringConverter<LocalDate>() {
     @Override public String toString(LocalDate value) { return value == null ? null : value.format(Constants.LOCAL_DATE_FORMATTER); }

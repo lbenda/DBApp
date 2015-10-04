@@ -18,7 +18,6 @@ package cz.lbenda.dataman.db.frm;
 import cz.lbenda.dataman.db.*;
 
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import org.slf4j.Logger;
@@ -35,9 +34,6 @@ public class DataTableFrmController {
   public static final String TASK_NAME = "Open table";
   @Message
   public static final String STEP_FINISH = "Table showed";
-  static {
-    MessageFactory.initializeMessages(DataTableFrmController.class);
-  }
 
   private DataTableView tableView;
   private final ObjectProperty<String> title = new SimpleObjectProperty<>();

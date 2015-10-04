@@ -20,10 +20,8 @@ import cz.lbenda.dataman.db.dialect.SQLDialect;
 import java.sql.*;
 import java.util.*;
 
-import cz.lbenda.dataman.db.frm.DbStructureFrmController;
 import cz.lbenda.rcp.StatusHelper;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,11 +44,7 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
   @Message
   public static final String STEP_READ_FOREIGN_KEYS = "Read foreign keys";
   @Message
-  public static final String STEP_FINISH = "Structure of databse was readed.";
-
-  static {
-    MessageFactory.initializeMessages(DbStructureFrmController.class);
-  }
+  public static final String STEP_FINISH = "Structure of database was read.";
 
   private final ConnectionProvider connectionProvider;
   private final DbConfig dbConfig;

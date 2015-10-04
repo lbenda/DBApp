@@ -17,7 +17,6 @@ package cz.lbenda.rcp;
 
 import cz.lbenda.common.Tuple2;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.control.ButtonType;
@@ -39,10 +38,9 @@ public class ExceptionMessageFrmController {
   private TextArea stackTrace;
 
   @Message
-  public String msgAppErrorHeader = "Error in application";
+  public static final String msgAppErrorHeader = "Error in application";
 
   public ExceptionMessageFrmController() {
-    MessageFactory.initializeMessages(this);
     stackTrace = new TextArea();
   }
 
@@ -58,7 +56,7 @@ public class ExceptionMessageFrmController {
     final Tuple2<Parent, ExceptionMessageFrmController> tuple = createNewInstance();
     if (tuple == null) { return; }
     ExceptionMessageFrmController controller = tuple.get2();
-    dialog.setTitle(controller.msgAppErrorHeader);
+    dialog.setTitle(ExceptionMessageFrmController.msgAppErrorHeader);
     dialog.setHeaderText(message);
     StringWriter sw = new StringWriter();
 
@@ -92,7 +90,7 @@ public class ExceptionMessageFrmController {
     final Tuple2<Parent, ExceptionMessageFrmController> tuple = createNewInstance();
     if (tuple == null) { return; }
     ExceptionMessageFrmController controller = tuple.get2();
-    dialog.setTitle(controller.msgAppErrorHeader);
+    dialog.setTitle(ExceptionMessageFrmController.msgAppErrorHeader);
     dialog.setHeaderText(exception.getMessage());
     StringWriter sw = new StringWriter();
     exception.printStackTrace(new PrintWriter(sw));

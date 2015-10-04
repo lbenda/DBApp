@@ -22,7 +22,6 @@ import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.ObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
@@ -59,14 +58,13 @@ public class OpenConnectedTablesHandler extends AbstractAction {
   private static Logger LOG = LoggerFactory.getLogger(OpenConnectedTablesHandler.class);
 
   @Message
-  private String msgDetailTitle = "Connected tables";
+  public static final String msgDetailTitle = "Connected tables";
 
   private ObjectProperty<DataTableView> tableViewObjectProperty;
   private Consumer<DetailDescriptor> detailAppender;
 
   public OpenConnectedTablesHandler(ObjectProperty<DataTableView> tableViewObjectProperty,
                                     Consumer<DetailDescriptor> detailAppender) {
-    MessageFactory.initializeMessages(this);
     this.tableViewObjectProperty = tableViewObjectProperty;
     this.detailAppender = detailAppender;
     tableViewObjectProperty.addListener((observable, oldValue, newValue) -> {

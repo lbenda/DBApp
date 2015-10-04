@@ -20,7 +20,6 @@ import cz.lbenda.gui.ImageViewerFrmController;
 import cz.lbenda.rcp.ExceptionMessageFrmController;
 import cz.lbenda.rcp.IconFactory;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.*;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
@@ -73,10 +72,6 @@ public class BinaryDataEditor extends Control {
   public static final String OPEN_AS_IMAGE = "Open as image";
   @Message
   public static final String OPEN_AS_HEX = "Open as hexadecimal text";
-
-  static {
-    MessageFactory.initializeMessages(BinaryDataEditor.class);
-  }
 
   private final ObjectProperty<BinaryData> binaryData = new SimpleObjectProperty<>();
   private final ObjectProperty<Long> currentSize = new SimpleObjectProperty<>();

@@ -19,7 +19,6 @@ import cz.lbenda.common.AbstractHelper;
 import cz.lbenda.common.Constants;
 import cz.lbenda.rcp.IconFactory;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -30,7 +29,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -51,10 +49,6 @@ public class FileField extends Control {
   public static final String BTN_TOOLTIP = "Choose file";
   @Message
   public static final String CHOOSE_FILE_WINDOW_TITLE = "Choose file";
-
-  static {
-    MessageFactory.initializeMessages(FileField.class);
-  }
 
   private final ObjectProperty<String> file = new SimpleObjectProperty<>();
   private final BooleanProperty editable = new SimpleBooleanProperty(false);

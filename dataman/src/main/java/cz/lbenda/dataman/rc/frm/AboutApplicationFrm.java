@@ -17,7 +17,6 @@ package cz.lbenda.dataman.rc.frm;
 
 import cz.lbenda.rcp.DialogHelper;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.fxml.JavaFXBuilderFactory;
@@ -38,8 +37,7 @@ public class AboutApplicationFrm implements Initializable {
   private static final String FXML_RESOURCE = "AboutApplication.fxml";
 
   @Message
-  public static final String WINDOW_TITLE = "About applicaiton";
-  static { MessageFactory.initializeMessages(AboutApplicationFrm.class); }
+  public static final String WINDOW_TITLE = "About application";
 
   @Override
   public void initialize(URL url, ResourceBundle resourceBundle) {

@@ -15,7 +15,6 @@
  */
 package cz.lbenda.gui.tableView;
 
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
@@ -44,7 +43,6 @@ public abstract class FilterableTableView<S> extends TableView<S> {
   private ObjectProperty<Comparator<? super S>> sortProperty = new SimpleObjectProperty<>();
 
   public FilterableTableView() {
-    MessageFactory.initializeMessages(this);
     filters.addListener((ListChangeListener<Predicate<S>>) change ->
         filteredList.setPredicate(object -> filters.stream().allMatch(p -> p.test(object))));
     sortProperty.addListener((observable, oldValue, newValue) -> sortedList.setComparator(newValue));

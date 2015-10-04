@@ -16,7 +16,6 @@
 package cz.lbenda.dataman;
 
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.stage.FileChooser.ExtensionFilter;
 
 import java.util.ArrayList;
@@ -63,8 +62,4 @@ public class Constants {
           new ExtensionFilter("XML v1 and v2 (XML)", "*.xml"),
           new ExtensionFilter("All files", "*.*")
       }));
-
-  static {
-    MessageFactory.initializeMessages(Constants.class);
-  }
 }

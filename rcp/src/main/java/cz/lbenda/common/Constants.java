@@ -16,7 +16,6 @@
 package cz.lbenda.common;
 
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.stage.FileChooser;
 
 import java.text.DateFormat;
@@ -111,7 +110,6 @@ public class Constants {
       new FileChooser.ExtensionFilter[] { new FileChooser.ExtensionFilter("All files", "*.*") }));
 
   static {
-    MessageFactory.initializeMessages(Constants.class);
     if (CONF_DATE_FORMAT != null) { LOCAL_DATE_FORMATTER = DateTimeFormatter.ofPattern(CONF_DATE_FORMAT); }
   }
 }

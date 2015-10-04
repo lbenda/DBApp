@@ -71,8 +71,6 @@ public class DialogHelper {
   @Message
   public static final String chooseSingleOption_title = "Choose one option";
 
-  static { MessageFactory.initializeMessages(DialogHelper.class); }
-
   /** Ask user if file can be overwrite if file exist */
   @SuppressWarnings("unused")
   public boolean canBeOverwriteDialog(File file) {

@@ -16,7 +16,6 @@
 package cz.lbenda.gui.tableView;
 
 import cz.lbenda.common.StringConverters;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -53,7 +52,6 @@ public class DatePickerTableCell<S, T> extends TableCell<S, T> {
 
   @SuppressWarnings("unchecked")
   public DatePickerTableCell(Callback<Integer, ObservableValue<LocalDate>> selectedStateCallback, StringConverter<T> converter) {
-    MessageFactory.initializeMessages(this);
     this.converter = new SimpleObjectProperty(this, "converter") {
       protected void invalidated() {}
     };

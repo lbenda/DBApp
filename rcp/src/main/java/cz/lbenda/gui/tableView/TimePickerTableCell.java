@@ -16,7 +16,6 @@
 package cz.lbenda.gui.tableView;
 
 import cz.lbenda.common.StringConverters;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
@@ -50,7 +49,6 @@ public class TimePickerTableCell<S, T> extends TableCell<S, T> {
 
   @SuppressWarnings("unchecked")
   public TimePickerTableCell(Callback<Integer, ObservableValue<LocalDateTime>> selectedStateCallback, StringConverter<T> converter) {
-    MessageFactory.initializeMessages(this);
     this.converter = new SimpleObjectProperty(this, "converter") {
       protected void invalidated() {}
     };

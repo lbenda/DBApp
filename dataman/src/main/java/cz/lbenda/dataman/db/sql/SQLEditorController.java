@@ -23,7 +23,6 @@ import cz.lbenda.gui.editor.HighlighterSQL;
 import cz.lbenda.gui.editor.TextEditor;
 import cz.lbenda.rcp.ExceptionMessageFrmController;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.scene.Node;
@@ -67,7 +66,6 @@ public class SQLEditorController {
           + "  </script>"
           + "</head><body onLoad=\"toBottom()\">%s</body></html>";
     }
-    MessageFactory.initializeMessages(SQLEditorController.class);
   }
 
   private TextEditor textEditor = new TextEditor();

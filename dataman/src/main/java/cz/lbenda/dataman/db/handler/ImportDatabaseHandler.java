@@ -22,7 +22,6 @@ import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
 import javafx.stage.FileChooser;
@@ -44,11 +43,7 @@ import java.io.File;
 public class ImportDatabaseHandler extends AbstractAction {
 
   @Message
-  private String msgFileChooseTitle = "Choose file from which will be configuration loaded";
-
-  public ImportDatabaseHandler() {
-    MessageFactory.initializeMessages(this);
-  }
+  public static final String msgFileChooseTitle = "Choose file from which will be configuration loaded";
 
   @Override
   public void handle(ActionEvent e) {

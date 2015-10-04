@@ -24,7 +24,6 @@ import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.ObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
@@ -57,9 +56,6 @@ public class ExportTableHandler extends AbstractAction {
 
   @Message
   private static final String msgFileChooseTitle = "Choose file to which table or result ot SQL will be save";
-  static {
-    MessageFactory.initializeMessages(ExportTableHandler.class);
-  }
 
   public ExportTableHandler(ObjectProperty<SQLQueryRows> sqlQueryRowsObjectProperty) {
     this.sqlQueryRowsObjectProperty = sqlQueryRowsObjectProperty;

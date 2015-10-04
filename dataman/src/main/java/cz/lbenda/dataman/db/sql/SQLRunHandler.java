@@ -23,7 +23,6 @@ import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.event.ActionEvent;
@@ -54,9 +53,6 @@ public class SQLRunHandler extends AbstractAction {
   public static final String TASK_NAME = "Execute sql";
   @Message
   public static final String STEP_FINISH = "SQL command finish";
-  static {
-    MessageFactory.initializeMessages(SQLRunHandler.class);
-  }
 
   private static Logger LOG = LoggerFactory.getLogger(SQLRunHandler.class);
   private SQLEditorController sqlEditorController;

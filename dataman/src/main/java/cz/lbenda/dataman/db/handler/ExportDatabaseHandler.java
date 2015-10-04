@@ -22,7 +22,6 @@ import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.ObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
@@ -49,9 +48,6 @@ public class ExportDatabaseHandler extends AbstractAction {
 
   @Message
   private static final String msgFileChooseTitle = "Choose file for configuration save";
-  static {
-    MessageFactory.initializeMessages(ExportDatabaseHandler.class);
-  }
 
   public ExportDatabaseHandler(ObjectProperty<DbConfig> dbConfigProperty) {
     this.dbConfigProperty = dbConfigProperty;

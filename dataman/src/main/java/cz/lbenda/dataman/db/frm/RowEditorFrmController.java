@@ -18,7 +18,6 @@ package cz.lbenda.dataman.db.frm;
 import cz.lbenda.dataman.db.ColumnDesc;
 import cz.lbenda.dataman.db.RowDesc;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.Node;
@@ -30,9 +29,6 @@ public class RowEditorFrmController {
 
   @Message
   public static final String WINDOW_TITLE = "Row value editor";
-  static {
-    MessageFactory.initializeMessages(RowEditorFrmController.class);
-  }
 
   private PropertySheet sheet = new PropertySheet();
   private ObjectProperty<DataTableView> tableViewObjectProperty;

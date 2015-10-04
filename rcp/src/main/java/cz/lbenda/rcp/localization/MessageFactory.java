@@ -15,9 +15,12 @@
  */
 package cz.lbenda.rcp.localization;
 
+import cz.lbenda.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Field;
+import java.util.List;
 import java.util.ResourceBundle;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 11.9.15.
@@ -27,7 +30,7 @@ public class MessageFactory {
   private static final Logger LOG = LoggerFactory.getLogger(MessageFactory.class);
   private static MessageFactory instance;
 
-  public static void createInstanance(ResourceBundle resourceBundle) {
+  public static void createInstance(ResourceBundle resourceBundle) {
     instance = new MessageFactory(resourceBundle);
   }
 
@@ -38,32 +41,45 @@ public class MessageFactory {
     return instance;
   }
 
+  /** Initialize message classes in given base package */
+  public void initializePackage(String basePackage) {
+    new Thread(() -> {
+      List<String> classes = ClassLoaderHelper.classInPackage(basePackage, getClass().getClassLoader());
+      classes.parallelStream().forEach(cName -> {
+        try {
+          getInstance().initializeMessages(getClass().getClassLoader().loadClass(cName));
+        } catch (ClassNotFoundException e) {
+          /* Ignore this problem. It's normal because there ins't all dependencies. */
+        }
+      });
+    }).start();
+  }
+
   /** Initialize given object or class with localized messages
    * @param o object which is initialized */
   @SuppressWarnings({"unused", "UnusedAssignment"})
-  public static <T> void initializeMessages(T o)  {
+  public <T> void initializeMessages(T o)  {
     if (o == null) { return; }
-    final Class clazz;
+    Class clazz;
     if (o instanceof Class) { clazz = (Class) o; }
     else { clazz = o.getClass(); }
-    /*
-    if (o == null) { return; }
-    Class clazz = o.getClass();
     do {
       for (Field field : clazz.getDeclaredFields()) {
         Message message = field.getDeclaredAnnotation(Message.class);
         if (message != null) {
-          field.setAccessible(true);
-          try {
-            field.set(o, message.value());
-          } catch (IllegalAccessException e) {
-            LOG.error("Problem with set message for field: " + o.getClass().getName() + "." + field.getName(), e);
+          String mess = getMessage(clazz.getName() + "." + field.getName(), null);
+          if (mess != null) {
+            field.setAccessible(true);
+            try {
+              field.set(o, mess);
+            } catch (IllegalAccessException e) {
+              LOG.error("Problem with set message for field: " + o.getClass().getName() + "." + field.getName(), e);
+            }
           }
         }
       }
       clazz = clazz.getSuperclass();
     } while (clazz != null && !Object.class.equals(clazz));
-    */
   }
 
   private ResourceBundle messages;
@@ -86,7 +102,7 @@ public class MessageFactory {
       if (messages.containsKey(key)) {
         result = messages.getString(key);
       } else {
-        LOG.warn("The message with key: '" + key + "' wasn't found in messages.");
+        LOG.debug("The message with key: '" + key + "' wasn't found in messages.");
       }
     }
     return result == null ? def : result;

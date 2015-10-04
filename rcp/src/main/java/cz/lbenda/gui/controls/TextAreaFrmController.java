@@ -22,7 +22,6 @@ import cz.lbenda.rcp.DialogHelper;
 import cz.lbenda.rcp.ExceptionMessageFrmController;
 import cz.lbenda.rcp.IconFactory;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.fxml.FXML;
@@ -63,10 +62,6 @@ public class TextAreaFrmController implements Initializable {
   public final static String msgLoadFile_title = "Open file";
   @Message
   public final static String msgSaveFile_title = "Save to file";
-
-  static {
-    MessageFactory.initializeMessages(TextFieldArea.class);
-  }
 
   /** Image for button which open text editor */
   public static final Image BUTTON_IMAGE = IconFactory.getInstance().image(TextFieldArea.class, "document-edit.png",

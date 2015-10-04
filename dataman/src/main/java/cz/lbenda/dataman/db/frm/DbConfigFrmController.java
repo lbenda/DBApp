@@ -22,7 +22,6 @@ import cz.lbenda.dataman.db.DbConfig;
 import cz.lbenda.dataman.schema.dataman.ExtendedConfigTypeType;
 import cz.lbenda.rcp.DialogHelper;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
@@ -59,9 +58,6 @@ public class DbConfigFrmController implements Initializable {
   public static final String msgLibraryChooseTitle = "Choose libraries";
   @Message
   public static final String msgExtendConfigChooseTitle = "Choose path to extended configuration";
-  static {
-    MessageFactory.initializeMessages(DbConfigFrmController.class);
-  }
 
   private String currentDriverClass;
 
