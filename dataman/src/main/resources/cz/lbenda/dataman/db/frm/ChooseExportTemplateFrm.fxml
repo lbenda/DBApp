@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import cz.lbenda.gui.controls.FileField?>
+
+<TabPane id="mainPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+         tabClosingPolicy="UNAVAILABLE" BorderPane.alignment="CENTER" xmlns="http://javafx.com/javafx/8"
+         xmlns:fx="http://javafx.com/fxml/1" fx:controller="cz.lbenda.dataman.db.frm.ChooseExportTemplateFrmController">
+  <padding>
+    <Insets bottom="0" left="0" right="0" top="0"/>
+  </padding>
+  <Tab text="Basic">
+    <VBox>
+      <Label text="Template system:"/>
+      <ComboBox fx:id="cbTemplateType"/>
+      <Label text="Template file:"/>
+      <FileField fx:id="ffTemplateFile">
+        <save>false</save>
+      </FileField>
+      <Label text="Export to file:"/>
+      <FileField fx:id="ffFile">
+        <save>true</save>
+      </FileField>
+    </VBox>
+  </Tab>
+  <Tab text="Advanced">
+  </Tab>
+</TabPane>

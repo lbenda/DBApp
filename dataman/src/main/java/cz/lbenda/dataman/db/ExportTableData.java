@@ -19,6 +19,7 @@ import cz.lbenda.dataman.Constants;
 import cz.lbenda.dataman.schema.export.*;
 import cz.lbenda.dataman.schema.export.ColumnType;
 import cz.lbenda.rcp.DialogHelper;
+import cz.lbenda.rcp.ExceptionMessageFrmController;
 import cz.lbenda.rcp.localization.Message;
 import cz.lbenda.rcp.localization.MessageFactory;
 import org.apache.commons.csv.CSVFormat;
@@ -39,15 +40,19 @@ import org.jopendocument.dom.spreadsheet.SpreadSheet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -78,6 +83,23 @@ public class ExportTableData {
     SpreadsheetFormat(String extension) { this.extension = extension; }
     public static List<SpreadsheetFormat> byExtension(String extension) { return extensionsMap.get(extension); }
   }
+  public enum TemplateFormat {
+    XLST_XMLv1, XLST_XMLv2, VELOCITY, FREEMARKER, THYMELEAF, ;
+  }
+
+  public static class TemplateExportConfig {
+    /** Format system for template */
+    private ExportTableData.TemplateFormat templateFormat; public ExportTableData.TemplateFormat getTemplateFormat() { return templateFormat; }
+    /** File which contains template */
+    private String templateFile; public String getTemplateFile() { return templateFile; }
+    /** File to which will be export write */
+    private String file; public String getFile() { return file; }
+    public TemplateExportConfig(ExportTableData.TemplateFormat templateFormat, String templateFile, String file) {
+      this.templateFormat = templateFormat;
+      this.templateFile = templateFile;
+      this.file = file;
+    }
+  }
 
   public static void writeSqlQueryRows(String fileName, SQLQueryRows sqlQueryRows, String sheetName, OutputStream outputStream) throws IOException {
     String extension = FilenameUtils.getExtension(fileName);
@@ -95,6 +117,18 @@ public class ExportTableData {
       case CSV: writeSqlQueryRowsToCSV(sqlQueryRows, outputStream); break;
       case TXT: writeSqlQueryRowsToTXT(sqlQueryRows, outputStream); break;
       case ODS: writeSqlQueryRowsToODS(sqlQueryRows, sheetName, outputStream); break;
+    }
+  }
+
+  public static void writeSqlQueryRows(@Nonnull TemplateFormat format, @Nonnull SQLQueryRows sqlQueryRows,
+                                       @Nonnull InputStream template, @Nonnull OutputStream outputStream)
+      throws IOException {
+    switch (format) {
+   /*   case FREEMARKER: writeSqlQueryRowsToXLSX(sqlQueryRows, template, outputStream); break;
+      case THYMELEAF: writeSqlQueryRowsToXLS(sqlQueryRows, template, outputStream); break;
+      case VELOCITY: writeSqlQueryRowsToXMLv1(sqlQueryRows, template, outputStream); break;*/
+      case XLST_XMLv1: writeSqlQueryRowsToXLSTXMLv1(sqlQueryRows, template, outputStream); break;
+      case XLST_XMLv2: writeSqlQueryRowsToXLSTXMLv2(sqlQueryRows, template, outputStream); break;
     }
   }
 
@@ -261,7 +295,6 @@ public class ExportTableData {
       m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.FALSE);
       m.marshal(of.createExport(export), outputStream);
     } catch (JAXBException e) {
-
       LOG.error("Problem with write exporting data: " + e.toString(), e);
       throw new RuntimeException("Problem with write exporting data: " + e.toString(), e);
     }
@@ -291,5 +324,40 @@ public class ExportTableData {
     root.addContent(rows);
     XMLOutputter xmlOutputter = new XMLOutputter();
     xmlOutputter.output(new Document(root), outputStream);
+  }
+
+  private static void transformXSLT(InputStream templateStream, ByteArrayOutputStream xmlOutputStream, OutputStream outputStream) {
+    StreamSource styleSource = new StreamSource(templateStream);
+    ByteArrayInputStream bais = new ByteArrayInputStream(xmlOutputStream.toByteArray());
+    StreamSource xmlSource = new StreamSource(bais);
+    StreamResult streamResult = new StreamResult(outputStream);
+    try {
+      Transformer transformer = TransformerFactory.newInstance().newTransformer(styleSource);
+      transformer.transform(xmlSource, streamResult);
+    } catch (TransformerConfigurationException e) {
+      LOG.error("Problem with load style source.", e);
+      ExceptionMessageFrmController.showException("Problem with load style source.", e);
+    } catch (TransformerException e) {
+      LOG.error("Problem with transforming input stream.", e);
+      ExceptionMessageFrmController.showException("Problem with transforming input stream.", e);
+    }
+  }
+
+  /** Write rows from sql query to output stream
+   * @param sqlQueryRows rows
+   * @param outputStream stream to which are data write */
+  public static void writeSqlQueryRowsToXLSTXMLv1(SQLQueryRows sqlQueryRows, InputStream inputStream, OutputStream outputStream) {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    writeSqlQueryRowsToXMLv1(sqlQueryRows, baos);
+    transformXSLT(inputStream, baos, outputStream);
+  }
+
+  /** Write rows from sql query to output stream
+   * @param sqlQueryRows rows
+   * @param outputStream stream to which are data write */
+  public static void writeSqlQueryRowsToXLSTXMLv2(SQLQueryRows sqlQueryRows, InputStream inputStream, OutputStream outputStream) throws IOException {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    writeSqlQueryRowsToXMLv2(sqlQueryRows, baos);
+    transformXSLT(inputStream, baos, outputStream);
   }
 }

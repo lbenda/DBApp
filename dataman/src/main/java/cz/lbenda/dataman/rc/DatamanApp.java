@@ -224,6 +224,7 @@ public class DatamanApp extends Application {
         new OpenConnectedTablesHandler(tableViewObjectProperty,
             detailDescriptor -> addRemoveToDetail(detailDescriptor.getTitle(), detailDescriptor.getNode(), detailDescriptor.getClosable())),
         new ExportTableHandler(sqlQueryRowsObjectProperty),
+        new ExportTableWithTemplateHandler(sqlQueryRowsObjectProperty),
         new AboutApplicationHandler());
 
     Scene scene = new Scene(mainPane);

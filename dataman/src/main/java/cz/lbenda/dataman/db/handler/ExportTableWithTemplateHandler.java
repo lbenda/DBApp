@@ -15,24 +15,22 @@
  */
 package cz.lbenda.dataman.db.handler;
 
-import cz.lbenda.dataman.Constants;
 import cz.lbenda.dataman.db.ExportTableData;
+import cz.lbenda.dataman.db.ExportTableData.TemplateExportConfig;
 import cz.lbenda.dataman.db.SQLQueryRows;
-import cz.lbenda.rcp.DialogHelper;
+import cz.lbenda.dataman.db.frm.ChooseExportTemplateFrmController;
 import cz.lbenda.rcp.ExceptionMessageFrmController;
 import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
 import cz.lbenda.rcp.localization.Message;
-import cz.lbenda.rcp.localization.MessageFactory;
 import javafx.beans.property.ObjectProperty;
 import javafx.event.ActionEvent;
-import javafx.scene.Node;
-import javafx.stage.FileChooser;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -40,28 +38,24 @@ import java.io.IOException;
  * Export current db configuration */
 @ActionConfig(
     category = "/ExportImport/tableExport",
-    id = "cz.lbenda.dataman.db.handler.ExportTableExcelHandler",
-    priority = 100,
+    id = "cz.lbenda.dataman.db.handler.ExportTableWithTemplateExcelHandler",
+    priority = 200,
     gui = @ActionGUIConfig(
-        iconBase = "database-export.png",
-        displayName = @Message(id="Export_table", msg="Export"),
-        displayTooltip = @Message(id="Export_table_tooltip", msg="Export current table to XSLX, ODS, CSV, TXT or XML")
+        iconBase = "database-exportWithTemplate.png",
+        displayName = @Message(id="Export_tableWithTemplate", msg="With template"),
+        displayTooltip = @Message(id="Export_tableWithTemplate_tooltip", msg="Export with template")
     )
 )
-public class ExportTableHandler extends AbstractAction {
+public class ExportTableWithTemplateHandler extends AbstractAction {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ExportTableHandler.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ExportTableWithTemplateHandler.class);
 
   /** Loaded query */
   private ObjectProperty<SQLQueryRows> sqlQueryRowsObjectProperty;
+  /** Last get template export config */
+  private TemplateExportConfig templateExportConfig;
 
-  @Message
-  private static final String msgFileChooseTitle = "Choose file to which table or result ot SQL will be save";
-  static {
-    MessageFactory.initializeMessages(ExportTableHandler.class);
-  }
-
-  public ExportTableHandler(ObjectProperty<SQLQueryRows> sqlQueryRowsObjectProperty) {
+  public ExportTableWithTemplateHandler(ObjectProperty<SQLQueryRows> sqlQueryRowsObjectProperty) {
     this.sqlQueryRowsObjectProperty = sqlQueryRowsObjectProperty;
     setEnable(sqlQueryRowsObjectProperty.getValue() != null);
     this.sqlQueryRowsObjectProperty.addListener(observable -> {
@@ -72,17 +66,13 @@ public class ExportTableHandler extends AbstractAction {
   @Override
   public void handle(ActionEvent event) {
     if (sqlQueryRowsObjectProperty.getValue() == null) { return; }
-    SQLQueryRows sqlQueryRows = sqlQueryRowsObjectProperty.getValue();
-    FileChooser fileChooser = new FileChooser();
-    fileChooser.setTitle(msgFileChooseTitle);
-    Node node = (Node) event.getSource();
-    fileChooser.getExtensionFilters().addAll(Constants.spreadSheetFilter);
-    File file = DialogHelper.getInstance().canBeOverwriteDialog(
-        fileChooser.showSaveDialog(node.getScene().getWindow()),
-        Constants.CSV_EXTENSION);
-    if (file != null) {
-      try (FileOutputStream fos = new FileOutputStream(file)) {
-        ExportTableData.writeSqlQueryRows(file.getName(), sqlQueryRows, Constants.EXPORT_SHEET_NAME, fos);
+    templateExportConfig = ChooseExportTemplateFrmController.openDialog(templateExportConfig);
+    if (templateExportConfig != null && StringUtils.isNoneBlank(templateExportConfig.getFile())
+        && StringUtils.isNoneBlank(templateExportConfig.getTemplateFile())) {
+      SQLQueryRows sqlQueryRows = sqlQueryRowsObjectProperty.getValue();
+      try (FileOutputStream fos = new FileOutputStream(templateExportConfig.getFile());
+           FileInputStream fis = new FileInputStream(templateExportConfig.getTemplateFile())) {
+        ExportTableData.writeSqlQueryRows(templateExportConfig.getTemplateFormat(), sqlQueryRows, fis, fos);
       } catch (IOException e) {
         LOG.error("Problem with write files", e);
         ExceptionMessageFrmController.showException("Problem with write files", e);
