@@ -94,7 +94,8 @@ public class ColumnDesc {
     this.name = confValue(dialect.columnName(), rs);
     this.label = confValue(dialect.columnRemarks(), rs);
     this.size = confValue(dialect.columnSize(), rs);
-    this.scale = confValue(dialect.columnDecimalDigits(), rs);
+    Long scale = confValue(dialect.columnDecimalDigits(), rs);
+    this.scale = scale == null ? 0 : scale.intValue();
     this.columnTypeName = confValue(dialect.columnTypeName(), rs);
     this.nullable = confBool(dialect.columnNullable(), rs);
     this.autoincrement = confBool(dialect.columnAutoIncrement(), rs);

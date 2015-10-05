@@ -36,13 +36,13 @@ public class TestExportTableData {
     catalogDesc.getSchemas().add(schemaDesc);
     TableDesc tableDesc = new TableDesc(schemaDesc, "TABLE", "table");
     ColumnDesc cd1 = new ColumnDesc(tableDesc, "id", null, Types.INTEGER, "", 10, false, true, true, new HSQLDBDialect());
-    cd1.setPosition(0);
+    cd1.setPosition(1);
     ColumnDesc cd2 = new ColumnDesc(tableDesc, "column2", null, Types.VARCHAR, "", 250, true, false, false, new HSQLDBDialect());
-    cd2.setPosition(1);
+    cd2.setPosition(2);
     ColumnDesc cd3 = new ColumnDesc(tableDesc, "column3", null, Types.DATE, "", 12, true, false, false, new HSQLDBDialect());
-    cd3.setPosition(2);
+    cd3.setPosition(3);
     ColumnDesc cd4 = new ColumnDesc(tableDesc, "column4", null, Types.BOOLEAN, "", 1, true, false, false, new HSQLDBDialect());
-    cd4.setPosition(3);
+    cd4.setPosition(4);
     tableDesc.getQueryRow().getMetaData().getColumns().addAll(cd1, cd2, cd3, cd4);
 
     RowDesc row1 = tableDesc.addNewRowAction();

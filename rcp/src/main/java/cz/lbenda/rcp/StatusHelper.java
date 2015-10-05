@@ -34,12 +34,16 @@ public class StatusHelper {
   public void setStatusBar(StatusBar statusBar) { this.statusBar = statusBar; }
 
   public void setProgress(double progress) {
-    Platform.runLater(() -> statusBar.setProgress(progress));
+    if (statusBar != null) {
+      Platform.runLater(() -> statusBar.setProgress(progress));
+    }
   }
 
   /** Show message which is given */
   public void showMessage(String message) {
-    Platform.runLater(() -> statusBar.setText(message));
+    if (statusBar != null) {
+      Platform.runLater(() -> statusBar.setText(message));
+    }
   }
 
   private final Map<Object, String> progressNames = new ConcurrentHashMap<>();

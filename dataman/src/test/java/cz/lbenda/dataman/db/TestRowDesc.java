@@ -34,9 +34,9 @@ public class TestRowDesc {
     catalogDesc.getSchemas().add(schemaDesc);
     TableDesc td = new TableDesc(schemaDesc, "TABLE", "table1");
     ColumnDesc cd = new ColumnDesc(td, "col1", null, Types.VARCHAR, "", 12, true, false, false, new HSQLDBDialect());
-    cd.setPosition(0);
+    cd.setPosition(1);
     ColumnDesc cd1 = new ColumnDesc(td, "col2", null, Types.INTEGER, "", 12, true, false, false, new HSQLDBDialect());
-    cd1.setPosition(1);
+    cd1.setPosition(2);
 
     String originalValue = row.getColumnValue(cd);
     Integer originalValue1 = row.getColumnValue(cd1);
