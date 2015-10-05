@@ -35,6 +35,6 @@ public class TestClassLoaderHelper {
   public void testClassInPackage() throws Exception {
     List<String> result = ClassLoaderHelper.classInPackage("cz.lbenda", getClass().getClassLoader());
     assertNotNull(result);
-    assertTrue(result.size() > 200);
+    assertTrue(result.size() > 50);
   }
 }
