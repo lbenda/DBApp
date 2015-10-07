@@ -94,13 +94,17 @@ public class ColumnDesc {
     this.name = confValue(dialect.columnName(), rs);
     this.label = confValue(dialect.columnRemarks(), rs);
     this.size = confValue(dialect.columnSize(), rs);
-    Long scale = confValue(dialect.columnDecimalDigits(), rs);
-    this.scale = scale == null ? 0 : scale.intValue();
+    Object size = confValue(dialect.columnDecimalDigits(), rs);
+    if (size == null) { this.scale = 0; }
+    else { this.scale = size instanceof Long
+        ? ((Long) confValue(dialect.columnDecimalDigits(), rs)).intValue()
+        : ((Integer) confValue(dialect.columnDecimalDigits(), rs)).intValue();
+    }
     this.columnTypeName = confValue(dialect.columnTypeName(), rs);
     this.nullable = confBool(dialect.columnNullable(), rs);
     this.autoincrement = confBool(dialect.columnAutoIncrement(), rs);
     this.generated = confBool(dialect.columnGenerated(), rs);
-    this.dataType = dialect.columnTypeFromSQL(confValue(dialect.columnDateType(), rs), columnTypeName, size);
+    this.dataType = dialect.columnTypeFromSQL(confValue(dialect.columnDateType(), rs), columnTypeName, this.size);
 
     /*
     if ("DATAMAN".equals(this.schema)) {

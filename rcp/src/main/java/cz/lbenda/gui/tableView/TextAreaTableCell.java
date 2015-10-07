@@ -79,7 +79,7 @@ public class TextAreaTableCell<S> extends TableCell<S, String> {
       super.startEdit();
       if (this.isEditing()) {
         this.textFieldArea.setText(getItem());
-        this.setGraphic(textFieldArea.getNode());
+        this.setGraphic(textFieldArea);
         this.textFieldArea.requestFocus();
         this.setText(null);
       }
@@ -88,7 +88,6 @@ public class TextAreaTableCell<S> extends TableCell<S, String> {
 
   public void commitEdit(String newValue) {
     if (!AbstractHelper.nullEquals(newValue, getItem())) {
-      textFieldArea.commitEdit(newValue);
       super.commitEdit(newValue);
     }
   }
@@ -97,7 +96,7 @@ public class TextAreaTableCell<S> extends TableCell<S, String> {
   @Override
   public void cancelEdit() {
     super.cancelEdit();
-    textFieldArea.cancelEdit();
+    textFieldArea.setText(getItem());
     this.setText(getItem());
     this.setGraphic(null);
   }

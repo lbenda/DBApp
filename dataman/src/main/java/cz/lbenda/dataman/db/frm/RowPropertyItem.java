@@ -17,6 +17,7 @@ package cz.lbenda.dataman.db.frm;
 
 import cz.lbenda.dataman.db.ColumnDesc;
 import cz.lbenda.dataman.db.RowDesc;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.value.ObservableValue;
 import org.controlsfx.control.PropertySheet;
 import org.controlsfx.property.editor.PropertyEditor;
@@ -33,9 +34,12 @@ public class RowPropertyItem implements PropertySheet.Item {
   }
 
   private boolean editable;
-  private RowDesc row;
+  private ObjectProperty<RowDesc> row;
+  public ObjectProperty<RowDesc> rowProperty() { return row; }
+  public void setRow(RowDesc row) { this.row.setValue(row); }
+  public RowDesc getRow() { return this.row.getValue(); }
 
-  public RowPropertyItem(ColumnDesc columnDesc, RowDesc row, boolean editable) {
+  public RowPropertyItem(ColumnDesc columnDesc, ObjectProperty<RowDesc> row, boolean editable) {
     this.columnDesc = columnDesc;
     this.editable = editable && row != null;
     this.row = row;
@@ -60,18 +64,18 @@ public class RowPropertyItem implements PropertySheet.Item {
   }
 
   public ObservableValue valueProperty() {
-    if (row == null) { return null; }
-    return row.observableValueForColumn(columnDesc);
+    if (row == null || row.getValue() == null) { return null; }
+    return row.getValue().valueProperty(columnDesc);
   }
 
   @Override
   public Object getValue() {
-    if (row == null) { return null; }
-    return row.getColumnValue(columnDesc);
+    if (row == null || row.getValue() == null) { return null; }
+    return row.getValue().getColumnValue(columnDesc);
   }
   @Override
   public void setValue(Object o) {
-    if (row != null) { row.setColumnValue(columnDesc, o); }
+    if (row != null && row.getValue() != null) { row.getValue().setColumnValue(columnDesc, o); }
   }
 
   @SuppressWarnings("unchecked")

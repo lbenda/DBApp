@@ -17,19 +17,16 @@ package cz.lbenda.dataman.db;
 
 import cz.lbenda.common.*;
 import cz.lbenda.dataman.db.dialect.ColumnType;
+import cz.lbenda.rcp.SimpleDateProperty;
 import cz.lbenda.rcp.SimpleLocalDateProperty;
 import cz.lbenda.rcp.SimpleLocalDateTimeProperty;
 import cz.lbenda.rcp.SimpleLocalTimeProperty;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
+import javafx.beans.property.*;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.control.SingleSelectionModel;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,10 +34,11 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.*;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 13.9.15.
  * Description of row */
@@ -61,41 +59,68 @@ public class RowDesc implements Observable {
   }
 
   /** Array for calculate has code */
-  private static int[] PRIMES = {17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503, 509, 521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599, 601, 607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661, 673, 677, 683, 691, 701, 709, 719, 727, 733, 739, 743, 751, 757, 761, 769, 773, 787, 797, 809, 811, 821, 823, 827, 829, 839, 853, 857, 859, 863, 877, 881, 883, 887, 907, 911, 919, 929, 937, 941, 947, 953, 967, 971, 977, 983, 991, 997};
+  private static int[] PRIMES = {17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103,
+      107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229,
+      233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367,
+      373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503,
+      509, 521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599, 601, 607, 613, 617, 619, 631, 641, 643, 647, 653,
+      659, 661, 673, 677, 683, 691, 701, 709, 719, 727, 733, 739, 743, 751, 757, 761, 769, 773, 787, 797, 809, 811, 821,
+      823, 827, 829, 839, 853, 857, 859, 863, 877, 881, 883, 887, 907, 911, 919, 929, 937, 941, 947, 953, 967, 971, 977,
+      983, 991, 997};
 
   private List<InvalidationListener> invalidationListeners = new ArrayList<>();
   private Object id; public Object getId() { return id; } public void setId(Object id) { this.id = id; }
 
+  private final SQLQueryMetaData metaData;
   private Object[] oldValues;
-  private Object[] newValues;
+  private ObservableValue[] newValues;
 
 
   private RowDescState state;
 
   /** Row in state new */
   public static RowDesc createNewRow(SQLQueryMetaData metaData) {
-    RowDesc result = new RowDesc(metaData.columnCount());
+    RowDesc result = new RowDesc(metaData);
     result.state = RowDescState.NEW;
     return result;
   }
   /** Row in state new */
   public static RowDesc createNewRow(SQLQueryMetaData metaData, RowDescState state) {
-    RowDesc result = new RowDesc(metaData.columnCount());
+    RowDesc result = new RowDesc(metaData);
     result.state = state;
     return result;
   }
 
-  private RowDesc(int columnCount) {
-    newValues = new Object[columnCount];
-    oldValues = new Object[columnCount];
+  private RowDesc(SQLQueryMetaData metaData) {
+    this.metaData = metaData;
+    newValues = new ObservableValue[metaData.getColumns().size()];
+    int i = 0;
+    for (ColumnDesc columnDesc : metaData.getColumns()) {
+      newValues[i] = createObjectProperty(columnDesc);
+      //noinspection unchecked
+      newValues[i].addListener((observable, oldValue, newValue) -> {
+        if (!AbstractHelper.nullEquals(oldValue, newValue)) {
+          setColumnValue(columnDesc, newValue);
+        }
+      });
+      i++;
+    }
+    oldValues = new Object[metaData.getColumns().size()];
   }
 
+  RowDesc(SQLQueryMetaData metaData, RowDescState state) {
+    this(metaData);
+    this.state = state;
+  }
+
+  /*
   RowDesc(Object id, Object[] values, RowDescState state) {
     this.id = id;
     this.oldValues = values;
     this.newValues = values.clone();
     this.state = state;
   }
+  */
 
   public void setState(RowDescState state) {
     this.state = state;
@@ -106,12 +131,9 @@ public class RowDesc implements Observable {
   }
 
   public void cancelChanges() {
-    if (oldValues != null) {
-      newValues = oldValues.clone();
+    metaData.getColumns().forEach(columnDesc -> setColumnValue(columnDesc, oldValues[columnDesc.getPosition() - 1]));
+    if (state == RowDescState.CHANGED) {
       state = RowDescState.LOADED;
-    } else {
-      newValues = new Object[newValues.length];
-      state = RowDescState.NEW;
     }
     doInvalidation();
   }
@@ -136,16 +158,35 @@ public class RowDesc implements Observable {
   /** Return value from column */
   @SuppressWarnings("unchecked")
   public <T> T getColumnValue(ColumnDesc column) {
-    return (T) newValues[column.getPosition() - 1];
+    return (T) newValues[column.getPosition() - 1].getValue();
   }
   /** Return value of column in string */
   @SuppressWarnings("unchecked")
   public String getColumnValueStr(ColumnDesc column) {
-    return column.getStringConverter().toString(newValues[column.getPosition() - 1]);
+    return column.getStringConverter().toString(getColumnValue(column));
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T> T repairClassOfNumber(ColumnDesc column, T value) {
+    if (value == null) { return null; }
+    if (column.getDataType().getJavaClass().equals(value.getClass())) { return value; }
+    Long val;
+    if (value instanceof Long) { val = (Long) value; }
+    else if (value instanceof Integer) { val = ((Integer) value).longValue(); }
+    else if (value instanceof Short) { val = ((Short) value).longValue(); }
+    else if (value instanceof Byte) { val = ((Byte) value).longValue(); }
+    else { return value; }
+
+    if (column.getDataType() == ColumnType.INTEGER) { return (T) (Object) val.intValue(); }
+    if (column.getDataType() == ColumnType.BYTE) { return (T) (Object) val.byteValue(); }
+    if (column.getDataType() == ColumnType.SHORT) { return (T) (Object) val.shortValue(); }
+    return value;
   }
 
   /** Set value for both rows - old and new */
   public <T> void setInitialColumnValue(ColumnDesc column, T value) {
+    value = repairClassOfNumber(column, value);
+
     Object v = value;
     if (column.getDataType() == ColumnType.BLOB) {
       v = new BlobBinaryData(column.toString(), (Blob) value);
@@ -157,7 +198,7 @@ public class RowDesc implements Observable {
       v = new BitArrayBinaryData(column.toString(), (byte[]) value);
     }
     oldValues[column.getPosition() - 1] = v;
-    newValues[column.getPosition() - 1] = v;
+    setPropertyValue(column, v);
   }
 
   /** Load initial column value from rs */
@@ -181,18 +222,24 @@ public class RowDesc implements Observable {
 
   /** Return set value for given column */
   public <T> void setColumnValue(ColumnDesc column, T value) {
+    if (AbstractHelper.nullEquals(getColumnValue(column), value)) { return; }
+    if (column.getDataType() == ColumnType.ARRAY) {
+      LOG.warn("The editing of ARRAY isn't implemented yet");
+      return;
+    }
+
     if (value instanceof SingleSelectionModel) {
       throw new ClassCastException("The value of column can't be selection model type.");
     }
-    newValues[column.getPosition() - 1] = value;
+    setPropertyValue(column, value);
 
     if (RowDescState.LOADED == state
-        && !AbstractHelper.nullEquals(value, oldValues[column.getPosition() - 1])) {
+        && !AbstractHelper.nullEquals(getColumnValue(column), oldValues[column.getPosition() - 1])) {
       this.setState(RowDescState.CHANGED);
     } else if (state == RowDescState.CHANGED) {
       boolean noChanged = true;
       for (int i = 0; i < oldValues.length; i++) {
-        noChanged = noChanged && AbstractHelper.nullEquals(newValues[i], oldValues[i]);
+        noChanged = noChanged && AbstractHelper.nullEquals(newValues[i].getValue(), oldValues[i]);
       }
       if (noChanged) { setState(RowDescState.LOADED); }
     }
@@ -233,15 +280,94 @@ public class RowDesc implements Observable {
     return result;
   }
 
-  @Override
   @SuppressWarnings("CloneDoesntCallSuperClone")
+  @Override
   public RowDesc clone() {
-    RowDesc result = new RowDesc(id, oldValues.clone(), state);
+    RowDesc result = new RowDesc(metaData, state);
+    for (ColumnDesc columnDesc : metaData.getColumns()) {
+      result.setInitialColumnValue(columnDesc, oldValues[columnDesc.getPosition() - 1]);
+      result.setColumnValue(columnDesc, getColumnValue(columnDesc));
+    }
     return result;
   }
 
   @SuppressWarnings("unchecked")
-  public ObservableValue observableValueForColumn(@Nonnull ColumnDesc columnDesc) {
+  private <T> void setPropertyValue(@Nonnull ColumnDesc columnDesc, T value) {
+    ObservableValue<T> ov = newValues[columnDesc.getPosition() - 1];
+    if (ov instanceof BooleanProperty) {
+      ((BooleanProperty) ov).setValue(Boolean.TRUE.equals(value));
+    } else if (ov instanceof StringProperty) {
+      ((StringProperty) ov).setValue(columnDesc.getStringConverter().toString(value));
+    } else if (ov instanceof SimpleLocalDateProperty) {
+      final java.sql.Date date;
+      if (value == null) { date = null; }
+      else if (value instanceof LocalDate) { date = java.sql.Date.valueOf((LocalDate) value); }
+      else if (value instanceof java.sql.Date) { date = (java.sql.Date) value; }
+      else { date = new java.sql.Date(((java.util.Date) value).getTime()); }
+      ((SimpleLocalDateProperty) ov).setDate(date);
+    } else if (ov instanceof SimpleDateProperty) {
+      final java.sql.Date date;
+      if (value == null) { date = null; }
+      else if (value instanceof LocalDate) { date = java.sql.Date.valueOf((LocalDate) value); }
+      else if (value instanceof java.sql.Date) { date = (java.sql.Date) value; }
+      else { date = new java.sql.Date(((java.util.Date) value).getTime()); }
+      ((SimpleDateProperty) ov).setValue(date);
+    } else if (ov instanceof SimpleLocalTimeProperty) {
+      final java.sql.Time time;
+      if (value == null) { time = null; }
+      else if (value instanceof LocalTime) { time = java.sql.Time.valueOf((LocalTime) value); }
+      else if (value instanceof java.sql.Time) { time = (java.sql.Time) value; }
+      else { time = new java.sql.Time(((java.util.Date) value).getTime()); }
+      ((SimpleLocalTimeProperty) ov).setTime(time);
+    } else if (ov instanceof SimpleLocalDateTimeProperty) {
+      final java.sql.Timestamp timestamp;
+      if (value == null) { timestamp = null; }
+      else if (value instanceof LocalDateTime) { timestamp = java.sql.Timestamp.valueOf((LocalDateTime) value); }
+      else if (value instanceof java.sql.Timestamp) { timestamp = (java.sql.Timestamp) value; }
+      else { timestamp = new java.sql.Timestamp(((java.util.Date) value).getTime()); }
+      ((SimpleLocalDateTimeProperty) ov).setTimestamp(timestamp);
+    } else if (ov instanceof ObjectProperty) {
+      ((ObjectProperty<T>) ov).setValue(value);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T> ObservableValue<T> createObjectProperty(@Nonnull ColumnDesc columnDesc) {
+    switch (columnDesc.getDataType()) {
+      case BOOLEAN:
+        return (ObservableValue<T>) new SimpleBooleanProperty(null, null);
+      case BYTE:
+      case SHORT:
+      case LONG:
+      case INTEGER:
+      case FLOAT:
+      case DOUBLE:
+      case DECIMAL:
+        return new SimpleObjectProperty<>();
+      case DATE:
+        return (ObservableValue<T>) new SimpleLocalDateProperty();
+      case TIMESTAMP:
+        return (ObservableValue<T>) new SimpleLocalDateTimeProperty();
+      case TIME:
+        return (ObservableValue<T>) new SimpleLocalTimeProperty();
+      case STRING:
+        return (ObservableValue<T>) new SimpleStringProperty();
+      case BYTE_ARRAY:
+      case CLOB:
+      case BLOB:
+        return (ObservableValue<T>) new SimpleObjectProperty<>();
+      default:
+        return (ObservableValue<T>) new SimpleObjectProperty<>();
+    }
+  }
+
+  public ObservableValue valueProperty(@Nonnull ColumnDesc columnDesc) {
+    return newValues[columnDesc.getPosition() - 1];
+  }
+
+  @SuppressWarnings("unchecked")
+  /*
+  public ObservableValue valueProperty(@Nonnull ColumnDesc columnDesc) {
     ObservableValue result;
     switch (columnDesc.getDataType()) {
       case BOOLEAN:
@@ -255,12 +381,8 @@ public class RowDesc implements Observable {
       case FLOAT:
       case DOUBLE:
       case DECIMAL:
-        if (newValues[columnDesc.getPosition() - 1] == null) {
-          result = new SimpleObjectProperty<>();//new SimpleStringProperty(null);
-        } else {
-          result = new SimpleObjectProperty<>(newValues[columnDesc.getPosition() - 1]);
-          // new SimpleStringProperty(String.valueOf(newValues[columnDesc.getPosition()]));
-        }
+        if (newValues[columnDesc.getPosition() - 1] == null) { result = new SimpleObjectProperty<>(); }
+        else { result = new SimpleObjectProperty<>(newValues[columnDesc.getPosition() - 1]); }
         break;
       case DATE:
         result = new SimpleLocalDateProperty((java.sql.Date) newValues[columnDesc.getPosition() - 1]);
@@ -284,9 +406,10 @@ public class RowDesc implements Observable {
         break;
     }
     result.addListener((observable, oldValue, newValue) -> {
-      if (newValue instanceof  SingleSelectionModel) {
+      if (newValue instanceof SingleSelectionModel) {
         throw new ClassCastException("The selection model isn't right new value for row");
       }
+      System.out.println("Value changed: " + newValue);
 
       if (observable instanceof SimpleLocalDateProperty) {
         setColumnValue(columnDesc, ((SimpleLocalDateProperty) observable).getSQLDate());
@@ -316,6 +439,8 @@ public class RowDesc implements Observable {
             nVal = columnDesc.getStringConverter().fromString(((StringProperty) newValue).getValue());
           }
         } else { nVal = newValue; }
+        System.out.println("newValue: " + newValue);
+        System.out.println("nVal: " + nVal);
         setColumnValue(columnDesc, nVal);
       } else if (columnDesc.getDataType() == ColumnType.BYTE_ARRAY
           || columnDesc.getDataType() == ColumnType.BLOB
@@ -327,6 +452,7 @@ public class RowDesc implements Observable {
     });
     return result;
   }
+  */
 
   /** return true if value in column was changed */
   public boolean isColumnChanged(ColumnDesc columnDesc) {

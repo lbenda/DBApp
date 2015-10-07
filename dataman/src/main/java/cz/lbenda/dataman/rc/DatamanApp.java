@@ -15,6 +15,7 @@
  */
 package cz.lbenda.dataman.rc;
 
+import cz.lbenda.common.Constants;
 import cz.lbenda.dataman.db.DbConfig;
 import cz.lbenda.dataman.db.SQLQueryRows;
 import cz.lbenda.dataman.db.frm.DataTableFrmController;
@@ -44,6 +45,7 @@ import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import org.apache.commons.cli.*;
 import org.controlsfx.control.StatusBar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +61,30 @@ public class DatamanApp extends Application {
 
   private static final Logger LOG = LoggerFactory.getLogger(DatamanApp.class);
 
+  private static void commandLine(String[] args) {
+    Options options = new Options();
+    options.addOption("mode", true, "Application mode: development, test");
+    options.addOption("help", "h", false, "Show this help");
+    CommandLineParser parser = new DefaultParser();
+    try {
+      CommandLine cmd = parser.parse(options, args);
+      if (cmd.hasOption("h")) { (new HelpFormatter()).printHelp("dataman", options); }
+      if (cmd.hasOption("mode")) {
+        if ("DEVELOPMENT".equals(cmd.getOptionValue("mode").toUpperCase())) {
+          Constants.IS_IN_DEVELOP_MODE = true;
+        } else if ("TEST".equals(cmd.getOptionValue("mode").toUpperCase())) {
+          Constants.IS_IN_DEVELOP_MODE = true;
+        }
+      }
+
+    } catch (ParseException e) {
+      LOG.error("Problem with parse command line arguments", e);
+      (new HelpFormatter()).printHelp("dataman", options);
+    }
+  }
+
   public static void main(String[] args) {
+    commandLine(args);
     ConfigurationRW.createInstance("dataman", null);
     PropertyResourceBundle prb = null;
     try {

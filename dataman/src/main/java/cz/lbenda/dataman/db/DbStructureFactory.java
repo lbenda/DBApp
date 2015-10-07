@@ -15,6 +15,7 @@
  */
 package cz.lbenda.dataman.db;
 
+import cz.lbenda.common.Constants;
 import cz.lbenda.dataman.db.dialect.SQLDialect;
 
 import java.sql.*;
@@ -187,10 +188,12 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
   }
 
   private void writeColumnNames(ResultSetMetaData metaData) throws SQLException {
-    for (int i = 1; i <= metaData.getColumnCount(); i++) {
-      System.out.print(metaData.getColumnName(i));
-      System.out.print(" : ");
-      System.out.println(metaData.getColumnLabel(i));
+    if (Constants.IS_IN_DEVELOP_MODE) {
+      for (int i = 1; i <= metaData.getColumnCount(); i++) {
+        System.out.print(metaData.getColumnName(i));
+        System.out.print(" : ");
+        System.out.println(metaData.getColumnLabel(i));
+      }
     }
   }
 

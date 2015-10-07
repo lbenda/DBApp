@@ -23,6 +23,7 @@ import java.time.ZoneId;
 import java.util.Date;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 13.9.15. */
+@SuppressWarnings("unused")
 public class SimpleLocalTimeProperty extends SimpleObjectProperty<LocalTime> {
 
   public SimpleLocalTimeProperty() { super(); }
@@ -35,7 +36,7 @@ public class SimpleLocalTimeProperty extends SimpleObjectProperty<LocalTime> {
   public SimpleLocalTimeProperty(Object var1, String var2) { super(var1, var2); }
   public SimpleLocalTimeProperty(Object var1, String var2, LocalTime var3) { super(var1, var2, var3); }
 
-  public void setTime(java.sql.Time time) { setValue(time.toLocalTime()); }
+  public void setTime(java.sql.Time time) { setValue(time == null ? null : time.toLocalTime()); }
   public void setDate(Date date) {
     setValue(date.toInstant().atZone(ZoneId.systemDefault()).toLocalTime());
   }

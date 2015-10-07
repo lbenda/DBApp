@@ -22,6 +22,7 @@ import java.time.ZoneId;
 import java.util.Date;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 13.9.15. */
+@SuppressWarnings("unused")
 public class SimpleLocalDateTimeProperty extends SimpleObjectProperty<LocalDateTime> {
 
   public SimpleLocalDateTimeProperty() { super(); }
@@ -37,7 +38,7 @@ public class SimpleLocalDateTimeProperty extends SimpleObjectProperty<LocalDateT
   public SimpleLocalDateTimeProperty(Object var1, String var2, LocalDateTime var3) { super(var1, var2, var3); }
 
   public void setTimestamp(java.sql.Timestamp timestamp) {
-    setValue(timestamp.toLocalDateTime());
+    setValue(timestamp == null ? null : timestamp.toLocalDateTime());
   }
   public void setDate(Date date) {
     setValue(date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());

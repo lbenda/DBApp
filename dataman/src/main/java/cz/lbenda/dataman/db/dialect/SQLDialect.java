@@ -28,6 +28,8 @@ public interface SQLDialect {
 
   boolean isForDriver(String driver);
 
+  default byte incrementFrom() { return 0; }
+
   default String tableCatalog() { return "TABLE_CAT"; }
   default String tableSchema() { return "TABLE_SCHEM"; }
   default String tableName() { return "TABLE_NAME"; }
@@ -61,7 +63,7 @@ public interface SQLDialect {
 
   /** Set of names which is used to describe identity column */
   default Set<String> nameOfGeneratedIdentityColumn() { return new HashSet<>(Arrays.asList(new String[] {
-      "SCOPE_IDENTITY()", "IDENTITY()" })); }
+      "SCOPE_IDENTITY()", "IDENTITY()", "1" })); }
 
   default ColumnType columnTypeFromSQL(int dataType, String columnTypeName, int size) {
     switch (dataType) {

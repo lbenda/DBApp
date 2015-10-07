@@ -15,10 +15,12 @@
  */
 package cz.lbenda.dataman.db.frm;
 
-import cz.lbenda.dataman.db.ColumnDesc;
 import cz.lbenda.dataman.db.RowDesc;
+import cz.lbenda.dataman.db.TableDesc;
 import cz.lbenda.rcp.localization.Message;
+import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.Node;
 import org.controlsfx.control.PropertySheet;
@@ -31,18 +33,20 @@ public class RowEditorFrmController {
   public static final String WINDOW_TITLE = "Row value editor";
 
   private PropertySheet sheet = new PropertySheet();
-  private ObjectProperty<DataTableView> tableViewObjectProperty;
-  private ChangeListener<RowDesc> changeRowListener = (observableValue, oldValue, newValue) -> setRowValue(newValue);
+  private ObjectProperty<RowDesc> row = new SimpleObjectProperty<>();
+  private ChangeListener<RowDesc> changeRowListener = (observableValue, oldValue, newValue) -> row.setValue(newValue);
 
   public RowEditorFrmController(ObjectProperty<DataTableView> tableViewObjectProperty) {
-    this.tableViewObjectProperty = tableViewObjectProperty;
     tableViewObjectProperty.addListener((observable, oldValue, newValue) -> {
       if (oldValue != null) {
         oldValue.getSelectionModel().selectedItemProperty().removeListener(changeRowListener);
       }
       if (newValue != null) {
-        setRowValue(newValue.getSelectionModel().getSelectedItem());
+        row.setValue(newValue.getSelectionModel().getSelectedItem());
         newValue.getSelectionModel().selectedItemProperty().addListener(changeRowListener);
+      }
+      if (oldValue != newValue && newValue != null) { // The exact same instance
+        setTable(newValue.getTableDesc());
       }
     });
   }
@@ -50,11 +54,14 @@ public class RowEditorFrmController {
   /** Return node which hold whole view */
   public Node getPane() { return sheet; }
 
-  public void setRowValue(RowDesc row) {
-    sheet.getItems().clear();
-    for (ColumnDesc columnDesc : tableViewObjectProperty.getValue().getSqlQueryRows().getMetaData().getColumns()) {
-      RowPropertyItem item = new RowPropertyItem(columnDesc, row, columnDesc.isEditable());
-      sheet.getItems().add(item);
-    }
+  public void setTable(TableDesc table) {
+
+    new Thread(() -> {
+      Platform.runLater(() -> {
+        sheet.getItems().clear();
+        table.getColumns().forEach(columnDesc ->
+          sheet.getItems().add(new RowPropertyItem(columnDesc, row, columnDesc.isEditable())));
+      });
+    }).start();
   }
 }

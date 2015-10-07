@@ -26,15 +26,16 @@ import javafx.beans.value.ChangeListener;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.util.StringConverter;
+import jfxtras.scene.control.LocalDateTimeTextField;
+import jfxtras.scene.control.LocalTimeTextField;
 import org.controlsfx.control.PropertySheet;
 import org.controlsfx.property.editor.PropertyEditor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.*;
 import java.util.Date;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 23.9.15. */
@@ -46,6 +47,8 @@ public class StringPropertyEditor implements PropertyEditor<Object> {
   private TextFieldArea textFieldArea;
   private BinaryDataEditor binaryDataEditor;
   private DatePicker datePicker;
+  private LocalTimeTextField localTimeTextField;
+  private LocalDateTimeTextField localDateTimeTextField;
   private CheckBox checkBox;
   private ComboBox<ComboBoxItem> comboBox;
   private final StringConverter converter;
@@ -61,9 +64,26 @@ public class StringPropertyEditor implements PropertyEditor<Object> {
     this.item = item;
     if (item instanceof RowPropertyItem) {
       rpi = (RowPropertyItem) item;
+      rpi.rowProperty().addListener((observable, oldValue, newValue) -> {
+        if (!AbstractHelper.nullEquals(oldValue, newValue)) {
+          setValue(item.getValue());
+        }
+      });
       converter = rpi.getColumnDesc().getStringConverter();
     } else { converter = StringConverters.converterForClass(item.getType()); }
-    if (java.sql.Date.class.isAssignableFrom(item.getType())
+
+    if ((rpi != null && rpi.getColumnDesc().getDataType() == ColumnType.TIME)
+        || java.sql.Time.class.isAssignableFrom(item.getType())
+        || java.time.LocalTime.class.isAssignableFrom(item.getType())) {
+      localTimeTextField = new LocalTimeTextField();
+      localTimeTextField.focusedProperty().addListener(focusLostListener);
+    } else if ((rpi != null && rpi.getColumnDesc().getDataType() == ColumnType.TIMESTAMP)
+        || java.sql.Timestamp.class.isAssignableFrom(item.getType())
+        || java.time.LocalDateTime.class.isAssignableFrom(item.getType())) {
+      localDateTimeTextField = new LocalDateTimeTextField();
+      localDateTimeTextField.focusedProperty().addListener(focusLostListener);
+    } else if ((rpi != null && rpi.getColumnDesc().getDataType() == ColumnType.DATE)
+        || java.sql.Date.class.isAssignableFrom(item.getType())
         || java.util.Date.class.isAssignableFrom(item.getType())
         || LocalDate.class.isAssignableFrom(item.getType())) {
       datePicker = new DatePicker();
@@ -118,16 +138,35 @@ public class StringPropertyEditor implements PropertyEditor<Object> {
     return
         checkBox != null ? checkBox :
             datePicker != null ? datePicker :
-                comboBox != null ? comboBox :
-                    binaryDataEditor != null ? binaryDataEditor :
-                        textFieldArea.getNode();
+                localDateTimeTextField != null ? localDateTimeTextField :
+                    localTimeTextField != null ? localTimeTextField :
+                        comboBox != null ? comboBox :
+                            binaryDataEditor != null ? binaryDataEditor :
+                                textFieldArea;
   }
 
   @Override
   public Object getValue() {
     if (checkBox != null) { return checkBox.isSelected(); }
-    if (datePicker != null) {
+    else if (localTimeTextField != null) {
+      LocalTime lt = localTimeTextField.getLocalTime();
+      if (lt == null) { return null; }
+      if ((rpi != null && rpi.getColumnDesc().getDataType() == ColumnType.TIME
+          || java.sql.Time.class.isAssignableFrom(item.getType()))) {
+        return Time.valueOf(lt);
+      }
+      return lt;
+    } else if (localDateTimeTextField != null) {
+      LocalDateTime lt = localDateTimeTextField.getLocalDateTime();
+      if (lt == null) { return null; }
+      if ((rpi != null && rpi.getColumnDesc().getDataType() == ColumnType.TIMESTAMP
+          || java.sql.Timestamp.class.isAssignableFrom(item.getType()))) {
+        return Timestamp.valueOf(lt);
+      }
+      return lt;
+    } else if (datePicker != null) {
       LocalDate ldt = datePicker.getValue();
+      if (ldt == null) { return null; }
       if (java.sql.Date.class.isAssignableFrom(item.getType())) {
         Instant instant = ldt.atStartOfDay(ZoneId.systemDefault()).toInstant();
         return Date.from(instant);
@@ -136,8 +175,7 @@ public class StringPropertyEditor implements PropertyEditor<Object> {
         return new java.sql.Date(Date.from(instant).getTime());
       }
       return ldt;
-    }
-    if (comboBox != null) { return comboBox.selectionModelProperty().getValue().getSelectedItem().getValue(); }
+    } else if (comboBox != null) { return comboBox.selectionModelProperty().getValue().getSelectedItem().getValue(); }
     return converter.fromString(textFieldArea.textProperty().getValue());
   }
 
@@ -145,19 +183,22 @@ public class StringPropertyEditor implements PropertyEditor<Object> {
   public void setValue(Object o) {
     if (checkBox != null) {
       checkBox.setSelected(Boolean.TRUE.equals(o));
+    } else if (localTimeTextField != null) {
+      if (o == null) { localTimeTextField.setLocalTime(null); }
+      if (o instanceof java.sql.Time) { localTimeTextField.setLocalTime(((java.sql.Time) o).toLocalTime()); }
+      else { localTimeTextField.setLocalTime((LocalTime) o); }
+    } else if (localDateTimeTextField != null) {
+      if (o == null) { localDateTimeTextField.setLocalDateTime(null); }
+      if (o instanceof java.sql.Timestamp) {
+        localDateTimeTextField.setLocalDateTime(((java.sql.Timestamp) o).toLocalDateTime());
+      } else { localDateTimeTextField.setLocalDateTime((LocalDateTime) o); }
     } else if (datePicker != null) {
-      if (o == null) {
-        datePicker.setValue(null);
-      }
-      if (o instanceof java.sql.Date) {
-        datePicker.setValue(((java.sql.Date) o).toLocalDate());
-      }
+      if (o == null) { datePicker.setValue(null); }
+      if (o instanceof java.sql.Date) { datePicker.setValue(((java.sql.Date) o).toLocalDate()); }
       if (o instanceof java.util.Date) {
         Instant instant = Instant.ofEpochMilli(((Date) o).getTime());
         datePicker.setValue(LocalDateTime.ofInstant(instant, ZoneId.systemDefault()).toLocalDate());
-      } else {
-        datePicker.setValue((LocalDate) o);
-      }
+      } else { datePicker.setValue((LocalDate) o); }
     } else if (comboBox != null) {
       ComboBoxItem comboBoxItem = comboBoxTDExtension.itemForValue(o);
       comboBox.getSelectionModel().select(comboBoxItem);

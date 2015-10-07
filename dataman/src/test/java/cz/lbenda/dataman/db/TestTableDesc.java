@@ -43,11 +43,11 @@ public class TestTableDesc extends TestAbstractDB {
     ColumnDesc columnDesc = tableDesc.getColumn("COL");
     row = tableDesc.getRows().get(0);
     //noinspection unchecked,ConstantConditions
-    String puvodniHodnota = ((SimpleStringProperty) row.observableValueForColumn(columnDesc)).getValue();
+    String puvodniHodnota = ((SimpleStringProperty) row.valueProperty(columnDesc)).getValue();
     //noinspection unchecked,ConstantConditions
-    ((SimpleStringProperty) row.observableValueForColumn(columnDesc)).setValue("Jina hodnota");
+    ((SimpleStringProperty) row.valueProperty(columnDesc)).setValue("Jina hodnota");
     Assert.assertTrue(tableDesc.dirtyProperty().getValue());
-    ((SimpleStringProperty) row.observableValueForColumn(columnDesc)).setValue(puvodniHodnota);
+    ((SimpleStringProperty) row.valueProperty(columnDesc)).setValue(puvodniHodnota);
     Assert.assertEquals(row.getState(), RowDesc.RowDescState.LOADED);
     Assert.assertFalse(tableDesc.dirtyProperty().getValue());
   }

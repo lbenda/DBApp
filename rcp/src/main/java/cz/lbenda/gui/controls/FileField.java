@@ -15,20 +15,15 @@
  */
 package cz.lbenda.gui.controls;
 
-import cz.lbenda.common.AbstractHelper;
 import cz.lbenda.common.Constants;
 import cz.lbenda.rcp.IconFactory;
 import cz.lbenda.rcp.localization.Message;
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.*;
-import javafx.scene.layout.BorderPane;
+import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -39,7 +34,7 @@ import java.io.File;
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 26.9.15.
  * Text field with button for choose file */
 @SuppressWarnings("unused")
-public class FileField extends Control {
+public class FileField extends EditFieldWithButton {
 
   private static final Logger LOG = LoggerFactory.getLogger(FileField.class);
 
@@ -50,8 +45,6 @@ public class FileField extends Control {
   @Message
   public static final String CHOOSE_FILE_WINDOW_TITLE = "Choose file";
 
-  private final ObjectProperty<String> file = new SimpleObjectProperty<>();
-  private final BooleanProperty editable = new SimpleBooleanProperty(false);
   /** Flag for choose Save dialog or Open dialog */
   private final BooleanProperty save = new SimpleBooleanProperty(true);
 
@@ -60,29 +53,11 @@ public class FileField extends Control {
   }
 
   public FileField(File file, boolean editable, boolean save) {
-    this.editable.set(editable);
+    super();
     getStyleClass().setAll(DEFAULT_STYLE_CLASS);
+    setEditable(editable);
     this.save.set(save);
   }
-
-  @Override
-  protected Skin<?> createDefaultSkin() {
-    return new FileFieldSkin(this);
-  }
-
-  /** Absolute path to choose file */
-  public void setFile(String file) { this.file.setValue(file); }
-  /** Absolute path to choose file */
-  public String getFile() { return file.getValue(); }
-  /** Absolute path to choose file */
-  public ObjectProperty<String> fileProperty() { return file; }
-
-  /** Set filed to editable mode  */
-  public void setEditable(boolean editable) { this.editable.set(editable); }
-  /** Filed in editable mode  */
-  public boolean isEditable() { return this.editable.get(); }
-  /** Filed in editable mode  */
-  public BooleanProperty editableProperty() { return editable; }
 
   /** Set field to save/open mode - is open save or open dialog */
   public void setSave(boolean save) { this.save.set(save); }
@@ -91,54 +66,28 @@ public class FileField extends Control {
   /** Field in save/open mode - is open save or open dialog */
   public BooleanProperty saveProperty() { return save; }
 
-  public static class FileFieldSkin extends SkinBase<FileField> {
-
-    private Label sizeLabel = new Label();
-
-    private EventHandler<ActionEvent> chooseFile = event -> {
+  protected String buttonTooltip() {
+    return BTN_TOOLTIP;
+  }
+  protected ImageView buttonImage() {
+    return IconFactory.getInstance().imageView(FileField.class, "threeDots.png",
+        IconFactory.IconLocation.LOCAL_TOOLBAR);
+  }
+  protected EventHandler<ActionEvent> buttonEventHandler() {
+    return event -> {
       FileChooser fileChooser = new FileChooser();
       fileChooser.setTitle(CHOOSE_FILE_WINDOW_TITLE);
       fileChooser.getExtensionFilters().addAll(Constants.allFilesFilter);
-      if (!StringUtils.isBlank(getSkinnable().getFile())) {
-        fileChooser.setInitialFileName(getSkinnable().getFile());
-        File file = new File(getSkinnable().getFile());
+      if (!StringUtils.isBlank(getText())) {
+        fileChooser.setInitialFileName(getText());
+        File file = new File(getText());
         if (file.isDirectory()) { fileChooser.setInitialDirectory(file); }
         else { fileChooser.setInitialDirectory(file.getParentFile()); }
       }
       File file;
-      if (getSkinnable().isSave()) { file = fileChooser.showSaveDialog(((Node) event.getSource()).getScene().getWindow()); }
+      if (isSave()) { file = fileChooser.showSaveDialog(((Node) event.getSource()).getScene().getWindow()); }
       else { file = fileChooser.showOpenDialog(((Node) event.getSource()).getScene().getWindow()); }
-      if (file != null) { getSkinnable().setFile(file.getAbsolutePath()); }
+      if (file != null) { setText(file.getAbsolutePath()); }
     };
-
-    protected FileFieldSkin(FileField fileField) {
-      super(fileField);
-      BorderPane pane = new BorderPane();
-      pane.setMaxWidth(Double.MAX_VALUE);
-      TextField tf = new TextField();
-      tf.maxWidth(Double.MAX_VALUE);
-      tf.setText(fileField.getFile());
-      tf.setEditable(fileField.isEditable());
-      Button button = new Button();
-      button.setDisable(!fileField.isEditable());
-      button.setTooltip(new Tooltip(BTN_TOOLTIP));
-      button.setGraphic(IconFactory.getInstance().imageView(FileField.class, "threeDots.png",
-          IconFactory.IconLocation.LOCAL_TOOLBAR));
-      pane.setCenter(tf);
-      BorderPane.setAlignment(tf, Pos.CENTER_LEFT);
-      pane.setRight(button);
-      getChildren().add(pane);
-
-      fileField.editableProperty().addListener((observable, oldValue, newValue) -> {
-        tf.setEditable(newValue);
-        button.setDisable(!newValue);
-      });
-
-      button.setOnAction(chooseFile);
-      tf.textProperty().addListener((observable, oldValue, newValue) -> getSkinnable().setFile(newValue));
-      getSkinnable().fileProperty().addListener((observable, oldValue, newValue) -> {
-        if (!AbstractHelper.nullEquals(oldValue, newValue)) { tf.textProperty().setValue(newValue); }
-      });
-    }
   }
 }

@@ -15,16 +15,14 @@
  */
 package cz.lbenda.dataman.db.dialect;
 
-/** @author Lukas Benda <lbenda at lbenda.cz> */
-public class H2Dialect implements SQLDialect {
+/** Created by Lukas Benda <lbenda @ lbenda.cz> on 5.10.15. */
+public class DerbyDialect implements SQLDialect {
 
   @Override
   public boolean isForDriver(String driver) {
-    return driver != null && driver.startsWith("org.h2");
+    return driver != null && driver.startsWith("org.apache.derby");
   }
 
   @Override
-  public byte incrementFrom() { return 1; }
-  @Override
-  public String columnGenerated() { return null; }
+  public byte incrementFrom() { return 0; }
 }

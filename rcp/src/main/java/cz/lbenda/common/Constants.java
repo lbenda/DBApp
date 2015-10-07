@@ -106,6 +106,9 @@ public class Constants {
   /** Prefer height of text area */
   public static double TEXT_AREA_PREF_HIGH = 50.0;
 
+  /** Inform if the application is in development mode */
+  public static boolean IS_IN_DEVELOP_MODE = false;
+
   public static List<FileChooser.ExtensionFilter> allFilesFilter = new ArrayList<>(Arrays.asList(
       new FileChooser.ExtensionFilter[] { new FileChooser.ExtensionFilter("All files", "*.*") }));
 

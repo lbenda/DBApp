@@ -15,15 +15,13 @@
  */
 package cz.lbenda.dataman.db;
 
+import cz.lbenda.common.Constants;
 import cz.lbenda.common.Tuple3;
 import org.testng.annotations.BeforeGroups;
 import org.testng.annotations.DataProvider;
 
-import java.util.Map;
-
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 20.9.15.
- * Abstract class which is used of tests which need configure database
- */
+ * Abstract class which is used of tests which need configure database */
 public abstract class TestAbstractDB {
 
   @DataProvider
@@ -33,6 +31,7 @@ public abstract class TestAbstractDB {
 
   @BeforeGroups(groups = "database")
   public void setUp() {
+    Constants.IS_IN_DEVELOP_MODE = true;
     for (Tuple3<TestHelperPrepareDB.DBDriver, String, String> tuple3 : TestHelperPrepareDB.databases()) {
       TestHelperPrepareDB.prepareSmallDb(tuple3.get1(), tuple3.get2());
     }

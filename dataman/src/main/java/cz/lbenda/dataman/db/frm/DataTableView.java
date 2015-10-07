@@ -64,16 +64,14 @@ public class DataTableView extends FilterableTableView<RowDesc> {
     for (final ColumnDesc column : metaData.getColumns()) {
       FilterableTableColumn<RowDesc, Object> tc = new FilterableTableColumn<>(column.getName(), column.getLabel());
       tc.setPrefWidth(preferWidth(column));
-      tc.setCellValueFactory(var1 -> var1.getValue().observableValueForColumn(column));
+      tc.setCellValueFactory(var1 -> var1.getValue().valueProperty(column));
       tc.setCellFactory(tableCellFactory(tc.getCellFactory(), tc, column));//tableColumn -> tableCellForColumn(column));
       this.columnColumns.put(tc, column);
       this.getColumns().add(tc);
     }
   }
 
-  /**
-   * Return prefer width of column
-   */
+  /** Return prefer width of column */
   private double preferWidth(ColumnDesc column) {
     final Canvas canvas = new Canvas(250, 250);
     GraphicsContext gc = canvas.getGraphicsContext2D();

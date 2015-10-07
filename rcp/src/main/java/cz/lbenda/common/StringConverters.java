@@ -87,32 +87,32 @@ public class StringConverters {
 
   public static StringConverter<Integer> INT_CONVERTER = new StringConverter<Integer>() {
     @Override public String toString(Integer value) { return value == null ? null : value.toString(); }
-    @Override public Integer fromString(String s) { return s == null ? null : Integer.parseInt(s); }
+    @Override public Integer fromString(String s) { return StringUtils.isBlank(s) ? null : Integer.parseInt(s); }
   };
   public static StringConverter<Byte> BYTE_CONVERTER = new StringConverter<Byte>() {
     @Override public String toString(Byte value) { return value == null ? null : value.toString(); }
-    @Override public Byte fromString(String s) { return s == null ? null : Byte.parseByte(s); }
+    @Override public Byte fromString(String s) { return StringUtils.isBlank(s) ? null : Byte.parseByte(s); }
   };
   public static StringConverter<Short> SHORT_CONVERTER = new StringConverter<Short>() {
     @Override public String toString(Short value) { return value == null ? null : value.toString(); }
-    @Override public Short fromString(String s) { return s == null ? null : Short.parseShort(s); }
+    @Override public Short fromString(String s) { return StringUtils.isBlank(s) ? null : Short.parseShort(s); }
   };
   public static StringConverter<Long> LONG_CONVERTER = new StringConverter<Long>() {
     @Override public String toString(Long value) { return value == null ? null : value.toString(); }
-    @Override public Long fromString(String s) { return s == null ? null : Long.parseLong(s); }
+    @Override public Long fromString(String s) { return StringUtils.isBlank(s) ? null : Long.parseLong(s); }
   };
   public static StringConverter<BigDecimal> DECIMAL_CONVERTER = new StringConverter<BigDecimal>() {
     @Override public String toString(BigDecimal value) { return value == null ? null : value.toString(); }
-    @Override public BigDecimal fromString(String s) { return s == null ? null : new BigDecimal(s); }
+    @Override public BigDecimal fromString(String s) { return StringUtils.isBlank(s) ? null : new BigDecimal(s); }
   };
 
   public static StringConverter<Float> FLOAT_CONVERTER = new StringConverter<Float>() {
     @Override public String toString(Float value) { return value == null ? null : value.toString(); }
-    @Override public Float fromString(String s) { return s == null ? null : Float.parseFloat(s); }
+    @Override public Float fromString(String s) { return StringUtils.isBlank(s) ? null : Float.parseFloat(s); }
   };
   public static StringConverter<Double> DOUBLE_CONVERTER = new StringConverter<Double>() {
     @Override public String toString(Double value) { return value == null ? null : value.toString(); }
-    @Override public Double fromString(String s) { return s == null ? null : Double.parseDouble(s); }
+    @Override public Double fromString(String s) { return StringUtils.isBlank(s) ? null : Double.parseDouble(s); }
   };
 
   public static StringConverter<String> STRING_CONVERTER = new StringConverter<String>() {

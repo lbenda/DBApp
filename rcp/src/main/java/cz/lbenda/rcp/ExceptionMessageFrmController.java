@@ -51,6 +51,10 @@ public class ExceptionMessageFrmController {
   }
 
   public static void showException(final String message, Throwable e) {
+    if (LOG.isInfoEnabled()) { LOG.info(message, e); }
+    if (LOG.isTraceEnabled()) {
+      LOG.trace("Stacktrace to caller of show exception", new RuntimeException("Stacktrace to caller of show exception"));
+    }
     Dialog<Object> dialog = new Dialog<>();
     dialog.setResizable(true);
     final Tuple2<Parent, ExceptionMessageFrmController> tuple = createNewInstance();
@@ -69,7 +73,7 @@ public class ExceptionMessageFrmController {
     }
     int i = 0;
     PrintWriter writer = new PrintWriter(sw);
-    while ((ex = exceptions.pop()) != null) {
+    while (!exceptions.isEmpty() && (ex = exceptions.pop()) != null) {
       writer.write("Distance from root exception: " + i + "\n");
       ex.printStackTrace(writer);
       i++;

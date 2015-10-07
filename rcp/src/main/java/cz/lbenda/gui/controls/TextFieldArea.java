@@ -16,79 +16,138 @@
 package cz.lbenda.gui.controls;
 
 import cz.lbenda.common.Constants;
+import cz.lbenda.rcp.localization.Message;
 import javafx.beans.property.*;
-import javafx.geometry.Pos;
-import javafx.scene.Node;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.scene.control.*;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.BorderPane;
+import javafx.scene.image.ImageView;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 24.9.15.
  * element which show text field or text area by size of field */
 @SuppressWarnings("unused")
-public class TextFieldArea {
+public class TextFieldArea extends EditFieldWithButton {
 
-  private final BorderPane panel = new BorderPane(); public Node getNode() { return panel; }
-  private final TextInputControl textInputControl;
-  /** Property which set component to editable, or not editable mode */
-  private final BooleanProperty editable = new SimpleBooleanProperty(false);
-  /** Property which hold actual value of component. No value in text field, but value which was commit or set by setText. */
-  private final StringProperty text = new SimpleStringProperty();
-  /** Flag which configure what to do when textInputControl lost focus (and no edit window is open). If cancel will be called, or commit. */
-  private final BooleanProperty cancelOnFocusLost = new SimpleBooleanProperty(false);
+  public final static String DEFAULT_STYLE_CLASS = "text-field";
+
+  @Message
+  public static final String BUTTON_TOOLTIP = "Open text editor";
+
+  private final BooleanProperty useTextField = new SimpleBooleanProperty(true);
+  public BooleanProperty useTextFieldProperty() { return useTextField; }
+  public boolean isUseTextField() { return useTextField.get(); }
+  public void setUseTextField(boolean useTextField) { this.useTextField.set(useTextField); }
+
+  private final StringProperty windowTitle = new SimpleStringProperty();
+  public StringProperty windowTitleProperty() { return windowTitle; }
+  public void setWindowTitle(String windowTitle) { this.windowTitle.setValue(windowTitle); }
+  public String getWindowTitle() { return this.windowTitle.getValue(); }
+
+  public TextFieldArea() {
+    this(null, false);
+  }
 
   /** Construct of text field
    * @param windowTitle title of window if is open
    * @param useTextField use text field instead of text area */
   public TextFieldArea(String windowTitle, boolean useTextField) {
-    this.textInputControl = useTextField ? new TextField() : new TextArea();
-    if (!useTextField) { textInputControl.setPrefHeight(Constants.TEXT_AREA_PREF_HIGH); }
-    this.panel.setCenter(textInputControl);
-    BorderPane.setAlignment(textInputControl, Pos.TOP_LEFT);
-    this.panel.setRight(TextAreaFrmController.createOpenButton(windowTitle, textInputControl::getText, textInputControl::setText));
-    this.textInputControl.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-      switch (event.getCode()) {
-        case ENTER:
-        case TAB:
-          this.commitEdit(textInputControl.getText());
-          break;
-        case ESCAPE:
-          this.cancelEdit();
-          break;
-      }
-    });
-    this.textInputControl.focusedProperty().addListener((observable, oldValue, newValue) -> {
-      if (!newValue) {
-        if (isCancelOnFocusLost()) { cancelEdit(); }
-        else { commitEdit(textInputControl.getText()); }
-      }
-    });
-    editable.addListener((observable, oldValue, newValue) -> textInputControl.editableProperty().setValue(newValue));
-    text.addListener((observable, oldValue, newValue) -> textInputControl.textProperty().setValue(newValue));
+    super();
+    getStyleClass().setAll(DEFAULT_STYLE_CLASS);
+    this.useTextField.set(useTextField);
+    this.windowTitle.set(windowTitle);
   }
 
-  public boolean isEditable() { return editable.get(); }
-  public void setEditable(boolean editable) { this.editable.setValue(editable); }
-  public BooleanProperty editableProperty() { return editable; }
-
-  public String getText() { return text.getValue(); }
-  public void setText(String value) { this.text.setValue(value); }
-  public StringProperty textProperty() { return text; }
-
-  public boolean isCancelOnFocusLost() { return cancelOnFocusLost.get(); }
-  public void setCancelOnFocusLost(boolean cancelOnFocusLost) { this.cancelOnFocusLost.set(cancelOnFocusLost); }
-  public BooleanProperty cancelOnFocusLostProperty() { return cancelOnFocusLost; }
-
-  public void requestFocus() { textInputControl.requestFocus(); }
-
-  /** Commit given value to textProperty */
-  public void commitEdit(String newValue) {
-    this.setText(newValue);
+  protected String buttonTooltip() {
+    return BUTTON_TOOLTIP;
+  }
+  protected ImageView buttonImage() {
+    return new ImageView(TextAreaFrmController.BUTTON_IMAGE);
+  }
+  protected EventHandler<ActionEvent> buttonEventHandler() {
+    return TextAreaFrmController.openEventHandler(getWindowTitle(),
+        this::getText, this::setText);
   }
 
-  /** If you call this method, then value in text field is set from the value, which was last commit or which was
-   * set by setText() respectively to textProperty. */
-  public void cancelEdit() {
-    textInputControl.setText(text.getValue());
+  /** Text input control which edit value, and can be reimplement */
+  protected TextInputControl createInputControl() {
+    TextInputControl textInputControl = isUseTextField() ? new TextField() : new TextArea();
+    if (!isUseTextField()) { textInputControl.setPrefHeight(Constants.TEXT_AREA_PREF_HIGH); }
+    return textInputControl;
   }
+
+  /*
+  @Override
+  protected Skin<?> createDefaultSkin() {
+    return new TextFieldAreaSkin(this);
+  }
+  */
+
+  /*
+  public static class TextFieldAreaSkin extends SkinBase<TextFieldArea> {
+
+    protected TextFieldAreaSkin(TextFieldArea textFieldArea) {
+      super(textFieldArea);
+      BorderPane pane = new BorderPane();
+      pane.maxWidth(Double.MAX_VALUE);
+      TextField tf = new TextField();
+      tf.maxWidth(Double.MAX_VALUE);
+      tf.setText("ahoj");
+      tf.setEditable(true);
+      pane.setCenter(tf);
+      BorderPane.setAlignment(tf, Pos.CENTER_LEFT);
+      */
+
+      /*TextInputControl textInputControl = textFieldArea.isUseTextField() ? new TextField() : new TextArea();
+      if (!textFieldArea.isUseTextField()) { textInputControl.setPrefHeight(Constants.TEXT_AREA_PREF_HIGH); }
+      textInputControl.maxWidth(Double.MAX_VALUE);
+      textInputControl.prefWidth(100.0);
+      textInputControl.minWidth(100.0);
+      */
+      /*pane.setCenter(textInputControl);
+
+      BorderPane.setAlignment(textInputControl, Pos.CENTER_LEFT);
+      /*
+      pane.setRight(TextAreaFrmController.createOpenButton(textFieldArea.getWindowTitle(),
+          textInputControl::getText, textInputControl::setText));
+          */
+      // getChildren().add(pane);
+      /*
+      this.textInputControl.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+        switch (event.getCode()) {
+          case ENTER:
+          case TAB:
+            textFieldArea.commitEdit(textInputControl.getText());
+            break;
+          case ESCAPE:
+            textFieldArea.cancelEdit();
+            break;
+        }
+      });
+      this.textInputControl.focusedProperty().addListener((observable, oldValue, newValue) -> {
+        if (!newValue) {
+          if (textFieldArea.isCancelOnFocusLost()) { textFieldArea.cancelEdit(); }
+          else { textFieldArea.commitEdit(textInputControl.getText()); }
+        }
+      });
+      */
+      // textFieldArea.editableProperty().addListener((observable, oldValue, newValue) -> textInputControl.editableProperty().setValue(newValue));
+      // textFieldArea.textProperty().bindBidirectional(textFieldArea.textProperty());
+      // textFieldArea.textProperty().addListener((observable, oldValue, newValue) -> textInputControl.textProperty().setValue(newValue));
+    // }
+
+    /** Commit given value to textProperty */
+    /*
+    public void commitEdit(String newValue) {
+      getSkinnable().textProperty().setValue(newValue);
+    }
+    */
+
+    /** If you call this method, then value in text field is set from the value, which was last commit or which was
+     * set by setText() respectively to textProperty. */
+    /*
+    public void cancelEdit() {
+      textInputControl.setText(text.getValue());
+    }
+    */
+  //}
 }

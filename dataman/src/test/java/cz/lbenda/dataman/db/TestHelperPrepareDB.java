@@ -16,7 +16,13 @@
 package cz.lbenda.dataman.db;
 
 import cz.lbenda.common.Tuple3;
+import cz.lbenda.dataman.UserImpl;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -30,8 +36,33 @@ import java.util.Map;
  * Prepare database for testing */
 public class TestHelperPrepareDB {
 
+  @SuppressWarnings("unused")
+  private static final Logger LOG = LoggerFactory.getLogger(TestHelperPrepareDB.class);
+
+  public enum DBDriver {
+    H2("org.h2.Driver", "testDbH2.sql"),
+    HSQL("org.hsqldb.jdbcDriver", "testDbHSQL.sql"),
+    DERBY("org.apache.derby.jdbc.EmbeddedDriver", "testDbDerby.sql"),
+    SQLITE("org.sqlite.JDBC", "testDbSqlite.sql") ;
+    private String driver;
+    private String testScript;
+    DBDriver(String driver, String testScript) {
+      this.driver = driver;
+      this.testScript = testScript;
+    }
+    public String getDriver() { return driver; }
+    public String getTestScript() { return testScript; }
+  }
+
   public static String USERNAME = "SA";
   public static String PASSWORD = "SA";
+
+  public static Map<DBDriver, Map<String, String>> rowReplacements = new HashMap<>();
+  static {
+    Map<String, String> sqlMap = new HashMap<>();
+    sqlMap.put("\"test\".", "");
+    rowReplacements.put(DBDriver.SQLITE, sqlMap);
+  }
 
   public static DbConfig createConfig(DBDriver driverClass, String url) {
     DbConfig config = new DbConfig();
@@ -40,15 +71,16 @@ public class TestHelperPrepareDB {
     config.getJdbcConfiguration().setUsername(USERNAME);
     config.getJdbcConfiguration().setPassword(PASSWORD);
     config.setReader(new DbStructureFactory(config));
+    config.getConnectionProvider().setUser(new UserImpl(USERNAME));
     return config;
   }
 
   public static List<Tuple3<DBDriver, String, String>> databases() {
     //noinspection ArraysAsListWithZeroOrOneArgument
     return Arrays.asList(
-        new Tuple3<>(DBDriver.HSQL, "jdbc:hsqldb:mem:smallTest", "PUBLIC") //,
-        //new Tuple3<>(DBDriver.H2, "jdbc:h2:mem:smallTest;DB_CLOSE_DELAY=-1", "SMALLTEST"),
-        //new Tuple3<>(DBDriver.DERBY, "jdbc:derby:memory:smallTest;create=true", "" )
+        new Tuple3<>(DBDriver.HSQL, "jdbc:hsqldb:mem:smallTest", "PUBLIC"),
+        new Tuple3<>(DBDriver.H2, "jdbc:h2:mem:smallTest;DB_CLOSE_DELAY=-1", "SMALLTEST"),
+        new Tuple3<>(DBDriver.DERBY, "jdbc:derby:memory:smallTest;create=true", "" )
     );
   }
 
@@ -60,19 +92,6 @@ public class TestHelperPrepareDB {
       i++;
     }
     return result;
-  }
-
-  @SuppressWarnings("unused")
-  public enum DBDriver {
-    H2("org.h2.Driver"),
-    HSQL("org.hsqldb.jdbcDriver"),
-    DERBY("org.apache.derby.jdbc.EmbeddedDriver"),
-    SQLITE("org.sqlite.JDBC") ;
-    private String driver;
-    DBDriver(String driver) {
-      this.driver = driver;
-    }
-    public String getDriver() { return driver; }
   }
 
   public static String[][] SQL_COMMANDS = new String[][] {
@@ -92,13 +111,6 @@ public class TestHelperPrepareDB {
       new String[] { "insert into \"test\".table3 (id1, id2, col) values('table3_id1', 1, 'table3_value3')" },
       new String[] { "insert into \"test\".table3 (id1, id2, col) values('table3_id2', 0, 'table3_value4')" }
   };
-
-  public static Map<DBDriver, Map<String, String>> rowReplacements = new HashMap<>();
-  static {
-    Map<String, String> sqlMap = new HashMap<>();
-    sqlMap.put("\"test\".", "");
-    rowReplacements.put(DBDriver.SQLITE, sqlMap);
-  }
 
   public static Connection getConnection(DBDriver driverClass , String url) {
     try {
@@ -126,26 +138,38 @@ public class TestHelperPrepareDB {
     return sql;
   }
 
-  public static void prepareSmallDb(Connection connection, DBDriver dbDriver) {
-    try (Statement st = connection.createStatement()) {
-      for (String[] sqls : SQL_COMMANDS) {
-        if (sqls.length == 1) {
-          st.addBatch(replaceSql(sqls[0], dbDriver));
-        } else {
-          boolean apply = false;
-          for (int i = 0; i < sqls.length - 1; i++) {
-            if (dbDriver.toString().equals(sqls[i])) {
-              apply = true;
-            }
-          }
-          if (apply) {
-            st.addBatch(replaceSql(sqls[sqls.length - 1], dbDriver));
+  public static void prepareSmallDb(Connection connection, DBDriver dbDriver) throws SQLException, IOException {
+    if (dbDriver.getTestScript() != null) {
+      String sql = IOUtils.toString(TestHelperPrepareDB.class.getResourceAsStream(dbDriver.getTestScript()));
+      String[] lines = sql.split(";");
+      try (Statement st = connection.createStatement()) {
+        for (String line : lines) {
+          line = line.trim();
+          if (StringUtils.isNoneBlank(line)) {
+            st.addBatch(line);
           }
         }
+        st.executeBatch();
       }
-      st.executeBatch();
-    } catch (SQLException e) {
-      throw new RuntimeException("The database wasn't created", e);
+    } else {
+      try (Statement st = connection.createStatement()) {
+        for (String[] sqls : SQL_COMMANDS) {
+          if (sqls.length == 1) {
+            st.addBatch(replaceSql(sqls[0], dbDriver));
+          } else {
+            boolean apply = false;
+            for (int i = 0; i < sqls.length - 1; i++) {
+              if (dbDriver.toString().equals(sqls[i])) {
+                apply = true;
+              }
+            }
+            if (apply) {
+              st.addBatch(replaceSql(sqls[sqls.length - 1], dbDriver));
+            }
+          }
+        }
+        st.executeBatch();
+      }
     }
   }
 }

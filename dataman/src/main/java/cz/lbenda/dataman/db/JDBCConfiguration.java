@@ -50,6 +50,6 @@ public class JDBCConfiguration {
   }
 
   public SQLDialect getDialect() {
-    return SQLDialectsHelper.dialectForDriver(driverClass);
+    return SQLDialectsHelper.getInstance().dialectForDriver(driverClass);
   }
 }

@@ -24,6 +24,8 @@ import cz.lbenda.rcp.IconFactory;
 import cz.lbenda.rcp.localization.Message;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -183,5 +185,18 @@ public class TextAreaFrmController implements Initializable {
       DialogHelper.getInstance().openWindowInCenterOfStage(stage, tuple2.get2().getMainPane(), title);
     });
     return result;
+  }
+
+  public static EventHandler<ActionEvent> openEventHandler(String windowTitle,
+                                                           @Nonnull Supplier<String> oldValueSupplier,
+                                                           @Nonnull Consumer<String> newValueConsumer) {
+    String title = windowTitle == null ? msgDefaultWindowTitle : windowTitle;
+    return event -> {
+      Tuple2<Parent, TextAreaFrmController> tuple2 = TextAreaFrmController.createNewInstance();
+      tuple2.get2().textProperty().setValue(oldValueSupplier.get());
+      tuple2.get2().textProperty().addListener((observable, oldValue, newValue) -> newValueConsumer.accept(newValue));
+      Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+      DialogHelper.getInstance().openWindowInCenterOfStage(stage, tuple2.get2().getMainPane(), title);
+    };
   }
 }

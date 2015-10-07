@@ -102,7 +102,9 @@ public class MessageFactory {
       if (messages.containsKey(key)) {
         result = messages.getString(key);
       } else {
-        LOG.debug("The message with key: '" + key + "' wasn't found in messages.");
+        if (LOG.isDebugEnabled() && Constants.IS_IN_DEVELOP_MODE) {
+          LOG.debug("The message with key: '" + key + "' wasn't found in messages.");
+        }
       }
     }
     return result == null ? def : result;

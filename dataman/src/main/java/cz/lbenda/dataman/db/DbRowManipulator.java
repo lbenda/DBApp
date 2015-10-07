@@ -15,6 +15,7 @@
  */
 package cz.lbenda.dataman.db;
 
+import cz.lbenda.common.Constants;
 import cz.lbenda.dataman.db.audit.Auditor;
 import cz.lbenda.dataman.db.audit.AuditorNone;
 import cz.lbenda.dataman.db.audit.SqlLogToLogAuditor;
@@ -83,6 +84,14 @@ public class DbRowManipulator {
     }
   }
 
+  private static void writeColumnsInResultSet(ResultSetMetaData rsmd) throws SQLException {
+    if (Constants.IS_IN_DEVELOP_MODE) {
+      for (int i = 1; i <= rsmd.getColumnCount(); i++) {
+        System.out.println(String.format("Column %s: %s", i, rsmd.getCatalogName(i)));
+      }
+    }
+  }
+
   /** Insert given rows to database */
   private void insertRows(Connection connection, TableDesc td, List<RowDesc> rows) throws SQLException {
     final List<ColumnDesc> pks = td.getPKColumns().stream().filter(col -> col.isGenerated() || col.isAutoincrement()).collect(Collectors.toList());
@@ -114,6 +123,7 @@ public class DbRowManipulator {
         if (!pks.isEmpty()) {
           ResultSet rs = ps.getGeneratedKeys();
           ResultSetMetaData rsmd = rs.getMetaData();
+          writeColumnsInResultSet(rsmd);
           while (rs.next()) {
             for (int j = 1; j <= rsmd.getColumnCount(); j++) {
               ColumnDesc col = td.getColumn(rsmd.getColumnName(j));

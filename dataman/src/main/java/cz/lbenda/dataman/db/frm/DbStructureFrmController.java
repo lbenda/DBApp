@@ -73,13 +73,16 @@ public class DbStructureFrmController {
     treeView.setOnMouseClicked(event -> {
       if (event.getClickCount() == 2) {
         TreeItem<TableDesc> item = (TreeItem<TableDesc>) treeView.getSelectionModel().getSelectedItem();
-        tableShower.accept(item.getValue());
+        if (item.getValue() instanceof TableDesc || item.getValue() == null) {
+          tableShower.accept(item.getValue());
+        }
       }
     });
     treeView.setOnDragDetected(event -> {
       if (event.getSource() instanceof TreeView) {
         TreeView source = (TreeView) event.getSource();
         TreeItem item = (TreeItem<TableDesc>) source.getSelectionModel().getSelectedItem();
+        if (item == null) { return; }
         Dragboard db = treeView.startDragAndDrop(TransferMode.ANY);
 
         ClipboardContent content = new ClipboardContent();

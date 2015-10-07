@@ -15,23 +15,43 @@
  */
 package cz.lbenda.dataman.db.dialect;
 
-import java.util.Arrays;
+import cz.lbenda.common.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /** @author Lukas Benda <lbenda at lbenda.cz> */
 public class SQLDialectsHelper {
 
   /** Default Dialect */
-  private static final SQLDialect DEFAULT = new H2Dialect();
+  private final SQLDialect DEFAULT = new H2Dialect();
 
-  public static SQLDialect dialectForDriver(String driver) {
-    if (SQLDialect.DIALECTS.isEmpty()) {
-      SQLDialect.DIALECTS.addAll(Arrays.asList(new H2Dialect(), new HSQLDBDialect()));
-    }
-    for (SQLDialect dialect : SQLDialect.DIALECTS) {
-      if (dialect.isForDriver(driver)) {
-        return dialect;
+  private static SQLDialectsHelper instance;
+
+  public static SQLDialectsHelper getInstance() {
+    if (instance == null) { instance = new SQLDialectsHelper(); }
+    return instance;
+  }
+
+  public SQLDialect dialectForDriver(String driver) {
+    List<SQLDialect> find = SQLDialect.DIALECTS.stream().filter(dialect -> dialect.isForDriver(driver))
+        .collect(Collectors.toList());
+    if (find.isEmpty()) { return DEFAULT; }
+    return find.get(0);
+  }
+
+  public SQLDialectsHelper() {
+    List<String> classes = ClassLoaderHelper.classInPackage("cz.lbenda.dataman.db", getClass().getClassLoader());
+    classes.forEach(className -> {
+      try {
+        Class clazz = getClass().getClassLoader().loadClass(className);
+        //noinspection unchecked
+        if (SQLDialect.class.isAssignableFrom(clazz)) {
+          SQLDialect.DIALECTS.add((SQLDialect) clazz.newInstance());
+        }
+      } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+        /* The class exist. I can ignore this. */
       }
-    }
-    return DEFAULT;
+    });
   }
 }

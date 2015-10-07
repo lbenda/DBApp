@@ -80,13 +80,13 @@ public class ChooseExportTemplateFrmController implements Initializable {
 
   public void valuesPreset(final TemplateExportConfig templateExportConfig) {
     this.cbTemplateType.getSelectionModel().select(templateExportConfig.getTemplateFormat());
-    this.ffTemplateFile.setFile(templateExportConfig.getTemplateFile());
-    this.ffFile.setFile(templateExportConfig.getFile());
+    this.ffTemplateFile.setText(templateExportConfig.getTemplateFile());
+    this.ffFile.setText(templateExportConfig.getFile());
   }
 
   public TemplateExportConfig exportConfig() {
     return new TemplateExportConfig(cbTemplateType.getSelectionModel().getSelectedItem(),
-        ffTemplateFile.getFile(), ffFile.getFile());
+        ffTemplateFile.getText(), ffFile.getText());
   }
 
 
