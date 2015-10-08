@@ -86,16 +86,21 @@ public class SQLRunHandler extends AbstractAction {
     new Thread(() -> {
       StatusHelper.getInstance().progressStart(this, TASK_NAME, sqls.length);
       int i = 0;
-      for (String sql : sqls) {
+      for (String sql1 : sqls) {
+        String sql = sql1.trim();
         i++;
         StatusHelper.getInstance().progressNextStep(this, i + ": " + sql, 0);
         SQLQueryResult sqlQueryResult = new SQLQueryResult();
         sqlQueryResult.setSql(sql);
+
         if (dbConfigProperty.getValue() != null
             && dbConfigProperty.getValue().connectionProvider.isConnected()) {
           dbConfigProperty.getValue().getConnectionProvider().onPreparedStatement(sql,
               tuple2 -> this.statementToSQLQueryResult(sqlQueryResult, tuple2));
           sqlEditorController.addQueryResult(sqlQueryResult);
+        }
+        if (sqlQueryResult.getErrorMsg() != null && this.sqlEditorController.isStopOnFirstError()) {
+          break;
         }
       }
       StatusHelper.getInstance().progressFinish(this, STEP_FINISH);

@@ -142,14 +142,30 @@ public class RibbonMainButton extends Control {
     Menu m = getMenuOfCategory(ac.category().split("/"));
     Integer catP = appendGroupSeparator(m, ac);
     ActionGUIConfig gui = ac.gui()[0];
-    PrioritisedMenu item = new PrioritisedMenu(MessageFactory.getInstance().getMessage(gui.displayName()));
-    item.setPriority(catP + ac.priority());
-    m.getItems().add(item);
+    if (options.isCheckBox()) {
+      PrioritisedCheckMenuItem item
+          = new PrioritisedCheckMenuItem(MessageFactory.getInstance().getMessage(gui.displayName()));
+      item.setPriority(catP + ac.priority());
+      m.getItems().add(item);
 
-    reloadMenuOptions(item, options);
-    options.getItems().addListener((ListChangeListener<F>) change -> {
-      while (change.next()) { reloadMenuOptions(item, options); }
-    });
+      item.setSelected((Boolean) options.getSelect());
+      item.selectedProperty().addListener((observable, oldValue, newValue) -> {
+        //noinspection unchecked
+        options.setSelect((F) newValue);
+      });
+      options.selectProperty().addListener((observable, oldValue, newValue) -> {
+        item.setSelected((Boolean) newValue);
+      });
+    } else {
+      PrioritisedMenu item = new PrioritisedMenu(MessageFactory.getInstance().getMessage(gui.displayName()));
+      item.setPriority(catP + ac.priority());
+      m.getItems().add(item);
+
+      reloadMenuOptions(item, options);
+      options.getItems().addListener((ListChangeListener<F>) change -> {
+        while (change.next()) { reloadMenuOptions(item, options); }
+      });
+    }
   }
 
   private <F> void reloadMenuOptions(Menu m, MenuOptions<F> options) {

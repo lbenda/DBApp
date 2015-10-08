@@ -25,6 +25,7 @@ import cz.lbenda.rcp.ExceptionMessageFrmController;
 import cz.lbenda.rcp.localization.Message;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.layout.AnchorPane;
@@ -72,6 +73,10 @@ public class SQLEditorController {
   private WebView webView = new WebView();
   private StringBuffer consoleMessages = new StringBuffer();
   private NodeShower nodeShower;
+  private ObjectProperty<Boolean> stopOnFirstError = new SimpleObjectProperty<>(Boolean.TRUE);
+  public boolean isStopOnFirstError() { return  stopOnFirstError.getValue(); }
+  public void setStopOnFirstError(boolean stopOnFirstError) { this.stopOnFirstError.setValue(stopOnFirstError); }
+  public ObjectProperty<Boolean> stopOnFirstErrorProperty() { return stopOnFirstError; }
 
   /** Return text which is in code Area */
   public String getText() { return textEditor.getText(); }
@@ -126,6 +131,7 @@ public class SQLEditorController {
     menuItemConsumer.accept(new OpenFileHandler(this));
     menuItemConsumer.accept(new SaveFileHandler(this));
     menuItemConsumer.accept(new SaveAsFileHandler(this));
+    menuItemConsumer.accept(new StopOnFirstErrorOptions(stopOnFirstError));
   }
 
   /** Load data SQL file */

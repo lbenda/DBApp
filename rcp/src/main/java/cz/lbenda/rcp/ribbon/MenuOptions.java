@@ -41,6 +41,8 @@ public interface MenuOptions<T> {
   void handle(ActionEvent stage);
 
   /** Inform if item will be checked or not */
-  boolean isChecked(T item);
-  ReadOnlyBooleanProperty checkedProperty(T item);
+  default boolean isChecked(T item) { return false; }
+  default ReadOnlyBooleanProperty checkedProperty(T item) { return null; }
+
+  default boolean isCheckBox() { return false; }
 }

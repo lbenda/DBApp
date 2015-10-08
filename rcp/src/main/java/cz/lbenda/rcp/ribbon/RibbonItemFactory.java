@@ -104,18 +104,31 @@ public class RibbonItemFactory {
     if (!"".equals(ac.gui()[0].iconBase())) {
       ri.setGraphic(IconFactory.getInstance().imageView(options, ac.gui()[0].iconBase(), IconFactory.IconLocation.GLOBAL_TOOL_BAR));
     }
-    ComboBox<F> cb = new ComboBox<>();
-    cb.setId(itemId);
-    cb.setItems(options.getItems());
-    cb.setPromptText(messageFactory.getMessage(ac.gui()[0].displayName()));
-    Tooltip tp = new Tooltip(messageFactory.getMessage(ac.gui()[0].displayTooltip()));
-    cb.setTooltip(tp);
-    cb.valueProperty().addListener((observableValue, f, t1) -> options.setSelect(t1));
-    options.selectProperty().addListener((observable, oldValue, newValue) -> {
-      cb.getSelectionModel().select(newValue);
-    });
-    ri.setItem(cb);
 
+    if (options.isCheckBox()) {
+      CheckBox cb = new CheckBox();
+      cb.setId(itemId);
+      cb.setText(messageFactory.getMessage(ac.gui()[0].displayName()));
+      Tooltip tp = new Tooltip(messageFactory.getMessage(ac.gui()[0].displayTooltip()));
+      cb.setTooltip(tp);
+      cb.setSelected((Boolean) options.getSelect());
+      //noinspection unchecked
+      cb.selectedProperty().addListener((observable, oldValue, newValue) -> options.setSelect((F) newValue));
+      options.selectProperty().addListener((observable, oldValue, newValue) -> cb.selectedProperty().setValue((Boolean) newValue));
+      ri.setItem(cb);
+    } else {
+      ComboBox<F> cb = new ComboBox<>();
+      cb.setId(itemId);
+      cb.setItems(options.getItems());
+      cb.setPromptText(messageFactory.getMessage(ac.gui()[0].displayName()));
+      Tooltip tp = new Tooltip(messageFactory.getMessage(ac.gui()[0].displayTooltip()));
+      cb.setTooltip(tp);
+      cb.valueProperty().addListener((observableValue, f, t1) -> options.setSelect(t1));
+      options.selectProperty().addListener((observable, oldValue, newValue) -> {
+        cb.getSelectionModel().select(newValue);
+      });
+      ri.setItem(cb);
+    }
     putNodeToGroup(group, ri, ac);
   }
 

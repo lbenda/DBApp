@@ -1,51 +1,32 @@
 package cz.lbenda.rcp.ribbon.skin;
 
 import cz.lbenda.rcp.ribbon.RibbonItem;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 
-/**
- * Created by pedro_000 on 1/19/2015.
- */
+/** Created by pedro_000 on 1/19/2015. */
 public class RibbonItemSkin extends SkinBase<RibbonItem> {
 
   BorderPane borderPane;
   Label label;
 
-  /**
-   * Constructor for all SkinBase instances.
-   *
-   * @param control The control for which this Skin should attach to.
-   */
+  /** Constructor for all SkinBase instances.
+   * @param control The control for which this Skin should attach to. */
+  @SuppressWarnings("unchecked")
   public RibbonItemSkin(RibbonItem control) {
     super(control);
 
     borderPane = new BorderPane();
     label = new Label();
 
-    control.graphicProperty().addListener(new ChangeListener() {
-      @Override
-      public void changed(ObservableValue observable, Object oldValue, Object newValue) {
-                graphicChanged();
-            }
+    control.graphicProperty().addListener((observable, oldValue, newValue) -> graphicChanged());
+    control.labelPropery().addListener((observable, oldValue, newValue) -> {
+      labelChanged();
     });
-    control.labelPropery().addListener(new ChangeListener<String>() {
-      @Override
-      public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-        labelChanged();
-      }
-    });
-    control.itemProperty().addListener(new ChangeListener() {
-      @Override
-      public void changed(ObservableValue observable, Object oldValue, Object newValue) {
-                itemChanged();
-            }
-    });
+    control.itemProperty().addListener((observable, oldValue, newValue) -> itemChanged());
 
     if (control.getLabel() != null || control.getGraphic() != null) {
       if (control.getLabel() != null) {
