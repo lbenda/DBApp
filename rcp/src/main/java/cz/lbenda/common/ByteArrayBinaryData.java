@@ -64,7 +64,6 @@ public class ByteArrayBinaryData implements BinaryData {
     if (!(o instanceof ByteArrayBinaryData)) return false;
 
     ByteArrayBinaryData that = (ByteArrayBinaryData) o;
-
     return Arrays.equals(bytes, that.bytes);
   }
 

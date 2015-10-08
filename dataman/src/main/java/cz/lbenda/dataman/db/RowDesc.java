@@ -166,26 +166,34 @@ public class RowDesc implements Observable {
     return column.getStringConverter().toString(getColumnValue(column));
   }
 
-  @SuppressWarnings("unchecked")
-  private <T> T repairClassOfNumber(ColumnDesc column, T value) {
+  @SuppressWarnings({"unchecked", "RedundantCast"})
+  private <T> T repairClassOfValue(ColumnDesc column, T value) {
     if (value == null) { return null; }
     if (column.getDataType().getJavaClass().equals(value.getClass())) { return value; }
-    Long val;
-    if (value instanceof Long) { val = (Long) value; }
-    else if (value instanceof Integer) { val = ((Integer) value).longValue(); }
-    else if (value instanceof Short) { val = ((Short) value).longValue(); }
-    else if (value instanceof Byte) { val = ((Byte) value).longValue(); }
-    else { return value; }
+    if (column.getDataType() == ColumnType.TIME) {
+      if (value instanceof LocalTime) { return (T) (Object) java.sql.Time.valueOf((LocalTime) value); }
+    } else if (column.getDataType() == ColumnType.DATE) {
+      if (value instanceof LocalDate) { return (T) (Object) java.sql.Date.valueOf((LocalDate) value); }
+    } else if (column.getDataType() == ColumnType.TIMESTAMP) {
+      if (value instanceof LocalDateTime) { return (T) (Object) java.sql.Timestamp.valueOf((LocalDateTime) value); }
+    } else {
+      Long val;
+      if (value instanceof Long) { val = (Long) value; }
+      else if (value instanceof Integer) { val = ((Integer) value).longValue(); }
+      else if (value instanceof Short) { val = ((Short) value).longValue(); }
+      else if (value instanceof Byte) { val = ((Byte) value).longValue(); }
+      else { return value; }
 
-    if (column.getDataType() == ColumnType.INTEGER) { return (T) (Object) val.intValue(); }
-    if (column.getDataType() == ColumnType.BYTE) { return (T) (Object) val.byteValue(); }
-    if (column.getDataType() == ColumnType.SHORT) { return (T) (Object) val.shortValue(); }
+      if (column.getDataType() == ColumnType.INTEGER) { return (T) (Object) val.intValue(); }
+      if (column.getDataType() == ColumnType.BYTE) { return (T) (Object) val.byteValue(); }
+      if (column.getDataType() == ColumnType.SHORT) { return (T) (Object) val.shortValue(); }
+    }
     return value;
   }
 
   /** Set value for both rows - old and new */
   public <T> void setInitialColumnValue(ColumnDesc column, T value) {
-    value = repairClassOfNumber(column, value);
+    value = repairClassOfValue(column, value);
 
     Object v = value;
     if (column.getDataType() == ColumnType.BLOB) {
@@ -222,7 +230,9 @@ public class RowDesc implements Observable {
 
   /** Return set value for given column */
   public <T> void setColumnValue(ColumnDesc column, T value) {
-    if (AbstractHelper.nullEquals(getColumnValue(column), value)) { return; }
+    value = repairClassOfValue(column, value);
+
+    if (AbstractHelper.nullEquals(oldValues[column.getPosition()], value)) { return; }
     if (column.getDataType() == ColumnType.ARRAY) {
       LOG.warn("The editing of ARRAY isn't implemented yet");
       return;
@@ -364,95 +374,6 @@ public class RowDesc implements Observable {
   public ObservableValue valueProperty(@Nonnull ColumnDesc columnDesc) {
     return newValues[columnDesc.getPosition() - 1];
   }
-
-  @SuppressWarnings("unchecked")
-  /*
-  public ObservableValue valueProperty(@Nonnull ColumnDesc columnDesc) {
-    ObservableValue result;
-    switch (columnDesc.getDataType()) {
-      case BOOLEAN:
-        result = new SimpleBooleanProperty(getColumnValue(columnDesc), null);
-        ((SimpleBooleanProperty) result).setValue(getColumnValue(columnDesc));
-        break;
-      case BYTE:
-      case SHORT:
-      case LONG:
-      case INTEGER:
-      case FLOAT:
-      case DOUBLE:
-      case DECIMAL:
-        if (newValues[columnDesc.getPosition() - 1] == null) { result = new SimpleObjectProperty<>(); }
-        else { result = new SimpleObjectProperty<>(newValues[columnDesc.getPosition() - 1]); }
-        break;
-      case DATE:
-        result = new SimpleLocalDateProperty((java.sql.Date) newValues[columnDesc.getPosition() - 1]);
-        break;
-      case TIMESTAMP:
-        result = new SimpleLocalDateTimeProperty((Timestamp) newValues[columnDesc.getPosition() - 1]);
-        break;
-      case TIME:
-        result = new SimpleLocalTimeProperty((Time) newValues[columnDesc.getPosition() - 1]);
-        break;
-      case STRING:
-        result = new SimpleStringProperty((String) newValues[columnDesc.getPosition() - 1]);
-        break;
-      case BYTE_ARRAY:
-      case CLOB:
-      case BLOB:
-        result = new SimpleObjectProperty<>(getColumnValue(columnDesc));
-        break;
-      default:
-        result = new SimpleObjectProperty<>(newValues[columnDesc.getPosition() - 1]);
-        break;
-    }
-    result.addListener((observable, oldValue, newValue) -> {
-      if (newValue instanceof SingleSelectionModel) {
-        throw new ClassCastException("The selection model isn't right new value for row");
-      }
-      System.out.println("Value changed: " + newValue);
-
-      if (observable instanceof SimpleLocalDateProperty) {
-        setColumnValue(columnDesc, ((SimpleLocalDateProperty) observable).getSQLDate());
-      } else if (observable instanceof SimpleLocalDateTimeProperty) {
-        setColumnValue(columnDesc, ((SimpleLocalDateTimeProperty) observable).getSQLTimestamp());
-      } else if (observable instanceof SimpleLocalTimeProperty) {
-        setColumnValue(columnDesc, ((SimpleLocalTimeProperty) observable).getSQLTime());
-      } else if (columnDesc.getDataType() == ColumnType.SHORT
-          || columnDesc.getDataType() == ColumnType.BYTE
-          || columnDesc.getDataType() == ColumnType.INTEGER
-          || columnDesc.getDataType() == ColumnType.LONG
-          || columnDesc.getDataType() == ColumnType.FLOAT
-          || columnDesc.getDataType() == ColumnType.DOUBLE
-          || columnDesc.getDataType() == ColumnType.DECIMAL) {
-        Object nVal;
-        if (newValue == null) { nVal = null; }
-        else if (newValue instanceof String) {
-          if (StringUtils.isBlank((String) newValue)) {
-            nVal = null;
-          } else {
-            nVal = columnDesc.getStringConverter().fromString((String) newValue);
-          }
-        } else if (newValue instanceof StringProperty) {
-          if (StringUtils.isBlank(((StringProperty) newValue).getValue())) {
-            nVal = null;
-          } else {
-            nVal = columnDesc.getStringConverter().fromString(((StringProperty) newValue).getValue());
-          }
-        } else { nVal = newValue; }
-        System.out.println("newValue: " + newValue);
-        System.out.println("nVal: " + nVal);
-        setColumnValue(columnDesc, nVal);
-      } else if (columnDesc.getDataType() == ColumnType.BYTE_ARRAY
-          || columnDesc.getDataType() == ColumnType.BLOB
-          || columnDesc.getDataType() == ColumnType.CLOB) {
-        setColumnValue(columnDesc, newValue);
-      } else {
-        setColumnValue(columnDesc, newValue);
-      }
-    });
-    return result;
-  }
-  */
 
   /** return true if value in column was changed */
   public boolean isColumnChanged(ColumnDesc columnDesc) {

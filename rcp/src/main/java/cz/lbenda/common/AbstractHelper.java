@@ -16,6 +16,12 @@
 package cz.lbenda.common;
 
 import java.nio.ByteBuffer;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -41,7 +47,23 @@ public abstract class AbstractHelper {
       if (Float.TYPE.equals(o1.getClass().getComponentType())) { return Arrays.equals((float[]) o1, (float[]) o2); }
       return Arrays.equals((Object[]) o1, (Object[]) o2);
     }
-    return o1.equals(o2);
+    boolean result = o1.equals(o2);
+    if (!result) {
+      if (o1 instanceof LocalTime && o2 instanceof Time) {
+        result = o1.equals(((Time) o2).toLocalTime());
+      } else if (o2 instanceof LocalTime && o1 instanceof Time) {
+        result = o2.equals(((Time) o1).toLocalTime());
+      } else if (o1 instanceof LocalDate && o2 instanceof Date) {
+        result = o1.equals(((Date) o2).toLocalDate());
+      } else if (o2 instanceof LocalDate && o1 instanceof Date) {
+        result = o2.equals(((Date) o1).toLocalDate());
+      } else if (o1 instanceof LocalDateTime && o2 instanceof Timestamp) {
+        result = o1.equals(((Timestamp) o2).toLocalDateTime());
+      } else if (o2 instanceof LocalDateTime && o1 instanceof Timestamp) {
+        result = o2.equals(((Timestamp) o1).toLocalDateTime());
+      }
+    }
+    return result;
   }
 
   /** Compare method for more then one object. If the first object is equal (or both are null)
