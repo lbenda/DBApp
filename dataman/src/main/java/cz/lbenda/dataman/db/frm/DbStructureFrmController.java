@@ -17,6 +17,7 @@ package cz.lbenda.dataman.db.frm;
 
 import cz.lbenda.common.StringConverterHolder;
 import cz.lbenda.dataman.db.*;
+import cz.lbenda.dataman.db.dialect.ColumnType;
 import cz.lbenda.rcp.IconFactory;
 import javafx.beans.property.ObjectProperty;
 import javafx.collections.ListChangeListener;
@@ -28,6 +29,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
+import javafx.scene.layout.HBox;
 
 import javax.annotation.Nonnull;
 import java.util.function.Consumer;
@@ -48,6 +50,25 @@ public class DbStructureFrmController {
   private final static Image imageForeignKey = IconFactory.getInstance().image(DbStructureFrmController.class, "key-blue.png",
       IconFactory.IconLocation.INDICATOR);
   private final static Image imagePrimaryAndForeignKey = IconFactory.getInstance().image(DbStructureFrmController.class, "key-goldenAndBlue.png",
+      IconFactory.IconLocation.INDICATOR);
+
+  private final static Image imageArray = IconFactory.getInstance().image(DbStructureFrmController.class, "array.png",
+      IconFactory.IconLocation.INDICATOR);
+  private final static Image imageBoolean = IconFactory.getInstance().image(DbStructureFrmController.class, "boolean.png",
+      IconFactory.IconLocation.INDICATOR);
+  private final static Image imageCharacter = IconFactory.getInstance().image(DbStructureFrmController.class, "character.png",
+      IconFactory.IconLocation.INDICATOR);
+  private final static Image imageTime = IconFactory.getInstance().image(DbStructureFrmController.class, "clock.png",
+      IconFactory.IconLocation.INDICATOR);
+  private final static Image imageDate = IconFactory.getInstance().image(DbStructureFrmController.class, "date.png",
+      IconFactory.IconLocation.INDICATOR);
+  private final static Image imageDecimal = IconFactory.getInstance().image(DbStructureFrmController.class, "decimal.png",
+      IconFactory.IconLocation.INDICATOR);
+  private final static Image imageHash = IconFactory.getInstance().image(DbStructureFrmController.class, "hash.png",
+      IconFactory.IconLocation.INDICATOR);
+  private final static Image imageInteger = IconFactory.getInstance().image(DbStructureFrmController.class, "integer.png",
+      IconFactory.IconLocation.INDICATOR);
+  private final static Image imageUUID = IconFactory.getInstance().image(DbStructureFrmController.class, "uuid.png",
       IconFactory.IconLocation.INDICATOR);
 
   public Node getControlledNode() { return treeView; }
@@ -187,6 +208,7 @@ public class DbStructureFrmController {
   private void createColumnTreeItems(TreeItem item, TableDesc tableDesc) {
     tableDesc.getColumns().forEach(columnDesc -> {
       final TreeItem columnItem; // TODO append tooltip from table comment
+      HBox hbox = new HBox();
       Image image = null;
       if (columnDesc.isPK()) { image = imagePrimaryKey; }
       if (columnDesc.isFk()) {
@@ -194,7 +216,35 @@ public class DbStructureFrmController {
         else { image = imagePrimaryAndForeignKey; }
       }
       if (image == null) { image = imageBlank; }
-      columnItem = new TreeItem<>(new StringConverterHolder<>(columnDesc, columnDesc::getName), new ImageView(image));
+      hbox.getChildren().add(new ImageView(image));
+
+      image = null;
+      if (columnDesc.getDataType() == ColumnType.BOOLEAN || columnDesc.getDataType() == ColumnType.BIT) { image = imageBoolean; }
+      else if (columnDesc.getDataType() == ColumnType.ARRAY || columnDesc.getDataType() == ColumnType.BYTE_ARRAY) { image = imageArray; }
+      else if (columnDesc.getDataType() == ColumnType.BYTE
+          || columnDesc.getDataType() == ColumnType.SHORT
+          || columnDesc.getDataType() == ColumnType.INTEGER
+          || columnDesc.getDataType() == ColumnType.LONG
+          || (columnDesc.getDataType() == ColumnType.DECIMAL && columnDesc.getScale() == 0)) { image = imageInteger; }
+      else if (columnDesc.getDataType() == ColumnType.FLOAT
+          || columnDesc.getDataType() == ColumnType.DOUBLE
+          || (columnDesc.getDataType() == ColumnType.DECIMAL && columnDesc.getScale() > 0)) { image = imageDecimal; }
+      else if (columnDesc.getDataType() == ColumnType.DATE
+          || columnDesc.getDataType() == ColumnType.TIMESTAMP) { image = imageDate; }
+      else if (columnDesc.getDataType() == ColumnType.TIME) { image = imageTime; }
+      else if (columnDesc.getDataType() == ColumnType.STRING
+          || columnDesc.getDataType() == ColumnType.CLOB) { image = imageCharacter; }
+      else if (columnDesc.getDataType() == ColumnType.BLOB
+          || columnDesc.getDataType() == ColumnType.BIT_ARRAY
+          || columnDesc.getDataType() == ColumnType.OBJECT) { image = imageHash; }
+      else if (columnDesc.getDataType() == ColumnType.UUID) { image = imageUUID; }
+      else {
+        image = imageBlank;
+        System.out.println(columnDesc.getDataType());
+      }
+      hbox.getChildren().add(new ImageView(image));
+
+      columnItem = new TreeItem<>(new StringConverterHolder<>(columnDesc, columnDesc::getName), hbox);
       //noinspection unchecked
       item.getChildren().add(columnItem);
     });
