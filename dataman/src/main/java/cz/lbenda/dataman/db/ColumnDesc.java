@@ -98,7 +98,7 @@ public class ColumnDesc {
     if (size == null) { this.scale = 0; }
     else { this.scale = size instanceof Long
         ? ((Long) confValue(dialect.columnDecimalDigits(), rs)).intValue()
-        : ((Integer) confValue(dialect.columnDecimalDigits(), rs)).intValue();
+        : (Integer) confValue(dialect.columnDecimalDigits(), rs);
     }
     this.columnTypeName = confValue(dialect.columnTypeName(), rs);
     this.nullable = confBool(dialect.columnNullable(), rs);
@@ -116,9 +116,9 @@ public class ColumnDesc {
     */
   }
 
-  public ColumnDesc(final TableDesc td, final String name, final String label, final int dataType, final String columnTypeName,
-                    final int size, final boolean nullable, final boolean autoincrement, final boolean generated,
-                    final SQLDialect dialect) {
+  public ColumnDesc(final TableDesc td, final String name, final String label, final ColumnType dataType,
+                    final int size, final int scale, final boolean nullable, final boolean autoincrement,
+                    final boolean generated) {
     this.tableDesc = td;
     this.position = -1;
     this.catalog = td.getSchema().getCatalog().getName();
@@ -126,11 +126,11 @@ public class ColumnDesc {
     this.table = td.getName();
     this.name = name;
     this.size = size;
-    this.scale = 0;
+    this.scale = scale;
     this.nullable = nullable;
     this.autoincrement = autoincrement;
     this.generated = generated;
-    this.dataType = dialect.columnTypeFromSQL(dataType, columnTypeName, size);
+    this.dataType = dataType;
     this.label = label;
   }
 

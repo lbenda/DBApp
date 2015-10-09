@@ -131,7 +131,7 @@ public class DbStructureFrmController {
       root.setExpanded(true);
       if (newValue != null) {
         newValue.getCatalogs().addListener(catalogChangeListener);
-        if (newValue.connectionProvider.isConnected()) {
+        if (newValue.getCatalogs().size() > 0) {
           createCatalogTreeItems(root, newValue);
         }
       }

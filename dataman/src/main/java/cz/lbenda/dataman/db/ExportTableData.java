@@ -16,6 +16,7 @@
 package cz.lbenda.dataman.db;
 
 import cz.lbenda.dataman.Constants;
+import cz.lbenda.dataman.schema.datatypes.DataTypeType;
 import cz.lbenda.dataman.schema.export.*;
 import cz.lbenda.dataman.schema.export.ColumnType;
 import cz.lbenda.rcp.DialogHelper;
@@ -256,10 +257,6 @@ public class ExportTableData {
     SpreadSheet.createEmpty(model).getPackage().save(outputStream);
   }
 
-  private static DataTypeType columnTypeToDataTypeType(cz.lbenda.dataman.db.dialect.ColumnType columnType) {
-    return DataTypeType.fromValue(columnType.name());
-  }
-
   private static String columnId(ColumnDesc cd) {
     return cd.getCatalog() + "." + cd.getSchema() + "." + cd.getTable() + "." + cd.getName();
   }
@@ -284,7 +281,7 @@ public class ExportTableData {
       ct.setSchema(cd.getSchema());
       ct.setTable(cd.getTable());
       ct.setColumn(cd.getName());
-      ct.setDataType(columnTypeToDataTypeType(cd.getDataType()));
+      ct.setDataType(DbStructureFactory.columnTypeToDataTypeType(cd.getDataType()));
       ct.setLength(cd.getSize());
       ct.setScale(cd.getScale());
       ct.setValue(cd.getLabel());

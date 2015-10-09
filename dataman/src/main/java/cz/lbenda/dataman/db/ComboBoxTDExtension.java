@@ -16,7 +16,6 @@
 package cz.lbenda.dataman.db;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -35,15 +34,34 @@ public class ComboBoxTDExtension implements TableDescriptionExtension {
 
   private static final Logger LOG = LoggerFactory.getLogger(ComboBoxTDExtension.class);
 
-  private final TableDesc td; public final TableDesc getTableDescription() { return td; }
+  private final TableDesc td;
+  @SuppressWarnings("unused")
+  public final TableDesc getTableDescription() { return td; }
   /** Name of column which is substitution by select box */
-  private String columnName; public final String getColumnName() { return columnName; } public final void setColumnName(final String columnName) { this.columnName = columnName; }
+  private String columnName;
+  @SuppressWarnings("unused")
+  public final String getColumnName() { return columnName; }
+  @SuppressWarnings("unused")
+  public final void setColumnName(final String columnName) { this.columnName = columnName; }
   /** SQL which return three fields with identifier which is write to column, showed value and tool tipe. */
-  private String tableOfKeySQL; public final String getTableOfKeySQL() { return tableOfKeySQL; } public final void setTableOfKeySQL(final String tableOfKeySQL) { this.tableOfKeySQL = tableOfKeySQL; }
+  private String tableOfKeySQL;
+  @SuppressWarnings("unused")
+  public final String getTableOfKeySQL() { return tableOfKeySQL; }
+  @SuppressWarnings("unused")
+  public final void setTableOfKeySQL(final String tableOfKeySQL) { this.tableOfKeySQL = tableOfKeySQL; }
 
-  private String columnValue; public final String getColumnValue() { return columnValue; } public final void setColumnValue(final String columnValue) { this.columnValue = columnValue; }
-  private String columnChoice; public final String getColumnChoice () { return columnChoice; } public final void setColumnChoice(final String columnChoice) { this.columnChoice = columnChoice; }
-  private String columnTooltip; public final String getColumnTooltip() { return columnTooltip; } public final void setColumnTooltip(final String columnTooltip) { this.columnTooltip = columnTooltip; }
+  private String columnValue;
+  @SuppressWarnings("unused")
+  public final String getColumnValue() { return columnValue; }
+  public final void setColumnValue(final String columnValue) { this.columnValue = columnValue; }
+  private String columnChoice;
+  @SuppressWarnings("unused")
+  public final String getColumnChoice () { return columnChoice; }
+  public final void setColumnChoice(final String columnChoice) { this.columnChoice = columnChoice; }
+  private String columnTooltip;
+  @SuppressWarnings("unused")
+  public final String getColumnTooltip() { return columnTooltip; }
+  public final void setColumnTooltip(final String columnTooltip) { this.columnTooltip = columnTooltip; }
 
   /** Flag which inform if combo box have already downloaded data */
   private boolean initialized = false;
@@ -115,6 +133,7 @@ public class ComboBoxTDExtension implements TableDescriptionExtension {
   }
   */
 
+  @SuppressWarnings("unused")
   public final ComboBoxType storeToComboBox() {
     ObjectFactory of = new ObjectFactory();
     ComboBoxType result = of.createComboBoxType();

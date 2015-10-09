@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Copyright 2015 Lukas Benda <lbenda at lbenda.cz>.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<xsd:schema version="1.0"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            targetNamespace="http://www.lbenda.cz/dataman/schema/DataTypes"
+            elementFormDefault="qualified">
+
+
+  <xsd:simpleType name="dataTypeType">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="STRING"><xsd:annotation><xsd:documentation>Java string type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="SHORT"><xsd:annotation><xsd:documentation>Java short type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="BYTE"><xsd:annotation><xsd:documentation>Java byte type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="INTEGER"><xsd:annotation><xsd:documentation>Java integer type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="LONG"><xsd:annotation><xsd:documentation>Java long type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="BYTE_ARRAY"><xsd:annotation><xsd:documentation>Java byte[] type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="UUID"><xsd:annotation><xsd:documentation>Java UUID type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="ARRAY"><xsd:annotation><xsd:documentation>Java custom array type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="BIT"><xsd:annotation><xsd:documentation>Java number with value 0/1</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="BIT_ARRAY"><xsd:annotation><xsd:documentation>Bit mask: example 0100 1100 1001 1010</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="FLOAT"><xsd:annotation><xsd:documentation>Java float type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="DOUBLE"><xsd:annotation><xsd:documentation>Java double type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="DECIMAL"><xsd:annotation><xsd:documentation>Java BigDecimal type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="BOOLEAN"><xsd:annotation><xsd:documentation>Java Boolean type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="DATE"><xsd:annotation><xsd:documentation>Java Date type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="TIME"><xsd:annotation><xsd:documentation>Java Time type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="TIMESTAMP"><xsd:annotation><xsd:documentation>Java Timestamp type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="BLOB"><xsd:annotation><xsd:documentation>Java Blob type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="CLOB"><xsd:annotation><xsd:documentation>Java Clob type</xsd:documentation></xsd:annotation></xsd:enumeration>
+      <xsd:enumeration value="OBJECT"><xsd:annotation><xsd:documentation>Java serialized object</xsd:documentation></xsd:annotation></xsd:enumeration>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+</xsd:schema>

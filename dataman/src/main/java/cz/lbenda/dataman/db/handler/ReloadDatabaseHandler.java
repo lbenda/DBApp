@@ -16,7 +16,6 @@
 package cz.lbenda.dataman.db.handler;
 
 import cz.lbenda.dataman.db.DbConfig;
-import cz.lbenda.dataman.db.frm.DbConfigFrmController;
 import cz.lbenda.rcp.action.AbstractAction;
 import cz.lbenda.rcp.action.ActionConfig;
 import cz.lbenda.rcp.action.ActionGUIConfig;
@@ -40,6 +39,7 @@ import org.slf4j.LoggerFactory;
 )
 public class ReloadDatabaseHandler extends AbstractAction {
 
+  @SuppressWarnings("unused")
   private static Logger LOG = LoggerFactory.getLogger(ReloadDatabaseHandler.class);
 
   /** The holder to which is set session configuration values */

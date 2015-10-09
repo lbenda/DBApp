@@ -26,6 +26,7 @@ import cz.lbenda.dataman.UserImpl;
 import cz.lbenda.dataman.db.dialect.SQLDialect;
 import cz.lbenda.dataman.rc.DbConfigFactory;
 import cz.lbenda.dataman.schema.dataman.*;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -93,8 +94,8 @@ public class DbConfig {
     }
     result.setLibraries(of.createLibrariesType());
     result.getLibraries().getLibrary().addAll(getLibrariesPaths());
-
     result.setExtendedConfig(this.extConfFactory.getExtendedConfigType());
+    result.setStructure(DbStructureFactory.createXMLDatabaseStructure(getCatalogs()));
     return result;
   }
 
@@ -114,6 +115,10 @@ public class DbConfig {
     if (session.getLibraries() != null) {
       session.getLibraries().getLibrary().forEach(this.librariesPaths::add);
     }
+    new Thread(() -> {
+      List<CatalogDesc> cds = DbStructureFactory.loadDatabaseStructureFromXML(session.getStructure());
+      Platform.runLater(() -> catalogs.addAll(cds));
+    }).start();
     extConfFactory.setExtendedConfigType(session.getExtendedConfig());
   }
 
@@ -131,6 +136,7 @@ public class DbConfig {
   public void reloadStructure() {
     reader.generateStructure();
     this.extConfFactory.load();
+    DbConfigFactory.saveConfiguration();
   }
 
   /** Close connection to database */

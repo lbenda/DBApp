@@ -56,7 +56,7 @@ public class DbConfigFactory {
 
   /** This method save configuration to file */
   public static void saveConfiguration() {
-    ConfigurationRW.getInstance().writeConfig(CONFIG_FILE_NAME, storeToString());
+    new Thread(() -> ConfigurationRW.getInstance().writeConfig(CONFIG_FILE_NAME, storeToString())).start();
   }
 
   public static void removeConfiguration(DbConfig config) {

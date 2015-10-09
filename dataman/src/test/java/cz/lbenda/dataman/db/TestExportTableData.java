@@ -16,7 +16,7 @@
 package cz.lbenda.dataman.db;
 
 import cz.lbenda.dataman.Constants;
-import cz.lbenda.dataman.db.dialect.HSQLDBDialect;
+import cz.lbenda.dataman.db.dialect.ColumnType;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.Date;
-import java.sql.Types;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 20.9.15. */
 public class TestExportTableData {
@@ -35,13 +34,13 @@ public class TestExportTableData {
     SchemaDesc schemaDesc = new SchemaDesc(catalogDesc, "schema");
     catalogDesc.getSchemas().add(schemaDesc);
     TableDesc tableDesc = new TableDesc(schemaDesc, "TABLE", "table");
-    ColumnDesc cd1 = new ColumnDesc(tableDesc, "id", null, Types.INTEGER, "", 10, false, true, true, new HSQLDBDialect());
+    ColumnDesc cd1 = new ColumnDesc(tableDesc, "id", null, ColumnType.INTEGER, 10, 0, false, true, true);
     cd1.setPosition(1);
-    ColumnDesc cd2 = new ColumnDesc(tableDesc, "column2", null, Types.VARCHAR, "", 250, true, false, false, new HSQLDBDialect());
+    ColumnDesc cd2 = new ColumnDesc(tableDesc, "column2", null, ColumnType.STRING, 250, 0, true, false, false);
     cd2.setPosition(2);
-    ColumnDesc cd3 = new ColumnDesc(tableDesc, "column3", null, Types.DATE, "", 12, true, false, false, new HSQLDBDialect());
+    ColumnDesc cd3 = new ColumnDesc(tableDesc, "column3", null, ColumnType.DATE, 12, 0, true, false, false);
     cd3.setPosition(3);
-    ColumnDesc cd4 = new ColumnDesc(tableDesc, "column4", null, Types.BOOLEAN, "", 1, true, false, false, new HSQLDBDialect());
+    ColumnDesc cd4 = new ColumnDesc(tableDesc, "column4", null, ColumnType.BOOLEAN, 1, 0, true, false, false);
     cd4.setPosition(4);
     tableDesc.getQueryRow().getMetaData().getColumns().addAll(cd1, cd2, cd3, cd4);
 
@@ -62,7 +61,6 @@ public class TestExportTableData {
     row1.setColumnValue(cd2, null);
     row1.setColumnValue(cd3, null);
     row1.setColumnValue(cd4, null);
-
 
     try {
       File file = File.createTempFile("TestExportTableData", ".XLSX");
