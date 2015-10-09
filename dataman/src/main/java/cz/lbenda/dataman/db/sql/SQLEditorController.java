@@ -75,7 +75,9 @@ public class SQLEditorController {
   private NodeShower nodeShower;
   private ObjectProperty<Boolean> stopOnFirstError = new SimpleObjectProperty<>(Boolean.TRUE);
   public boolean isStopOnFirstError() { return  stopOnFirstError.getValue(); }
+  @SuppressWarnings("unused")
   public void setStopOnFirstError(boolean stopOnFirstError) { this.stopOnFirstError.setValue(stopOnFirstError); }
+  @SuppressWarnings("unused")
   public ObjectProperty<Boolean> stopOnFirstErrorProperty() { return stopOnFirstError; }
 
   /** Return text which is in code Area */

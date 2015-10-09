@@ -242,6 +242,7 @@ public class DatamanApp extends Application {
         new EditDatabaseHandler(currentDbProperty),
         new CopyDatabaseHandler(currentDbProperty),
         new RemoveDatabaseHandler(currentDbProperty),
+        new ReloadDatabaseHandler(currentDbProperty),
         new RemoveRowsHandler(tableViewObjectProperty),
         new AddRowHandler(tableViewObjectProperty),
         new ReloadTableHandler(tableViewObjectProperty),
