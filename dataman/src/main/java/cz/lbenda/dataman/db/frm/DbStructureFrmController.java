@@ -71,6 +71,7 @@ public class DbStructureFrmController {
   private final static Image imageUUID = IconFactory.getInstance().image(DbStructureFrmController.class, "uuid.png",
       IconFactory.IconLocation.INDICATOR);
 
+  @SuppressWarnings("unused")
   public Node getControlledNode() { return treeView; }
 
   private TreeView treeView;
@@ -87,10 +88,19 @@ public class DbStructureFrmController {
   };
 
   public DbStructureFrmController(@Nonnull ObjectProperty<DbConfig> dbConfigProperty,
-                                  @Nonnull Consumer<TableDesc> tableShower) {
+                                  @Nonnull Consumer<TableDesc> tableShower,
+                                  @Nonnull ObjectProperty<TableDesc> selectedTable) {
     this.dbConfigProperty = dbConfigProperty;
     treeView = new TreeView<>();
     treeView.setShowRoot(false);
+    treeView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+      TreeItem item = (TreeItem) treeView.getSelectionModel().getSelectedItem();
+      if (item.getValue() instanceof TableDesc) { selectedTable.setValue((TableDesc) item.getValue()); }
+      else if (item.getValue() instanceof ColumnDesc) {
+        selectedTable.setValue(((ColumnDesc) item.getValue()).getTableDesc()); }
+      else { selectedTable.setValue(null); }
+    });
+
     treeView.setOnMouseClicked(event -> {
       if (event.getClickCount() == 2) {
         TreeItem<TableDesc> item = (TreeItem<TableDesc>) treeView.getSelectionModel().getSelectedItem();

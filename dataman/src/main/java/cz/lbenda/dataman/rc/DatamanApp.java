@@ -16,12 +16,11 @@
 package cz.lbenda.dataman.rc;
 
 import cz.lbenda.common.Constants;
+import cz.lbenda.common.Tuple2;
 import cz.lbenda.dataman.db.DbConfig;
 import cz.lbenda.dataman.db.SQLQueryRows;
-import cz.lbenda.dataman.db.frm.DataTableFrmController;
-import cz.lbenda.dataman.db.frm.DataTableView;
-import cz.lbenda.dataman.db.frm.DbStructureFrmController;
-import cz.lbenda.dataman.db.frm.RowEditorFrmController;
+import cz.lbenda.dataman.db.TableDesc;
+import cz.lbenda.dataman.db.frm.*;
 import cz.lbenda.dataman.db.handler.*;
 import cz.lbenda.dataman.rc.frm.AboutApplicationHandler;
 import cz.lbenda.rcp.DialogHelper;
@@ -39,6 +38,7 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -231,6 +231,7 @@ public class DatamanApp extends Application {
 
     DbConfigFactory.reloadConfiguration();
     ObjectProperty<DbConfig> currentDbProperty = new SimpleObjectProperty<>();
+    ObjectProperty<TableDesc> selectedTableDescProperty = new SimpleObjectProperty<>();
 
     prepareMainPane();
     ribbon.itemsProperty().addAll(
@@ -259,6 +260,13 @@ public class DatamanApp extends Application {
 
     addToCenter(SQLEditorController.WINDOW_TITLE, te.getNode(), false);
 
+    Tuple2<Parent, DbTableStructureFrmController> dbTableStructureFrmController
+        = DbTableStructureFrmController.createNewInstance();
+    addToCenter(DbTableStructureFrmController.WINDOW_TITLE, dbTableStructureFrmController.get1(), false);
+    selectedTableDescProperty.addListener((observable, oldValue, newValue) ->
+        dbTableStructureFrmController.get2().setTableDesc(newValue));
+
+
     DbStructureFrmController dfc = new DbStructureFrmController(currentDbProperty, td -> new Thread(() -> {
       StatusHelper.getInstance().progressStart(td, DataTableFrmController.TASK_NAME, 2);
       StatusHelper.getInstance().progressNextStep(td, td.getName(), 0);
@@ -266,7 +274,7 @@ public class DatamanApp extends Application {
       StatusHelper.getInstance().progressNextStep(td, td.getName(), 0);
       Platform.runLater(() -> addToCenter(controller.titleProperty(), controller.getTabView(), true));
       StatusHelper.getInstance().progressFinish(td, DataTableFrmController.STEP_FINISH);
-    }).start());
+    }).start(), selectedTableDescProperty);
     leftPane.getChildren().add(dfc.getControlledNode());
 
     RowEditorFrmController rowEditorFrmController = new RowEditorFrmController(tableViewObjectProperty);

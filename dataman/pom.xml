@@ -102,6 +102,10 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-vfs2</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.webjars.bower</groupId>
+      <artifactId>jointjs</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
