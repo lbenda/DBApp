@@ -23,7 +23,7 @@ import static org.testng.Assert.*;
  * Testing implementation of data structure reader
  */
 @SuppressWarnings("ConstantConditions")
-public class TestDbStructureReader extends TestAbstractDB {
+public class TestDbStructureFactory extends TestAbstractDB {
 
   @Test(dataProviderClass = TestAbstractDB.class, dataProvider = "databases", groups = "database")
   public void readStructureFromDatabase(TestHelperPrepareDB.DBDriver driverClass, String url, String catalog) {

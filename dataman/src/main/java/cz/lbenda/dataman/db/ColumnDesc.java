@@ -35,6 +35,7 @@ public class ColumnDesc {
   private final String schema; public String getSchema() { return schema; }
   private final String table; public String getTable() { return table; }
   private final String name; public final String getName() { return name; }
+  private final String defaultValue; public final String getDefaultValue() { return defaultValue; }
   private final int size; public int getSize() { return size; }
   private final ColumnType dataType; public final ColumnType getDataType() { return dataType; }
   private final Boolean nullable; @SuppressWarnings("unused") public final Boolean isNullable() { return nullable; }
@@ -60,6 +61,7 @@ public class ColumnDesc {
     this.position = position;
     this.name = mtd.getColumnName(position);
     this.label = mtd.getColumnLabel(position);
+    this.defaultValue = "";
     this.catalog = mtd.getCatalogName(position);
     this.schema = mtd.getSchemaName(position);
     this.table = mtd.getTableName(position);
@@ -92,6 +94,7 @@ public class ColumnDesc {
     this.schema = td.getSchema().getName();
     this.table = td.getName();
     this.name = confValue(dialect.columnName(), rs);
+    this.defaultValue = confValue(dialect.columnDefaultValue(), rs);
     this.label = confValue(dialect.columnRemarks(), rs);
     this.size = confValue(dialect.columnSize(), rs);
     Object size = confValue(dialect.columnDecimalDigits(), rs);
@@ -118,13 +121,14 @@ public class ColumnDesc {
 
   public ColumnDesc(final TableDesc td, final String name, final String label, final ColumnType dataType,
                     final int size, final int scale, final boolean nullable, final boolean autoincrement,
-                    final boolean generated) {
+                    final boolean generated, final String defaultValue) {
     this.tableDesc = td;
     this.position = -1;
     this.catalog = td.getSchema().getCatalog().getName();
     this.schema = td.getSchema().getName();
     this.table = td.getName();
     this.name = name;
+    this.defaultValue = defaultValue;
     this.size = size;
     this.scale = scale;
     this.nullable = nullable;

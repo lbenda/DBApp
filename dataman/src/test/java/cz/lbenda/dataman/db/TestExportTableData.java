@@ -34,13 +34,13 @@ public class TestExportTableData {
     SchemaDesc schemaDesc = new SchemaDesc(catalogDesc, "schema");
     catalogDesc.getSchemas().add(schemaDesc);
     TableDesc tableDesc = new TableDesc(schemaDesc, "TABLE", "table");
-    ColumnDesc cd1 = new ColumnDesc(tableDesc, "id", null, ColumnType.INTEGER, 10, 0, false, true, true);
+    ColumnDesc cd1 = new ColumnDesc(tableDesc, "id", null, ColumnType.INTEGER, 10, 0, false, true, true, "NULL");
     cd1.setPosition(1);
-    ColumnDesc cd2 = new ColumnDesc(tableDesc, "column2", null, ColumnType.STRING, 250, 0, true, false, false);
+    ColumnDesc cd2 = new ColumnDesc(tableDesc, "column2", null, ColumnType.STRING, 250, 0, true, false, false, "NULL");
     cd2.setPosition(2);
-    ColumnDesc cd3 = new ColumnDesc(tableDesc, "column3", null, ColumnType.DATE, 12, 0, true, false, false);
+    ColumnDesc cd3 = new ColumnDesc(tableDesc, "column3", null, ColumnType.DATE, 12, 0, true, false, false, "NULL");
     cd3.setPosition(3);
-    ColumnDesc cd4 = new ColumnDesc(tableDesc, "column4", null, ColumnType.BOOLEAN, 1, 0, true, false, false);
+    ColumnDesc cd4 = new ColumnDesc(tableDesc, "column4", null, ColumnType.BOOLEAN, 1, 0, true, false, false, "NULL");
     cd4.setPosition(4);
     tableDesc.getQueryRow().getMetaData().getColumns().addAll(cd1, cd2, cd3, cd4);
 

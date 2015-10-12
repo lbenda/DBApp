@@ -27,10 +27,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.fxml.JavaFXBuilderFactory;
 import javafx.scene.Parent;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +44,11 @@ public class DbTableStructureFrmController implements Initializable {
 
   @Message
   public static final String WINDOW_TITLE = "Structure";
+  @Message
+  public static final String COLUMNS_PANEL_TITLE = "Columns: %s";
+  @Message
+  public static final String FOREIGN_KEY_PANEL_TITLE = "Foreign keys: %s";
+
 
   @FXML
   private Label lTableName;
@@ -98,6 +100,11 @@ public class DbTableStructureFrmController implements Initializable {
   @FXML
   private TableColumn<DbStructureFactory.ForeignKey, String> tcForeignKeyDelete;
 
+  @FXML
+  private TitledPane tpColumns;
+  @FXML
+  private TitledPane tpForeignKeys;
+
   private ObjectProperty<TableDesc> tableDescProperty = new SimpleObjectProperty<>();
 
   public DbTableStructureFrmController() {
@@ -106,6 +113,10 @@ public class DbTableStructureFrmController implements Initializable {
       columnsSet(newValue);
       foreignKeysSet(newValue);
     });
+  }
+
+  private TableDesc foreignTable(DbStructureFactory.ForeignKey foreignKey) {
+    return foreignKey.getMasterTable() == getTableDesc() ? foreignKey.getSlaveTable() : foreignKey.getMasterTable();
   }
 
   @Override
@@ -117,18 +128,25 @@ public class DbTableStructureFrmController implements Initializable {
     tcColumnsNull.setCellValueFactory(cell -> new SimpleBooleanProperty(cell.getValue().isNullable()));
     tcColumnsLength.setCellValueFactory(cell -> new SimpleObjectProperty<>(cell.getValue().getSize()));
     tcColumnsScale.setCellValueFactory(cell -> new SimpleObjectProperty<>(cell.getValue().getScale()));
-    tcColumnsDefault.setCellValueFactory(cell -> new SimpleObjectProperty<>("TODO"));
+    tcColumnsDefault.setCellValueFactory(cell -> new SimpleObjectProperty<>(cell.getValue().getDefaultValue()));
     tcColumnsEditable.setCellValueFactory(cell -> new SimpleBooleanProperty(cell.getValue().isEditable()));
 
-    tcForeignKeyInOut.setCellValueFactory(cell -> new SimpleStringProperty("TODO"));
-    tcForeignKeyName.setCellValueFactory(cell -> new SimpleStringProperty("TODO"));
-    tcForeignKeyCatalog.setCellValueFactory(cell -> new SimpleStringProperty("TODO"));
-    tcForeignKeySchema.setCellValueFactory(cell -> new SimpleStringProperty("TODO"));
-    tcForeignKeyTable.setCellValueFactory(cell -> new SimpleStringProperty("TODO"));
-    tcForeignKeyPKColumns.setCellValueFactory(cell -> new SimpleStringProperty("TODO"));
-    tcForeignKeyFKColumns.setCellValueFactory(cell -> new SimpleStringProperty("TODO"));
-    tcForeignKeyUpdate.setCellValueFactory(cell -> new SimpleStringProperty("TODO"));
-    tcForeignKeyDelete.setCellValueFactory(cell -> new SimpleStringProperty("TODO"));
+    tcForeignKeyInOut.setCellValueFactory(cell -> new SimpleStringProperty(
+        cell.getValue().getMasterTable() == getTableDesc() ? "Out" : "In"
+    ));
+    tcForeignKeyName.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getName()));
+    tcForeignKeyCatalog.setCellValueFactory(cell -> new SimpleStringProperty(
+        foreignTable(cell.getValue()).getSchema().getCatalog().getName()));
+    tcForeignKeySchema.setCellValueFactory(cell -> new SimpleStringProperty(
+        foreignTable(cell.getValue()).getSchema().getName()));
+    tcForeignKeyTable.setCellValueFactory(cell -> new SimpleStringProperty(
+        foreignTable(cell.getValue()).getName()));
+    tcForeignKeyPKColumns.setCellValueFactory(cell -> new SimpleStringProperty(
+        cell.getValue().getMasterColumn().getName()));
+    tcForeignKeyFKColumns.setCellValueFactory(cell -> new SimpleStringProperty(
+        cell.getValue().getSlaveColumn().getName()));
+    tcForeignKeyUpdate.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getUpdateRule()));
+    tcForeignKeyDelete.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getDeleteRule()));
 
     generalSet(null);
     columnsSet(null);
@@ -156,17 +174,15 @@ public class DbTableStructureFrmController implements Initializable {
   /** Set columns for columns part */
   private void columnsSet(TableDesc tableDesc) {
     tvColumns.getItems().clear();
-    if (tableDesc != null) {
-      tvColumns.getItems().addAll(tableDesc.getColumns());
-    }
+    if (tableDesc != null) { tvColumns.getItems().addAll(tableDesc.getColumns()); }
+    tpColumns.setText(String.format(COLUMNS_PANEL_TITLE, tvColumns.getItems().size()));
   }
 
   /** Set columns for foreign keys part */
   private void foreignKeysSet(TableDesc tableDesc) {
     tvForeignKeys.getItems().clear();
-    if (tableDesc != null) {
-      tvForeignKeys.getItems().addAll(tableDesc.getForeignKeys());
-    }
+    if (tableDesc != null) { tvForeignKeys.getItems().addAll(tableDesc.getForeignKeys()); }
+    tpForeignKeys.setText(String.format(FOREIGN_KEY_PANEL_TITLE, tvForeignKeys.getItems().size()));
   }
 
   /** Set table description which is currently showed */

@@ -40,6 +40,7 @@ public interface SQLDialect {
   default String columnTableSchema()  { return "TABLE_SCHEM"; }
   default String columnTableName()  { return "TABLE_NAME"; }
   default String columnName() { return "COLUMN_NAME"; }
+  default String columnDefaultValue() { return "COLUMN_DEF"; }
   default String columnDateType() { return "DATA_TYPE"; }
   default String columnTypeName() { return "TYPE_NAME"; }
   default String columnSize() { return "COLUMN_SIZE"; }
@@ -52,6 +53,7 @@ public interface SQLDialect {
 
   default String pkColumnName() { return "COLUMN_NAME"; }
 
+  default String fkName() { return "FK_NAME"; }
   default String fkMasterTableCatalog() { return "PKTABLE_CAT"; }
   default String fkMasterTableSchema() { return "PKTABLE_SCHEM"; }
   default String fkMasterTableName() { return "PKTALBLE_NAME"; }
@@ -60,6 +62,8 @@ public interface SQLDialect {
   default String fkSlaveTableSchema() { return "FKTABLE_SCHEM"; }
   default String fkSlaveTableName() { return "FKTABLE_NAME"; }
   default String fkSlaveColumnName() { return "FKCOLUMN_NAME"; }
+  default String fkUpdateRule() { return "UPDATE_RULE"; }
+  default String fkDeleteRule() { return "DELETE_RULE"; }
 
   /** Set of names which is used to describe identity column */
   default Set<String> nameOfGeneratedIdentityColumn() { return new HashSet<>(Arrays.asList(new String[] {

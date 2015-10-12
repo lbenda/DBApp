@@ -20,6 +20,7 @@ import cz.lbenda.dataman.db.dialect.*;
 
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import cz.lbenda.dataman.schema.dataman.*;
 import cz.lbenda.dataman.schema.dataman.ColumnType;
@@ -53,6 +54,7 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
 
   private final ConnectionProvider connectionProvider;
   private final DbConfig dbConfig;
+  private final Set<String> columnsFromWriten = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
   public DbStructureFactory(@Nonnull DbConfig dbConfig) {
     // this.setDbConfig(dbConfig);
@@ -191,12 +193,14 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
     }
   }
 
-  private void writeColumnNames(ResultSetMetaData metaData) throws SQLException {
+  private void writeColumnNames(String columnsFrom, ResultSetMetaData metaData) throws SQLException {
     if (Constants.IS_IN_DEVELOP_MODE) {
-      for (int i = 1; i <= metaData.getColumnCount(); i++) {
-        System.out.print(metaData.getColumnName(i));
-        System.out.print(" : ");
-        System.out.println(metaData.getColumnLabel(i));
+      if (!columnsFromWriten.contains(columnsFrom)) {
+        LOG.debug("Write column names: " + columnsFrom);
+        columnsFromWriten.add(columnsFrom);
+        for (int i = 1; i <= metaData.getColumnCount(); i++) {
+          LOG.debug("Column: " + metaData.getColumnName(i) + " : "  + metaData.getColumnLabel(i));
+        }
       }
     }
   }
@@ -211,7 +215,7 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
     }
     try (ResultSet rsColumn  = dmd.getColumns(null, null, null, null)) {
 
-      writeColumnNames(rsColumn.getMetaData());
+      writeColumnNames("generateStructureColumns", rsColumn.getMetaData());
       while (rsColumn.next()) {
         StatusHelper.getInstance().progress(this);
         String catalog = rsColumn.getString(dialect.columnTableCatalog());
@@ -298,13 +302,17 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
         for (TableDesc td : schema.getTables()) {
           StatusHelper.getInstance().progress(this);
           ResultSet rsEx = dmd.getExportedKeys(ch.getName(), schema.getName(), td.getName());
+          writeColumnNames("generateStructureForeignKeys", rsEx.getMetaData());
           while (rsEx.next()) {
             String slaveCatalogName = rsEx.getString(di.fkSlaveTableCatalog());
             String slaveSchemaName = rsEx.getString(di.fkSlaveTableSchema());
             String slaveTableName = rsEx.getString(di.fkSlaveTableName());
             TableDesc slaveTD = catalogs.get(slaveCatalogName).getSchema(slaveSchemaName).getTable(slaveTableName);
-            ForeignKey fk = new ForeignKey(td, td.getColumn(rsEx.getString(di.fkMasterColumnName())),
-                slaveTD, slaveTD.getColumn(rsEx.getString(di.fkSlaveColumnName())));
+            //noinspection ConstantConditions
+            ForeignKey fk = new ForeignKey(rsEx.getString(di.fkName()),
+                td, td.getColumn(rsEx.getString(di.fkMasterColumnName())),
+                slaveTD, slaveTD.getColumn(rsEx.getString(di.fkSlaveColumnName())),
+                rsEx.getString(di.fkUpdateRule()), rsEx.getString(di.fkDeleteRule()));
             td.addForeignKey(fk);
             slaveTD.addForeignKey(fk);
           }
@@ -336,8 +344,8 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
           tableType.getColumn().forEach(columnType -> {
             ColumnDesc columnDesc = new ColumnDesc(tableDesc,
                 columnType.getName(), columnType.getLabel(), dataTypeTypeToColumnType(columnType.getDataType()),
-                columnType.getSize(), columnType.getScale(),
-                columnType.isNullable(), columnType.isAutoincrement(), columnType.isGenerated());
+                columnType.getSize(), columnType.getScale(), columnType.isNullable(), columnType.isAutoincrement(),
+                columnType.isGenerated(), columnType.getDefaultValue());
             columnDescFromColumnType.put(columnType, columnDesc);
             columnDesc.setPosition(tableDesc.getColumns().size() + 1);
             columnDesc.setPK(columnType.isIsPK());
@@ -350,10 +358,13 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
     databaseStructure.getCatalog().forEach(catalogType -> catalogType.getSchema().forEach(schemaType -> schemaType.getTable().forEach(tableType ->
         tableType.getForeignKey().forEach(foreignKeyType -> {
           ForeignKey foreignKey = new ForeignKey(
+              foreignKeyType.getName(),
               tableDescFromTableType.get(foreignKeyType.getMasterTable()),
               columnDescFromColumnType.get(foreignKeyType.getMasterColumn().get(0).getColumn()),
               tableDescFromTableType.get(tableType),
-              columnDescFromColumnType.get(foreignKeyType.getSlaveColumn().get(0).getColumn()));
+              columnDescFromColumnType.get(foreignKeyType.getSlaveColumn().get(0).getColumn()),
+              foreignKeyType.getUpdateRule(),
+              foreignKeyType.getDeleteRule());
           foreignKey.getMasterTable().getForeignKeys().add(foreignKey);
           foreignKey.getSlaveTable().getForeignKeys().add(foreignKey);
         }))));
@@ -394,6 +405,7 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
             columnType.setIsPK(columnDesc.isPK());
             columnType.setSize(columnDesc.getSize());
             columnType.setScale(columnDesc.getScale());
+            columnType.setDefaultValue(columnDesc.getDefaultValue());
             tableType.getColumn().add(columnType);
           });
         });
@@ -403,6 +415,10 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
     catalogs.forEach(catalogDesc -> catalogDesc.getSchemas().forEach(schemaDesc -> schemaDesc.getTables().forEach(tableDesc ->
       tableDesc.getForeignKeys().stream().filter(foreignKey -> foreignKey.getSlaveTable() == tableDesc).forEach(foreignKey -> {
         ForeignKeyType foreignKeyType = of.createForeignKeyType();
+        foreignKeyType.setName(foreignKey.getName());
+        foreignKeyType.setDeleteRule(foreignKey.getDeleteRule());
+        foreignKeyType.setUpdateRule(foreignKey.getUpdateRule());
+
         foreignKeyType.setMasterTable(tableTypeForTableDesc.get(foreignKey.getMasterTable()));
         ForeignKeyColumnType masterColumn = of.createForeignKeyColumnType();
         masterColumn.setColumn(columnTypeForColumnDesc.get(foreignKey.getMasterColumn()));
@@ -426,16 +442,24 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
   }
 
   public static class ForeignKey {
+    private final String name; public final String getName() { return name; }
     private final TableDesc masterTable; public final TableDesc getMasterTable() { return masterTable; }
     private final ColumnDesc masterColumn; public final ColumnDesc getMasterColumn() { return masterColumn; }
     private final TableDesc slaveTable; public final TableDesc getSlaveTable() { return slaveTable; }
     private final ColumnDesc slaveColumn; public final ColumnDesc getSlaveColumn() { return slaveColumn; }
-    public ForeignKey(final TableDesc masterTable, final ColumnDesc masterColumn,
-            final TableDesc slaveTable, final ColumnDesc slaveColumn) {
+    private final String updateRule; public final String getUpdateRule() { return updateRule; }
+    private final String deleteRule; public final String getDeleteRule() { return deleteRule; }
+
+    public ForeignKey(@Nonnull String name, @Nonnull TableDesc masterTable, @Nonnull ColumnDesc masterColumn,
+                      @Nonnull TableDesc slaveTable, @Nonnull ColumnDesc slaveColumn,
+                      @Nonnull String updateRule , @Nonnull String deleteRule) {
+      this.name = name;
       this.masterTable = masterTable;
       this.masterColumn = masterColumn;
       this.slaveTable = slaveTable;
       this.slaveColumn = slaveColumn;
+      this.updateRule = updateRule;
+      this.deleteRule = deleteRule;
     }
   }
 
