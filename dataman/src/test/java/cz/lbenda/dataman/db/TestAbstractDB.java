@@ -17,6 +17,7 @@ package cz.lbenda.dataman.db;
 
 import cz.lbenda.common.Constants;
 import cz.lbenda.common.Tuple3;
+import cz.lbenda.test.JavaFXInitializer;
 import org.testng.annotations.BeforeGroups;
 import org.testng.annotations.DataProvider;
 
@@ -30,7 +31,8 @@ public abstract class TestAbstractDB {
   }
 
   @BeforeGroups(groups = "database")
-  public void setUp() {
+  public void setUp() throws InterruptedException {
+    JavaFXInitializer.initialize();
     Constants.IS_IN_DEVELOP_MODE = true;
     for (Tuple3<TestHelperPrepareDB.DBDriver, String, String> tuple3 : TestHelperPrepareDB.databases()) {
       TestHelperPrepareDB.prepareSmallDb(tuple3.get1(), tuple3.get2());

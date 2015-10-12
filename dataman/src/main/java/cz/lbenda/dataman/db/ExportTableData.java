@@ -16,7 +16,6 @@
 package cz.lbenda.dataman.db;
 
 import cz.lbenda.dataman.Constants;
-import cz.lbenda.dataman.schema.datatypes.DataTypeType;
 import cz.lbenda.dataman.schema.export.*;
 import cz.lbenda.dataman.schema.export.ColumnType;
 import cz.lbenda.rcp.DialogHelper;

@@ -158,7 +158,7 @@ public class RowDesc implements Observable {
   /** Return value from column */
   @SuppressWarnings("unchecked")
   public <T> T getColumnValue(ColumnDesc column) {
-    return (T) newValues[column.getPosition() - 1].getValue();
+    return repairClassOfValue(column, (T) newValues[column.getPosition() - 1].getValue());
   }
   /** Return value of column in string */
   @SuppressWarnings("unchecked")
@@ -232,7 +232,7 @@ public class RowDesc implements Observable {
   public <T> void setColumnValue(ColumnDesc column, T value) {
     value = repairClassOfValue(column, value);
 
-    if (AbstractHelper.nullEquals(oldValues[column.getPosition()], value)) { return; }
+    if (AbstractHelper.nullEquals(oldValues[column.getPosition() - 1], value)) { return; }
     if (column.getDataType() == ColumnType.ARRAY) {
       LOG.warn("The editing of ARRAY isn't implemented yet");
       return;

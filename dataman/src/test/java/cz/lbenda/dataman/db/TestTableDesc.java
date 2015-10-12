@@ -15,7 +15,10 @@
  */
 package cz.lbenda.dataman.db;
 
+import cz.lbenda.common.Tuple3;
+import cz.lbenda.test.JavaFXInitializer;
 import javafx.beans.property.SimpleStringProperty;
+import org.junit.BeforeClass;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -23,7 +26,16 @@ import org.testng.annotations.Test;
  * Test of function inside the test table */
 public class TestTableDesc extends TestAbstractDB {
 
-  @Test(dataProviderClass = TestAbstractDB.class, dataProvider = "databases", groups = "database")
+  @BeforeClass()
+  public void setUp() throws InterruptedException {
+    JavaFXInitializer.initialize();
+    cz.lbenda.common.Constants.IS_IN_DEVELOP_MODE = true;
+    for (Tuple3<TestHelperPrepareDB.DBDriver, String, String> tuple3 : TestHelperPrepareDB.databases()) {
+      TestHelperPrepareDB.prepareSmallDb(tuple3.get1(), tuple3.get2());
+    }
+  }
+
+  @Test(dataProviderClass = TestAbstractDB.class, dataProvider = "databases")
   public void testDirtyState(TestHelperPrepareDB.DBDriver driverClass, String url, String catalog) {
     DbConfig config = TestHelperPrepareDB.createConfig(driverClass, url);
     config.getReader().generateStructure();
@@ -38,6 +50,8 @@ public class TestTableDesc extends TestAbstractDB {
 
     tableDesc.addNewRowAction();
     tableDesc.reloadRowsAction();
+    Assert.assertTrue(
+        tableDesc.getRows().stream().allMatch(row1 -> row1.getState() == RowDesc.RowDescState.LOADED));
     Assert.assertFalse(tableDesc.dirtyProperty().getValue());
 
     ColumnDesc columnDesc = tableDesc.getColumn("COL");
@@ -48,7 +62,8 @@ public class TestTableDesc extends TestAbstractDB {
     ((SimpleStringProperty) row.valueProperty(columnDesc)).setValue("Jina hodnota");
     Assert.assertTrue(tableDesc.dirtyProperty().getValue());
     ((SimpleStringProperty) row.valueProperty(columnDesc)).setValue(puvodniHodnota);
-    Assert.assertEquals(row.getState(), RowDesc.RowDescState.LOADED);
-    Assert.assertFalse(tableDesc.dirtyProperty().getValue());
+
+    Assert.assertEquals(row.getState(), RowDesc.RowDescState.CHANGED);
+    Assert.assertTrue(tableDesc.dirtyProperty().getValue());
   }
 }

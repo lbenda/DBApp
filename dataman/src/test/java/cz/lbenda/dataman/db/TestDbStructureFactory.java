@@ -59,7 +59,7 @@ public class TestDbStructureFactory extends TestAbstractDB {
     TableDesc tableDesc = config.getCatalog(catalog).getSchema("test").getTable("TABLE1");
     tableDesc.reloadRowsAction();
     assertEquals(tableDesc.getRows().size(), 3, "In the database must be 3 rows.");
-    int i = driverClass == TestHelperPrepareDB.DBDriver.HSQL ? 0 : 1;
+    int i = config.getDialect().incrementFrom();
     for (RowDesc row : tableDesc.getRows()) {
       assertEquals((Object) row.getColumnValue(tableDesc.getColumn("ID")), i);
       i++;

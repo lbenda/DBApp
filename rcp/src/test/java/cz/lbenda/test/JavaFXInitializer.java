@@ -6,6 +6,7 @@ import javafx.stage.Stage;
 public class JavaFXInitializer extends Application {
 
   private static final Object barrier = new Object();
+  private static boolean initialized = false;
 
   @Override
   public void start(Stage primaryStage) throws Exception {
@@ -15,15 +16,18 @@ public class JavaFXInitializer extends Application {
   }
 
   public static void initialize() throws InterruptedException {
-    Thread t = new Thread("JavaFX Init Thread") {
-      public void run() {
-        Application.launch(JavaFXInitializer.class);
+    if (!initialized) {
+      initialized = true;
+      Thread t = new Thread("JavaFX Init Thread") {
+        public void run() {
+          Application.launch(JavaFXInitializer.class);
+        }
+      };
+      t.setDaemon(true);
+      t.start();
+      synchronized (barrier) {
+        barrier.wait();
       }
-    };
-    t.setDaemon(true);
-    t.start();
-    synchronized(barrier) {
-      barrier.wait();
     }
   }
 }
