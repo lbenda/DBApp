@@ -116,7 +116,7 @@ public class DbConfig {
       session.getLibraries().getLibrary().forEach(this.librariesPaths::add);
     }
     new Thread(() -> {
-      List<CatalogDesc> cds = DbStructureFactory.loadDatabaseStructureFromXML(session.getStructure());
+      List<CatalogDesc> cds = DbStructureFactory.loadDatabaseStructureFromXML(session.getStructure(), this);
       Platform.runLater(() -> catalogs.addAll(cds));
     }).start();
     extConfFactory.setExtendedConfigType(session.getExtendedConfig());

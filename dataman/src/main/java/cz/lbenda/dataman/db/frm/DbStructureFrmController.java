@@ -95,6 +95,7 @@ public class DbStructureFrmController {
     treeView.setShowRoot(false);
     treeView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
       TreeItem item = (TreeItem) treeView.getSelectionModel().getSelectedItem();
+      if (item == null) { return; }
       if (item.getValue() instanceof TableDesc) { selectedTable.setValue((TableDesc) item.getValue()); }
       else if (item.getValue() instanceof ColumnDesc) {
         selectedTable.setValue(((ColumnDesc) item.getValue()).getTableDesc()); }
@@ -105,7 +106,11 @@ public class DbStructureFrmController {
       if (event.getClickCount() == 2) {
         TreeItem<TableDesc> item = (TreeItem<TableDesc>) treeView.getSelectionModel().getSelectedItem();
         if (item.getValue() instanceof TableDesc || item.getValue() == null) {
-          tableShower.accept(item.getValue());
+          TableDesc tableDesc = (TableDesc) item.getValue();
+          if (tableDesc.getDbConfig().getConnectionProvider().isConnected() ||
+              ConnectionProvider.notConnectedDialog(tableDesc.getDbConfig())) {
+            tableShower.accept(item.getValue());
+          }
         }
       }
     });

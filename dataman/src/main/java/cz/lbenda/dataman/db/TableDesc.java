@@ -18,6 +18,7 @@ package cz.lbenda.dataman.db;
 import cz.lbenda.common.AbstractHelper;
 import cz.lbenda.rcp.action.AbstractSavable;
 import cz.lbenda.dataman.schema.exconf.AuditType;
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -184,9 +185,16 @@ public class TableDesc extends AbstractSavable implements Comparable<TableDesc> 
   /** Reload all data from database - remove changes as part of */
   public void reloadRowsAction() {
     getRows().clear();
-    dbConfig.getReader().readTableData(this, -1, -1).forEach(row -> getRows().add(row));
-    this.getQueryRow().setSQL(String.format("select * from \"%s\".\"%s\"", getSchema().getName(), getName()));
-    this.loaded.setValue(Boolean.TRUE);
+    if (dbConfig.getConnectionProvider() == null ||
+        !dbConfig.getConnectionProvider().isConnected()) {
+      ConnectionProvider.notConnectedDialog(dbConfig);
+    }
+    if (dbConfig.getConnectionProvider() != null &&
+        dbConfig.getConnectionProvider().isConnected()) {
+      dbConfig.getReader().readTableData(this, -1, -1).forEach(row -> getRows().add(row));
+      this.getQueryRow().setSQL(String.format("select * from \"%s\".\"%s\"", getSchema().getName(), getName()));
+      this.loaded.setValue(Boolean.TRUE);
+    }
   }
 
   /** Save all changes to database */

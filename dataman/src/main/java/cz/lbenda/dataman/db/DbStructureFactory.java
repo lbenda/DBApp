@@ -325,7 +325,7 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
   public void onDBAppDataSourceException(Exception e) {
   }
 
-  public static List<CatalogDesc> loadDatabaseStructureFromXML(DatabaseStructureType databaseStructure) {
+  public static List<CatalogDesc> loadDatabaseStructureFromXML(DatabaseStructureType databaseStructure, DbConfig dbConfig) {
     List<CatalogDesc> result = new ArrayList<>();
     if (databaseStructure == null) { return result; }
     Map<Object, TableDesc> tableDescFromTableType = new HashMap<>();
@@ -339,6 +339,7 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
         catalogDesc.getSchemas().add(schemaDesc);
         schemaType.getTable().forEach(tableType -> {
           TableDesc tableDesc = new TableDesc(schemaDesc, tableType.getTableType(), tableType.getName());
+          tableDesc.setDbConfig(dbConfig);
           tableDescFromTableType.put(tableType, tableDesc);
           schemaDesc.getTables().add(tableDesc);
           tableType.getColumn().forEach(columnType -> {

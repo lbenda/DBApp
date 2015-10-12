@@ -19,9 +19,12 @@ import cz.lbenda.common.Tuple2;
 import cz.lbenda.dataman.User;
 import cz.lbenda.dataman.db.dialect.SQLDialect;
 import cz.lbenda.rcp.action.SavableRegistry;
+import cz.lbenda.rcp.localization.Message;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +32,7 @@ import javax.annotation.Nonnull;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 27.9.15.
@@ -36,6 +40,11 @@ import java.util.function.Consumer;
 public class ConnectionProvider implements SQLExecutor {
 
   private static final Logger LOG = LoggerFactory.getLogger(ConnectionProvider.class);
+
+  @Message
+  public static final String notConnectedDialog_title = "The database %s ins't connected";
+  @Message
+  public static final String notConnectedDialog_header = "Would you connect the database %s?";
 
   private DbConfig dbConfig;
   private DatamanDataSource dataSource = null;
@@ -105,5 +114,27 @@ public class ConnectionProvider implements SQLExecutor {
       LOG.debug("The sql fall down", e);
       consumer.accept(new Tuple2<>(null, e));
     }
+  }
+
+  /** Show dialog with information for user the connection isn't establish */
+  public static boolean notConnectedDialog(DbConfig dbConfig) {
+    Dialog<Boolean> dialog = new Dialog<>();
+    dialog.setResizable(false);
+    dialog.setTitle(String.format(notConnectedDialog_title, dbConfig.getId()));
+    dialog.setHeaderText(String.format(notConnectedDialog_header, dbConfig.getId()));
+
+    ButtonType btNo = ButtonType.NO;
+    ButtonType btYes = ButtonType.YES;
+    dialog.getDialogPane().getButtonTypes().addAll(btNo, btYes);
+
+    dialog.setResultConverter(b -> b == btYes);
+    Optional<Boolean> result = dialog.showAndWait();
+    if (result.isPresent()) {
+      if (result.get()) {
+        dbConfig.reloadStructure();
+        return true;
+      }
+    }
+    return false;
   }
 }
