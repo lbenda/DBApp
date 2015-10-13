@@ -32,14 +32,12 @@ public class FilterableTableColumn<S, T> extends TableColumn<S, T> {
   private HBox leftIndicatorPane = new HBox();
   /** Indicator pane on right side of title */
   private HBox rightIndicatorPane = new HBox();
-  /** bPane */
-  private BorderPane bPane = new BorderPane();
   /** Title of column */
   private Label title = new Label();
 
   public FilterableTableColumn() {
     super();
-    bPane = new BorderPane();
+    BorderPane bPane = new BorderPane();
     leftIndicatorPane.setAlignment(Pos.CENTER_LEFT);
     rightIndicatorPane.setAlignment(Pos.CENTER_RIGHT);
     bPane.setLeft(leftIndicatorPane);
@@ -65,14 +63,22 @@ public class FilterableTableColumn<S, T> extends TableColumn<S, T> {
 
   /** Set indicator to left pane indicator */
   @SuppressWarnings("unused")
-  public void addLeftIndicator(Node indicator) { leftIndicatorPane.getChildren().add(indicator); }
+  public void addLeftIndicator(Node indicator) {
+    if (!leftIndicatorPane.getChildren().contains(indicator)) {
+      leftIndicatorPane.getChildren().add(indicator);
+    }
+  }
   /** Remove indicator from left indicator pane */
   @SuppressWarnings("unused")
   public void removeLeftIndicator(Node indicator) { leftIndicatorPane.getChildren().remove(indicator); }
 
   /** Set indicator to right pane indicator */
   @SuppressWarnings("unused")
-  public void addRightIndicator(Node indicator) { rightIndicatorPane.getChildren().add(indicator); }
+  public void addRightIndicator(Node indicator) {
+    if (!rightIndicatorPane.getChildren().contains(indicator)) {
+      rightIndicatorPane.getChildren().add(indicator);
+    }
+  }
   /** Remove indicator from right indicator pane */
   @SuppressWarnings("unused")
   public void removeRightIndicator(Node indicator) { rightIndicatorPane.getChildren().remove(indicator); }
