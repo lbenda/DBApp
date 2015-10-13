@@ -46,8 +46,10 @@ public class CatalogDesc implements Comparable<CatalogDesc> {
 
   /** Return schema by name if exist */
   public SchemaDesc getSchema(@Nonnull String name) {
-    List<SchemaDesc> sch = schemas.stream().filter(schema -> name.equals(schema.getName())).collect(Collectors.toList());
-    return sch.size() == 0 ? null : sch.get(0);
+    synchronized (schemas) {
+      List<SchemaDesc> sch = schemas.stream().filter(schema -> name.equals(schema.getName())).collect(Collectors.toList());
+      return sch.size() == 0 ? null : sch.get(0);
+    }
   }
 
   public CatalogDesc() {}

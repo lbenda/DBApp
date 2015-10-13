@@ -185,7 +185,9 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
         generatePKColumns(catalogs.values(), dmd);
         generateStructureForeignKeys(catalogs, dmd);
         dbConfig.getCatalogs().clear();
-        Platform.runLater(() -> dbConfig.getCatalogs().addAll(catalogs.values()));
+        if (Platform.isAccessibilityActive()) {
+          Platform.runLater(() -> dbConfig.getCatalogs().addAll(catalogs.values()));
+        } else { dbConfig.getCatalogs().addAll(catalogs.values()); }
         StatusHelper.getInstance().progressFinish(this, STEP_FINISH);
       }
     } catch (SQLException e) {

@@ -37,13 +37,15 @@ public class SchemaDesc implements Comparable<SchemaDesc> {
   public void setHidden(boolean hidden) { this.hidden.set(hidden); }
   public BooleanProperty hiddenProperty() { return this.hidden; }
 
-  private ObservableList<TableDesc> tables = FXCollections.observableArrayList();
+  private final ObservableList<TableDesc> tables = FXCollections.observableArrayList();
   public ObservableList<TableDesc> getTables() { return tables; }
 
   /** Return table description by name */
   public TableDesc getTable(@Nonnull String name) {
-    List<TableDesc> tds = tables.stream().filter(table -> name.equals(table.getName())).collect(Collectors.toList());
-    return tds.size() == 0 ? null : tds.get(0);
+    synchronized (tables) {
+      List<TableDesc> tds = tables.stream().filter(table -> name.equals(table.getName())).collect(Collectors.toList());
+      return tds.size() == 0 ? null : tds.get(0);
+    }
   }
 
   public SchemaDesc() {}

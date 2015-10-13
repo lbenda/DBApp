@@ -18,7 +18,6 @@ package cz.lbenda.dataman.db;
 import cz.lbenda.common.AbstractHelper;
 import cz.lbenda.rcp.action.AbstractSavable;
 import cz.lbenda.dataman.schema.exconf.AuditType;
-import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;

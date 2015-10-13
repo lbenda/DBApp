@@ -19,6 +19,7 @@ import cz.lbenda.common.StringConverterHolder;
 import cz.lbenda.dataman.db.*;
 import cz.lbenda.dataman.db.dialect.ColumnType;
 import cz.lbenda.rcp.IconFactory;
+import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
@@ -79,10 +80,12 @@ public class DbStructureFrmController {
   private final ListChangeListener<CatalogDesc> catalogChangeListener = change -> {
     while (change.next()) {
       if (change.wasAdded()) {
-        TreeItem root = new TreeItem();
-        treeView.setRoot(root);
-        DbConfig dbConfig = dbConfigProperty.getValue();
-        createCatalogTreeItems(root, dbConfig);
+        Platform.runLater(() -> {
+          TreeItem root = new TreeItem();
+          treeView.setRoot(root);
+          DbConfig dbConfig = dbConfigProperty.getValue();
+          createCatalogTreeItems(root, dbConfig);
+        });
       }
     }
   };

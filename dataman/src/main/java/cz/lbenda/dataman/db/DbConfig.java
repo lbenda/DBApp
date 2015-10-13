@@ -59,8 +59,10 @@ public class DbConfig {
   public final ObservableList<CatalogDesc> getCatalogs() { return catalogs; }
   /** Return catalog by name */
   public final CatalogDesc getCatalog(@Nonnull String name) {
-    List<CatalogDesc> cats = catalogs.stream().filter(catalogDesc -> name.equals(catalogDesc.getName())).collect(Collectors.toList());
-    return cats.size() == 0 ? null : cats.get(0);
+    synchronized (catalogs) {
+      List<CatalogDesc> cats = catalogs.stream().filter(catalogDesc -> name.equals(catalogDesc.getName())).collect(Collectors.toList());
+      return cats.size() == 0 ? null : cats.get(0);
+    }
   }
 
   /** SQLDialect for this db configuration */
