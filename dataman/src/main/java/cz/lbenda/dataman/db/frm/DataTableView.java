@@ -92,7 +92,7 @@ public class DataTableView extends FilterableTableView<RowDesc> {
       case TIMESTAMP:
         return 20 * nWidth;
       default:
-        double prefSize = column.getSize() / Math.log(column.getSize());
+        double prefSize = column.getSize() == 1 ? 1 : column.getSize() / Math.log(column.getSize());
         if (prefSize > 100) {
           prefSize = 100;
         } else if (prefSize < 10) {
