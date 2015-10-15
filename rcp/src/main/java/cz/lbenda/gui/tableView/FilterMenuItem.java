@@ -244,6 +244,7 @@ public class FilterMenuItem extends MenuItem {
   /** Init menu item before is showed to user */
   @SuppressWarnings("unchecked")
   public void beforeOpenInit() {
+
     StringConverter converter = filterableTableView.stringConverter(tableColumn);
     items.clear();
     existingItemNames.clear();

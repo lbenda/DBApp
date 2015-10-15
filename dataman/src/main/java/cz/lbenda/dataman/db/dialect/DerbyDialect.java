@@ -16,6 +16,7 @@
 package cz.lbenda.dataman.db.dialect;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 5.10.15. */
+@SuppressWarnings("unused")
 public class DerbyDialect implements SQLDialect {
 
   @Override

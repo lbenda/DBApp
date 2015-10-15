@@ -151,13 +151,11 @@ public class DataTableView extends FilterableTableView<RowDesc> {
     //noinspection unchecked
     return getItems().stream().map(row -> (T) row.getColumnValue(columnColumns.get(tableColumn)));
   }
-
   @Override
   public <T> StringConverter<T> stringConverter(TableColumn<RowDesc, ?> tableColumn) {
     //noinspection unchecked
     return columnColumns.get(tableColumn).getStringConverter();
   }
-
   @Override
   public <T> T valueForColumn(@Nonnull RowDesc row, @Nonnull TableColumn<RowDesc, ?> tableColumn) {
     //noinspection unchecked

@@ -20,6 +20,7 @@ import cz.lbenda.dataman.db.ColumnDesc;
 import cz.lbenda.dataman.db.DbStructureFactory;
 import cz.lbenda.dataman.db.TableDesc;
 import cz.lbenda.dataman.db.dialect.ColumnType;
+import cz.lbenda.gui.tableView.SimpleTableView;
 import cz.lbenda.rcp.localization.Message;
 import javafx.beans.property.*;
 import javafx.fxml.FXML;
@@ -59,7 +60,7 @@ public class DbTableStructureFrmController implements Initializable {
   @FXML
   private TextArea taComment;
   @FXML
-  private TableView<ColumnDesc> tvColumns;
+  private SimpleTableView<ColumnDesc> tvColumns;
   @FXML
   private TableColumn<ColumnDesc, Boolean> tcColumnsPK;
   @FXML
@@ -79,7 +80,7 @@ public class DbTableStructureFrmController implements Initializable {
   @FXML
   private TableColumn<ColumnDesc, Boolean> tcColumnsEditable;
   @FXML
-  private TableView<DbStructureFactory.ForeignKey> tvForeignKeys;
+  private SimpleTableView<DbStructureFactory.ForeignKey> tvForeignKeys;
 
   @FXML
   private TableColumn<DbStructureFactory.ForeignKey, String> tcForeignKeyInOut;
@@ -173,16 +174,16 @@ public class DbTableStructureFrmController implements Initializable {
 
   /** Set columns for columns part */
   private void columnsSet(TableDesc tableDesc) {
-    tvColumns.getItems().clear();
-    if (tableDesc != null) { tvColumns.getItems().addAll(tableDesc.getColumns()); }
-    tpColumns.setText(String.format(COLUMNS_PANEL_TITLE, tvColumns.getItems().size()));
+    tvColumns.getRows().clear();
+    if (tableDesc != null) { tvColumns.getRows().addAll(tableDesc.getColumns()); }
+    tpColumns.setText(String.format(COLUMNS_PANEL_TITLE, tvColumns.getRows().size()));
   }
 
   /** Set columns for foreign keys part */
   private void foreignKeysSet(TableDesc tableDesc) {
-    tvForeignKeys.getItems().clear();
-    if (tableDesc != null) { tvForeignKeys.getItems().addAll(tableDesc.getForeignKeys()); }
-    tpForeignKeys.setText(String.format(FOREIGN_KEY_PANEL_TITLE, tvForeignKeys.getItems().size()));
+    tvForeignKeys.getRows().clear();
+    if (tableDesc != null) { tvForeignKeys.getRows().addAll(tableDesc.getForeignKeys()); }
+    tpForeignKeys.setText(String.format(FOREIGN_KEY_PANEL_TITLE, tvForeignKeys.getRows().size()));
   }
 
   /** Set table description which is currently showed */

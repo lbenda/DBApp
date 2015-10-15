@@ -43,6 +43,7 @@ public abstract class FilterableTableView<S> extends TableView<S> {
   private ObjectProperty<Comparator<? super S>> sortProperty = new SimpleObjectProperty<>();
 
   public FilterableTableView() {
+    setItems(sortedList);
     filters.addListener((ListChangeListener<Predicate<S>>) change ->
         filteredList.setPredicate(object -> filters.stream().allMatch(p -> p.test(object))));
     sortProperty.addListener((observable, oldValue, newValue) -> sortedList.setComparator(newValue));
@@ -87,13 +88,13 @@ public abstract class FilterableTableView<S> extends TableView<S> {
     return items;
   }
 
+  /** List with all predicates which is used as filter */
+  public ObservableList<Predicate<S>> filters() { return filters; }
+
   /** Return stream with values from column which are in rows in given column */
   public abstract <T> Stream<T> valuesForColumn(TableColumn<S, ?> tableColumn);
   /** String converter for given column */
   public abstract <T> StringConverter<T> stringConverter(TableColumn<S, ?> tableColumn);
   /** Return value for given column */
   public abstract <T> T valueForColumn(S row, TableColumn<S, ?> tableColumn);
-
-  /** List with all predicates which is used as filter */
-  public ObservableList<Predicate<S>> filters() { return filters; }
 }

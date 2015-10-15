@@ -4,6 +4,7 @@
 <?import javafx.scene.text.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?improt cz.lbenda.gui.tableView.* ?>
 
 <Accordion maxHeight="Infinity" maxWidth="Infinity" minHeight="-Infinity" minWidth="-Infinity"
            xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/8"
@@ -39,40 +40,40 @@
       </VBox>
     </TitledPane>
     <TitledPane fx:id="tpColumns" prefHeight="200.0" prefWidth="200.0" text="Columns">
-      <TableView fx:id="tvColumns">
+      <cz.lbenda.gui.tableView.SimpleTableView fx:id="tvColumns">
         <columns>
-          <TableColumn fx:id="tcColumnsPK" maxWidth="800.0" prefWidth="29.0" text="PK"/>
-          <TableColumn fx:id="tcColumnsName" prefWidth="275.0" text="Name"/>
-          <TableColumn fx:id="tcColumnsComment" prefWidth="230.0" text="Comment"/>
-          <TableColumn fx:id="tcColumnsType" prefWidth="120.0" text="Type"/>
-          <TableColumn fx:id="tcColumnsNull" maxWidth="1000.0" prefWidth="103.0" text="Null"/>
-          <TableColumn fx:id="tcColumnsLength" prefWidth="66.0" text="Length"/>
-          <TableColumn fx:id="tcColumnsScale" prefWidth="52.0" text="Scale"/>
-          <TableColumn fx:id="tcColumnsDefault" prefWidth="175.0" text="Default"/>
-          <TableColumn fx:id="tcColumnsEditable" maxWidth="2000.0" prefWidth="163.0" text="Editable"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcColumnsPK" maxWidth="800.0" prefWidth="29.0" text="PK"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcColumnsName" prefWidth="275.0" text="Name"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcColumnsComment" prefWidth="230.0" text="Comment"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcColumnsType" prefWidth="120.0" text="Type"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcColumnsNull" maxWidth="1000.0" prefWidth="103.0" text="Null"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcColumnsLength" prefWidth="66.0" text="Length"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcColumnsScale" prefWidth="52.0" text="Scale"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcColumnsDefault" prefWidth="175.0" text="Default"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcColumnsEditable" maxWidth="2000.0" prefWidth="163.0" text="Editable"/>
         </columns>
         <columnResizePolicy>
           <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
         </columnResizePolicy>
-      </TableView>
+      </cz.lbenda.gui.tableView.SimpleTableView>
     </TitledPane>
     <TitledPane fx:id="tpForeignKeys" animated="false" text="Foreign keys">
-      <TableView fx:id="tvForeignKeys" prefHeight="200.0" prefWidth="200.0">
+      <cz.lbenda.gui.tableView.SimpleTableView fx:id="tvForeignKeys" prefHeight="200.0" prefWidth="200.0">
         <columns>
-          <TableColumn fx:id="tcForeignKeyInOut" maxWidth="2000.0" prefWidth="75.0" text="In/Out"/>
-          <TableColumn fx:id="tcForeignKeyName" prefWidth="75.0" text="Name"/>
-          <TableColumn fx:id="tcForeignKeyCatalog" prefWidth="150.0" text="Catalog"/>
-          <TableColumn fx:id="tcForeignKeySchema" prefWidth="75.0" text="Schema"/>
-          <TableColumn fx:id="tcForeignKeyTable" prefWidth="75.0" text="Table"/>
-          <TableColumn fx:id="tcForeignKeyPKColumns" prefWidth="116.0" text="PK Columns"/>
-          <TableColumn fx:id="tcForeignKeyFKColumns" prefWidth="136.0" text="FK Columns"/>
-          <TableColumn fx:id="tcForeignKeyUpdate" prefWidth="75.0" text="Update"/>
-          <TableColumn fx:id="tcForeignKeyDelete" prefWidth="75.0" text="Delete"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcForeignKeyInOut" maxWidth="2000.0" prefWidth="75.0" text="In/Out"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcForeignKeyName" prefWidth="75.0" text="Name"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcForeignKeyCatalog" prefWidth="150.0" text="Catalog"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcForeignKeySchema" prefWidth="75.0" text="Schema"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcForeignKeyTable" prefWidth="75.0" text="Table"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcForeignKeyPKColumns" prefWidth="116.0" text="PK Columns"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcForeignKeyFKColumns" prefWidth="136.0" text="FK Columns"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcForeignKeyUpdate" prefWidth="75.0" text="Update"/>
+          <cz.lbenda.gui.tableView.FilterableTableColumn fx:id="tcForeignKeyDelete" prefWidth="75.0" text="Delete"/>
         </columns>
         <columnResizePolicy>
           <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
         </columnResizePolicy>
-      </TableView>
+      </cz.lbenda.gui.tableView.SimpleTableView>
     </TitledPane>
     <TitledPane animated="false" text="Indexies" />
     <TitledPane animated="false" text="Privileges" />

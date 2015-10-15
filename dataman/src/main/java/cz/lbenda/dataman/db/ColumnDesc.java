@@ -108,15 +108,6 @@ public class ColumnDesc {
     this.autoincrement = confBool(dialect.columnAutoIncrement(), rs);
     this.generated = confBool(dialect.columnGenerated(), rs) || this.autoincrement && !dialect.isIdentityEditable();
     this.dataType = dialect.columnTypeFromSQL(confValue(dialect.columnDateType(), rs), columnTypeName, this.size);
-
-    /*
-    if ("DATAMAN".equals(this.schema)) {
-      System.out.println(this.name
-          + ", SQLType: " + confValue(dialect.columnDateType(), rs)
-          + ", Column type name: " + this.columnTypeName
-          + ", Identified type: " + this.dataType);
-    }
-    */
   }
 
   public ColumnDesc(final TableDesc td, final String name, final String label, final ColumnType dataType,
