@@ -106,7 +106,7 @@ public class ColumnDesc {
     this.columnTypeName = confValue(dialect.columnTypeName(), rs);
     this.nullable = confBool(dialect.columnNullable(), rs);
     this.autoincrement = confBool(dialect.columnAutoIncrement(), rs);
-    this.generated = confBool(dialect.columnGenerated(), rs);
+    this.generated = confBool(dialect.columnGenerated(), rs) || this.autoincrement && !dialect.isIdentityEditable();
     this.dataType = dialect.columnTypeFromSQL(confValue(dialect.columnDateType(), rs), columnTypeName, this.size);
 
     /*

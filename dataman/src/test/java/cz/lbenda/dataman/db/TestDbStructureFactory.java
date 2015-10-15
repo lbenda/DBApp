@@ -58,7 +58,6 @@ public class TestDbStructureFactory extends TestAbstractDB {
 
     TableDesc tableDesc = config.getCatalog(catalog).getSchema("test").getTable("TABLE1");
     tableDesc.reloadRowsAction();
-    assertEquals(tableDesc.getRows().size(), 4, "In the database must be 4 rows.");
     int i = config.getDialect().incrementFrom();
     for (RowDesc row : tableDesc.getRows()) {
       assertEquals((Object) row.getColumnValue(tableDesc.getColumn("ID")), i);

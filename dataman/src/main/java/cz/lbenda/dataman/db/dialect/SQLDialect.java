@@ -65,6 +65,9 @@ public interface SQLDialect {
   default String fkUpdateRule() { return "UPDATE_RULE"; }
   default String fkDeleteRule() { return "DELETE_RULE"; }
 
+  default boolean isIdentityEditable() { return true; }
+
+
   /** Set of names which is used to describe identity column */
   default Set<String> nameOfGeneratedIdentityColumn() { return new HashSet<>(Arrays.asList(new String[] {
       "SCOPE_IDENTITY()", "IDENTITY()", "1" })); }

@@ -25,4 +25,6 @@ public class DerbyDialect implements SQLDialect {
 
   @Override
   public byte incrementFrom() { return 0; }
+  @Override
+  public boolean isIdentityEditable() { return false; }
 }

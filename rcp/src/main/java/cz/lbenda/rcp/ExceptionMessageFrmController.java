@@ -17,6 +17,7 @@ package cz.lbenda.rcp;
 
 import cz.lbenda.common.Tuple2;
 import cz.lbenda.rcp.localization.Message;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.control.ButtonType;
@@ -88,7 +89,7 @@ public class ExceptionMessageFrmController {
     dialog.showAndWait();
   }
 
-  public static void showException(final Throwable exception) {
+  private static void showDialog(final Throwable exception) {
     Dialog<Object> dialog = new Dialog<>();
     dialog.setResizable(true);
     final Tuple2<Parent, ExceptionMessageFrmController> tuple = createNewInstance();
@@ -106,5 +107,10 @@ public class ExceptionMessageFrmController {
     dialog.getDialogPane().setPadding(new Insets(0, 0, 0, 0));
 
     dialog.showAndWait();
+  }
+
+  public static void showException(final Throwable exception) {
+    if (Platform.isFxApplicationThread())  { showDialog(exception); }
+    else { Platform.runLater(() -> showDialog(exception)); }
   }
 }
