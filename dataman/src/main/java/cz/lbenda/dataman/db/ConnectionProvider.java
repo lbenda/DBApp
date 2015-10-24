@@ -16,6 +16,7 @@
 package cz.lbenda.dataman.db;
 
 import cz.lbenda.common.Tuple2;
+import cz.lbenda.dataman.Constants;
 import cz.lbenda.dataman.User;
 import cz.lbenda.dataman.db.dialect.SQLDialect;
 import cz.lbenda.rcp.action.SavableRegistry;
@@ -118,23 +119,28 @@ public class ConnectionProvider implements SQLExecutor {
 
   /** Show dialog with information for user the connection isn't establish */
   public static boolean notConnectedDialog(DbConfig dbConfig) {
-    Dialog<Boolean> dialog = new Dialog<>();
-    dialog.setResizable(false);
-    dialog.setTitle(String.format(notConnectedDialog_title, dbConfig.getId()));
-    dialog.setHeaderText(String.format(notConnectedDialog_header, dbConfig.getId()));
+    if (Constants.HEADLESS) {
+      LOG.error(String.format(notConnectedDialog_title, dbConfig.getId()));
+      return false;
+    } else {
+      Dialog<Boolean> dialog = new Dialog<>();
+      dialog.setResizable(false);
+      dialog.setTitle(String.format(notConnectedDialog_title, dbConfig.getId()));
+      dialog.setHeaderText(String.format(notConnectedDialog_header, dbConfig.getId()));
 
-    ButtonType btNo = ButtonType.NO;
-    ButtonType btYes = ButtonType.YES;
-    dialog.getDialogPane().getButtonTypes().addAll(btNo, btYes);
+      ButtonType btNo = ButtonType.NO;
+      ButtonType btYes = ButtonType.YES;
+      dialog.getDialogPane().getButtonTypes().addAll(btNo, btYes);
 
-    dialog.setResultConverter(b -> b == btYes);
-    Optional<Boolean> result = dialog.showAndWait();
-    if (result.isPresent()) {
-      if (result.get()) {
-        dbConfig.reloadStructure();
-        return true;
+      dialog.setResultConverter(b -> b == btYes);
+      Optional<Boolean> result = dialog.showAndWait();
+      if (result.isPresent()) {
+        if (result.get()) {
+          dbConfig.reloadStructure();
+          return true;
+        }
       }
+      return false;
     }
-    return false;
   }
 }

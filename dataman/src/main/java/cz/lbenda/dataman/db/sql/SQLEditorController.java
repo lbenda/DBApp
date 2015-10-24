@@ -44,7 +44,7 @@ import java.util.function.Consumer;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 6.9.15.
  * Text editor with another part for SQL editing and getting result */
-public class SQLEditorController {
+public class SQLEditorController implements SQLSExecutor.SQLSExecutorConsumer {
 
   private static Logger LOG = LoggerFactory.getLogger(SQLEditorController.class);
   private static String HTML;
@@ -92,11 +92,7 @@ public class SQLEditorController {
   public String[] getExecutedText() {
     String text = textEditor.getSelectedText();
     if (text == null || "".equals(text)) { text = textEditor.getText(); }
-    if (StringUtils.isBlank(text)) { return new String[0]; }
-    String[] lines = text.split("\n");
-    StringBuilder sb = new StringBuilder();
-    for (String line : lines) { sb.append(line.trim()).append("\n"); }
-    return sb.toString().split(";\n");
+    return SQLSExecutor.splitSQLS(text);
   }
 
   private AnchorPane node = new AnchorPane();

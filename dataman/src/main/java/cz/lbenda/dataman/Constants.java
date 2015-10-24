@@ -33,6 +33,8 @@ public class Constants {
   public static String CSV_EXTENSION = "csv";
   public static String TXT_EXTENSION = "txt";
   public static String EXPORT_SHEET_NAME = "Dataman";
+  /** The application is executed headless in console mode */
+  public static boolean HEADLESS = false;
 
   @Message
   public static final String CSV_NEW_LINE_SEPARATOR = "\n";

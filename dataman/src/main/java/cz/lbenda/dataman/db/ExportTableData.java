@@ -105,6 +105,19 @@ public class ExportTableData {
     }
   }
 
+  public static void writeSqlQueryRows(SpreadsheetFormat format, SQLQueryRows sqlQueryRows, String sheetName,
+                                       OutputStream outputStream) throws IOException {
+    switch (format) {
+      case XLSX: writeSqlQueryRowsToXLSX(sqlQueryRows, sheetName, outputStream); break;
+      case XLS: writeSqlQueryRowsToXLS(sqlQueryRows, sheetName, outputStream); break;
+      case XMLv1: writeSqlQueryRowsToXMLv1(sqlQueryRows, outputStream); break;
+      case XMLv2: writeSqlQueryRowsToXMLv2(sqlQueryRows, outputStream); break;
+      case CSV: writeSqlQueryRowsToCSV(sqlQueryRows, new OutputStreamWriter(outputStream)); break;
+      case TXT: writeSqlQueryRowsToTXT(sqlQueryRows, outputStream); break;
+      case ODS: writeSqlQueryRowsToODS(sqlQueryRows, sheetName, outputStream); break;
+    }
+  }
+
   public static void writeSqlQueryRows(String fileName, SQLQueryRows sqlQueryRows, String sheetName, OutputStream outputStream) throws IOException {
     String extension = FilenameUtils.getExtension(fileName);
     List<SpreadsheetFormat> formatList = SpreadsheetFormat.byExtension(extension);
@@ -113,15 +126,7 @@ public class ExportTableData {
     else if (formatList.size() == 1) { format = formatList.get(0); }
     else { format = DialogHelper.chooseSingOption(CHOOSE_FORMAT, formatList); }
     if (format == null) { return; }
-    switch (format) {
-      case XLSX: writeSqlQueryRowsToXLSX(sqlQueryRows, sheetName, outputStream); break;
-      case XLS: writeSqlQueryRowsToXLS(sqlQueryRows, sheetName, outputStream); break;
-      case XMLv1: writeSqlQueryRowsToXMLv1(sqlQueryRows, outputStream); break;
-      case XMLv2: writeSqlQueryRowsToXMLv2(sqlQueryRows, outputStream); break;
-      case CSV: writeSqlQueryRowsToCSV(sqlQueryRows, outputStream); break;
-      case TXT: writeSqlQueryRowsToTXT(sqlQueryRows, outputStream); break;
-      case ODS: writeSqlQueryRowsToODS(sqlQueryRows, sheetName, outputStream); break;
-    }
+    writeSqlQueryRows(format, sqlQueryRows, sheetName, outputStream);
   }
 
   public static void writeSqlQueryRows(@Nonnull TemplateFormat format, @Nonnull SQLQueryRows sqlQueryRows,
@@ -204,10 +209,9 @@ public class ExportTableData {
 
   /** Write rows to CSV file
    * @param sqlQueryRows rows
-   * @param outputStream stream where are data write */
-  public static void writeSqlQueryRowsToCSV(SQLQueryRows sqlQueryRows, OutputStream outputStream) throws IOException {
+   * @param writer where are data */
+  public static void writeSqlQueryRowsToCSV(SQLQueryRows sqlQueryRows, Writer writer) throws IOException {
     CSVFormat csvFileFormat = CSVFormat.DEFAULT.withRecordSeparator(Constants.CSV_NEW_LINE_SEPARATOR);
-    Writer writer = new OutputStreamWriter(outputStream);
     CSVPrinter csvFilePrinter = new CSVPrinter(writer, csvFileFormat);
     csvFilePrinter.printRecord(sqlQueryRows.getMetaData().getColumns().stream().map(ColumnDesc::getName).toArray());
     for (RowDesc row : sqlQueryRows.getRows()) {

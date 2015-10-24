@@ -61,9 +61,12 @@ public class DatamanApp extends Application {
 
   private static final Logger LOG = LoggerFactory.getLogger(DatamanApp.class);
 
-  private static void commandLine(String[] args) {
+  private static CommandLine commandLine(String[] args) {
     Options options = new Options();
     options.addOption("mode", true, "Application mode: development, test");
+    options.addOption("i", "script", true, "Input script which is executes");
+    options.addOption("s", "scripts", true, "Input scripts which is executes separated by comma");
+    options.addOption("c", "config", true, "Name of configuration on which is executed script");
     options.addOption("help", "h", false, "Show this help");
     CommandLineParser parser = new DefaultParser();
     try {
@@ -76,15 +79,18 @@ public class DatamanApp extends Application {
           Constants.IS_IN_DEVELOP_MODE = true;
         }
       }
-
+      cz.lbenda.dataman.Constants.HEADLESS = cmd.hasOption("i") || cmd.hasOption("s");
+      return cmd;
     } catch (ParseException e) {
       LOG.error("Problem with parse command line arguments", e);
       (new HelpFormatter()).printHelp("dataman", options);
+      System.exit(1);
+      throw new RuntimeException(e);
     }
   }
 
   public static void main(String[] args) {
-    commandLine(args);
+    CommandLine cmd = commandLine(args);
     ConfigurationRW.createInstance("dataman", null);
     PropertyResourceBundle prb = null;
     try {
@@ -94,7 +100,13 @@ public class DatamanApp extends Application {
     }
     MessageFactory.createInstance(prb);
     MessageFactory.getInstance().initializePackage("cz.lbenda");
-    launch(args);
+
+    if (cz.lbenda.dataman.Constants.HEADLESS) {
+      DatamanHeadless headless = new DatamanHeadless();
+      headless.launch(cmd);
+    } else {
+      launch(args);
+    }
   }
 
   private BorderPane mainPane;
