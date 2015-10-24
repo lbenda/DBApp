@@ -18,20 +18,28 @@ package cz.lbenda.dataman.db;
 import cz.lbenda.common.Constants;
 import cz.lbenda.dataman.db.dialect.*;
 
+import java.io.InputStream;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import cz.lbenda.dataman.schema.dataman.*;
-import cz.lbenda.dataman.schema.dataman.ColumnType;
 import cz.lbenda.dataman.schema.datatypes.DataTypeType;
+import cz.lbenda.dataman.schema.dbstructure.*;
+import cz.lbenda.dataman.schema.dbstructure.ColumnType;
+import cz.lbenda.rcp.ExceptionMessageFrmController;
 import cz.lbenda.rcp.StatusHelper;
 import cz.lbenda.rcp.localization.Message;
 import javafx.application.Platform;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileSystemManager;
+import org.apache.commons.vfs2.VFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import javax.xml.bind.*;
 
 /** Class for reading data structure from JDBC. The first method which must be call is
  * @author Lukas Benda <lbenda at lbenda.cz> */
@@ -92,8 +100,7 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
     }
   }
 
-  /** Method return data which are in joined table. The binding is defined by
-   * <b>fk</b>.
+  /** Method return data which are in joined table. The binding is defined by <b>fk</b>.
    * @param fk foreign key which describe connection between tables
    * @param selectedRow all values of selected row
    * @return result set or null */
@@ -327,55 +334,94 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
   public void onDBAppDataSourceException(Exception e) {
   }
 
-  public static List<CatalogDesc> loadDatabaseStructureFromXML(DatabaseStructureType databaseStructure, DbConfig dbConfig) {
-    List<CatalogDesc> result = new ArrayList<>();
-    if (databaseStructure == null) { return result; }
-    Map<Object, TableDesc> tableDescFromTableType = new HashMap<>();
-    Map<Object, ColumnDesc> columnDescFromColumnType = new HashMap<>();
+  public static void loadDatabaseStructureFromXML(InputStream dbStructure, DbConfig dbConfig) {
+    try {
+      JAXBContext jc = JAXBContext.newInstance(cz.lbenda.dataman.schema.dbstructure.ObjectFactory.class);
+      Unmarshaller um = jc.createUnmarshaller();
+      Object ob = um.unmarshal(dbStructure);
+      if (ob instanceof JAXBElement && ((JAXBElement) ob).getValue() instanceof  DatabaseStructureType) {
+        //noinspection unchecked
+        loadDatabaseStructureFromXML(((JAXBElement<DatabaseStructureType>) ob).getValue(), dbConfig);
+      } else {
+        throw new RuntimeException("The file with database structure not contains XML with cached database structure.");
+      }
+    } catch (JAXBException e) {
+      LOG.error("Problem with read cached database structure configuration: " + e.toString(), e);
+      throw new RuntimeException("Problem with read cached database structure configuration: " + e.toString(), e);
+    }
+  }
 
-    databaseStructure.getCatalog().forEach(catalogType -> {
-      CatalogDesc catalogDesc = new CatalogDesc(catalogType.getName());
-      result.add(catalogDesc);
-      catalogType.getSchema().forEach(schemaType -> {
-        SchemaDesc schemaDesc = new SchemaDesc(catalogDesc, schemaType.getName());
-        catalogDesc.getSchemas().add(schemaDesc);
-        schemaType.getTable().forEach(tableType -> {
-          TableDesc tableDesc = new TableDesc(schemaDesc, tableType.getTableType(), tableType.getName());
-          tableDesc.setDbConfig(dbConfig);
-          tableDescFromTableType.put(tableType, tableDesc);
-          schemaDesc.getTables().add(tableDesc);
-          tableType.getColumn().forEach(columnType -> {
-            ColumnDesc columnDesc = new ColumnDesc(tableDesc,
-                columnType.getName(), columnType.getLabel(), dataTypeTypeToColumnType(columnType.getDataType()),
-                columnType.getSize(), columnType.getScale(), columnType.isNullable(), columnType.isAutoincrement(),
-                columnType.isGenerated(), columnType.getDefaultValue());
-            columnDescFromColumnType.put(columnType, columnDesc);
-            columnDesc.setPosition(tableDesc.getColumns().size() + 1);
-            columnDesc.setPK(columnType.isIsPK());
-            tableDesc.getColumns().add(columnDesc);
+  public static void loadDatabaseStructureFromXML(DatabaseStructureType databaseStructure, DbConfig dbConfig) {
+    if (databaseStructure == null) { return; }
+    if (!StringUtils.isBlank(databaseStructure.getSrc())) {
+      new Thread(() -> {
+        try {
+          FileSystemManager fsManager = VFS.getManager();
+          FileObject fileObject = fsManager.resolveFile((FileObject) null, databaseStructure.getSrc());
+          InputStream is = fileObject.getContent().getInputStream();
+          loadDatabaseStructureFromXML(is, dbConfig);
+        } catch (FileSystemException e) {
+          LOG.error("Problem with getting FS manager or read data from file", e);
+          ExceptionMessageFrmController.showException("Problem with getting FS manager or read data from file", e);
+        }
+      }).start();
+    } else {
+      new Thread(() -> {
+        dbConfig.getCatalogs().clear();
+        Map<Object, TableDesc> tableDescFromTableType = new HashMap<>();
+        Map<Object, ColumnDesc> columnDescFromColumnType = new HashMap<>();
+
+        databaseStructure.getCatalog().forEach(catalogType -> {
+          CatalogDesc catalogDesc = new CatalogDesc(catalogType.getName());
+          dbConfig.getCatalogs().add(catalogDesc);
+          catalogType.getSchema().forEach(schemaType -> {
+            SchemaDesc schemaDesc = new SchemaDesc(catalogDesc, schemaType.getName());
+            catalogDesc.getSchemas().add(schemaDesc);
+            schemaType.getTable().forEach(tableType -> {
+              TableDesc tableDesc = new TableDesc(schemaDesc, tableType.getTableType(), tableType.getName());
+              tableDesc.setDbConfig(dbConfig);
+              tableDescFromTableType.put(tableType, tableDesc);
+              schemaDesc.getTables().add(tableDesc);
+              tableType.getColumn().forEach(columnType -> {
+                ColumnDesc columnDesc = new ColumnDesc(tableDesc,
+                    columnType.getName(), columnType.getLabel(), dataTypeTypeToColumnType(columnType.getDataType()),
+                    columnType.getSize(), columnType.getScale(), columnType.isNullable(), columnType.isAutoincrement(),
+                    columnType.isGenerated(), columnType.getDefaultValue());
+                columnDescFromColumnType.put(columnType, columnDesc);
+                columnDesc.setPosition(tableDesc.getColumns().size() + 1);
+                columnDesc.setPK(columnType.isIsPK());
+                tableDesc.getColumns().add(columnDesc);
+              });
+            });
           });
         });
-      });
-    });
 
-    databaseStructure.getCatalog().forEach(catalogType -> catalogType.getSchema().forEach(schemaType -> schemaType.getTable().forEach(tableType ->
-        tableType.getForeignKey().forEach(foreignKeyType -> {
-          ForeignKey foreignKey = new ForeignKey(
-              foreignKeyType.getName(),
-              tableDescFromTableType.get(foreignKeyType.getMasterTable()),
-              columnDescFromColumnType.get(foreignKeyType.getMasterColumn().get(0).getColumn()),
-              tableDescFromTableType.get(tableType),
-              columnDescFromColumnType.get(foreignKeyType.getSlaveColumn().get(0).getColumn()),
-              foreignKeyType.getUpdateRule(),
-              foreignKeyType.getDeleteRule());
-          foreignKey.getMasterTable().getForeignKeys().add(foreignKey);
-          foreignKey.getSlaveTable().getForeignKeys().add(foreignKey);
-        }))));
-    return result;
+        databaseStructure.getCatalog().forEach(catalogType -> catalogType.getSchema().forEach(schemaType -> schemaType.getTable().forEach(tableType ->
+            tableType.getForeignKey().forEach(foreignKeyType -> {
+              ForeignKey foreignKey = new ForeignKey(
+                  foreignKeyType.getName(),
+                  tableDescFromTableType.get(foreignKeyType.getMasterTable()),
+                  columnDescFromColumnType.get(foreignKeyType.getMasterColumn().get(0).getColumn()),
+                  tableDescFromTableType.get(tableType),
+                  columnDescFromColumnType.get(foreignKeyType.getSlaveColumn().get(0).getColumn()),
+                  foreignKeyType.getUpdateRule(),
+                  foreignKeyType.getDeleteRule());
+              foreignKey.getMasterTable().getForeignKeys().add(foreignKey);
+              foreignKey.getSlaveTable().getForeignKeys().add(foreignKey);
+            }))));
+      }).run();
+    }
+  }
+
+  public static DatabaseStructureType createXMLDatabaseStructureImport(String src) {
+    cz.lbenda.dataman.schema.dbstructure.ObjectFactory of = new cz.lbenda.dataman.schema.dbstructure.ObjectFactory();
+    DatabaseStructureType databaseStructureType = of.createDatabaseStructureType();
+    databaseStructureType.setSrc(src);
+    return databaseStructureType;
   }
 
   public static DatabaseStructureType createXMLDatabaseStructure(List<CatalogDesc> catalogs) {
-    ObjectFactory of = new ObjectFactory();
+    cz.lbenda.dataman.schema.dbstructure.ObjectFactory of = new cz.lbenda.dataman.schema.dbstructure.ObjectFactory();
     DatabaseStructureType databaseStructureType = of.createDatabaseStructureType();
     Map<TableDesc, TableType> tableTypeForTableDesc = new HashMap<>();
     Map<ColumnDesc, ColumnType> columnTypeForColumnDesc = new HashMap<>();

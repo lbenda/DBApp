@@ -51,6 +51,10 @@ public class ExceptionMessageFrmController {
     return new Tuple2<>(controller.stackTrace, controller);
   }
 
+  public static void showException(final String message) {
+    showException(message, null);
+  }
+
   public static void showException(final String message, Throwable e) {
     if (LOG.isInfoEnabled()) { LOG.info(message, e); }
     if (LOG.isTraceEnabled()) {

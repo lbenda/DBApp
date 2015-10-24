@@ -19,7 +19,6 @@ import cz.lbenda.common.*;
 import cz.lbenda.dataman.Constants;
 import cz.lbenda.dataman.rc.DbConfigFactory;
 import cz.lbenda.dataman.db.DbConfig;
-import cz.lbenda.dataman.schema.dataman.ExtendedConfigTypeType;
 import cz.lbenda.rcp.DialogHelper;
 import cz.lbenda.rcp.localization.Message;
 import javafx.application.Platform;
@@ -84,8 +83,6 @@ public class DbConfigFrmController implements Initializable {
   private ListView<String> lvLibraries;
   @FXML
   private TextField tfExtendConfigPath;
-  @FXML
-  private ComboBox<ExtendedConfigTypeType> cbExtendConfigType;
 
   public void loadDataFromSessionConfiguration(DbConfig dbConfig) {
     currentDriverClass = dbConfig.getJdbcConfiguration().getDriverClass();
@@ -101,9 +98,7 @@ public class DbConfigFrmController implements Initializable {
       tfTimeout.setText(dbConfig.getConnectionTimeout() < 0 ? "" : Integer.toString(dbConfig.getConnectionTimeout()));
     }
 
-    tfExtendConfigPath.setText(StringUtils.defaultString(dbConfig.getExtConfFactory().getPath()));
-    cbExtendConfigType.getSelectionModel().select(dbConfig.getExtConfFactory().getConfigType() == null ?
-        ExtendedConfigTypeType.NONE : dbConfig.getExtConfFactory().getConfigType());
+    tfExtendConfigPath.setText(StringUtils.defaultString(dbConfig.getExtConfFactory().getSrc()));
   }
 
   private void findDriverClasses() {
@@ -120,10 +115,6 @@ public class DbConfigFrmController implements Initializable {
 
   @Override
   public void initialize(URL url, ResourceBundle resourceBundle) {
-    for (ExtendedConfigTypeType ectt : ExtendedConfigTypeType.values()) {
-      cbExtendConfigType.getItems().add(ectt);
-    }
-    cbExtendConfigType.getSelectionModel().select(ExtendedConfigTypeType.NONE);
     lvLibraries.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
     btnAddLibrary.setOnAction(event -> {
@@ -162,8 +153,7 @@ public class DbConfigFrmController implements Initializable {
     if (StringUtils.isBlank(tfTimeout.getText())) { dbConfig.setConnectionTimeout(-1); }
     else { dbConfig.setConnectionTimeout(Integer.parseInt(tfTimeout.getText())); }
 
-    dbConfig.getExtConfFactory().setConfigType(cbExtendConfigType.getSelectionModel().getSelectedItem());
-    dbConfig.getExtConfFactory().setPath(tfExtendConfigPath.getText());
+    dbConfig.getExtConfFactory().setSrc(tfExtendConfigPath.getText());
 
     dbConfig.getLibrariesPaths().clear();
     dbConfig.getLibrariesPaths().addAll(lvLibraries.getItems());

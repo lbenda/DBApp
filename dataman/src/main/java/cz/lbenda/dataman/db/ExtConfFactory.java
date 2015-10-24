@@ -15,17 +15,10 @@
  */
 package cz.lbenda.dataman.db;
 
-import cz.lbenda.common.AbstractHelper;
-import cz.lbenda.dataman.schema.dataman.ExtendedConfigType;
-import cz.lbenda.dataman.schema.dataman.ExtendedConfigTypeType;
-import cz.lbenda.dataman.schema.dataman.ObjectFactory;
 import cz.lbenda.dataman.schema.exconf.*;
 import cz.lbenda.rcp.ExceptionMessageFrmController;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.vfs2.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,86 +39,100 @@ import java.util.Map;
 public class ExtConfFactory {
 
   private static final Logger LOG = LoggerFactory.getLogger(ExtConfFactory.class);
-
-  /** Type of extended configuration */
-  private ObjectProperty<ExtendedConfigTypeType> configType = new SimpleObjectProperty<>(ExtendedConfigTypeType.NONE);
-  public final ExtendedConfigTypeType getConfigType() { return configType.getValue(); }
-  public final void setConfigType(ExtendedConfigTypeType configType) { this.configType.setValue(configType); }
-  public final ObjectProperty<ExtendedConfigTypeType> configTypeProperty() { return configType; }
   /** Map of table of keys. Every table of key have name as key and SQL which must have defined string. */
   private final Map<String, String> tableOfKeysSQL = new HashMap<>();
+  /** Map of defined table keys */
   public final Map<String, String> getTableOfKeysSQL() { return tableOfKeysSQL; }
-
-  /** Path to configuration where is the found extended */
-  private StringProperty path = new SimpleStringProperty(null);
-  public final String getPath() { return this.path.getValue(); }
-  public final void setPath(String path) {
-    if (!AbstractHelper.nullEquals(path, this.path.getValue())) { this.path.setValue(path); }
-  }
-  public final StringProperty pathProperty() { return path; }
-
+  /** Database configuration */
   private final DbConfig dbConfig;
+  /** Extended configuration */
+  private ExConfType exConf;
+  /** Extended configuration */
+  public void setExConf(ExConfType exConfType) {
+    if (exConfType != null) { this.exConf = exConfType; }
+  }
+  /** Path to extended configuration */
+  public String getSrc() { return exConf.getSrc(); }
+  /** Path to extended configuration */
+  public void setSrc(String src) { exConf.setSrc(src); }
 
   public ExtConfFactory(@Nonnull DbConfig dbConfig) {
     this.dbConfig = dbConfig;
-  }
-
-  public void setExtendedConfigType(ExtendedConfigType extendedConfigType) {
-    setConfigType(extendedConfigType.getType());
-    setPath(extendedConfigType.getValue());
-  }
-
-  public ExtendedConfigType getExtendedConfigType() {
     ObjectFactory of = new ObjectFactory();
-    ExtendedConfigType result = of.createExtendedConfigType();
-    result.setType(getConfigType());
-    result.setValue(getPath());
-    return result;
+    exConf = of.createExConfType();
   }
 
-  /** Flag which inform if extended configuration is configured */
-  public boolean isExtConfig() {
-    return StringUtils.isBlank(getPath());
+  public ExConfType create() {
+    ObjectFactory of = new ObjectFactory();
+    if (StringUtils.isBlank(getSrc())) {
+      return null;
+    } else {
+      ExConfType result = of.createExConfType();
+      result.setSrc(getSrc());
+      return result;
+    }
   }
 
   /** Load extend configuration to given database configuration */
   public void load() {
-    switch (getConfigType()) {
-      case FILE:
-        try (FileReader fileReader = new FileReader(new File(getPath()))) {
-          loadExtendedConfiguration(fileReader);
-        } catch (IOException e) {
-          LOG.error("Problem with read extend config from file: " + getPath(), e);
-          ExceptionMessageFrmController.showException("Problem with read extend config from file: " + getPath(), e);
-        }
-        break;
-      case DATABASE:
-        dbConfig.getConnectionProvider().onPreparedStatement("select usr, exConf from "
-            + getPath() + " where (usr = ? or usr is null or usr = '')", tuple2 -> {
-              PreparedStatement ps = tuple2.get1();
-              String extendConfiguration = null;
-              try {
-                ps.setString(1, dbConfig.getConnectionProvider().getUser().getUsername());
-                try (ResultSet rs = ps.executeQuery()) {
-                  while (rs.next()) {
-                    if (rs.getString(1) == null && extendConfiguration == null) { // The null user is used only if no specific user configuration is read
-                      extendConfiguration = rs.getString(2);
-                    } else if (rs.getString(1) != null) {
-                      extendConfiguration = rs.getString(2);
-                    }
-                  }
+    if (exConf != null && StringUtils.isBlank(exConf.getSrc())) {
+      loadExConfType(exConf);
+    } else if (exConf != null) {
+      if (exConf.getSrc().startsWith("db://")) {
+        String path = exConf.getSrc().substring(5, exConf.getSrc().length());
+        dbConfig.getConnectionProvider().onPreparedStatement(
+            String.format("select usr, exConf from %s where (usr = ? or usr is null or usr = '')", path), tuple2 -> {
+          PreparedStatement ps = tuple2.get1();
+          String extendConfiguration = null;
+          try {
+            ps.setString(1, dbConfig.getConnectionProvider().getUser().getUsername());
+            try (ResultSet rs = ps.executeQuery()) {
+              while (rs.next()) {
+                if (rs.getString(1) == null && extendConfiguration == null) { // The null user is used only if no specific user configuration is read
+                  extendConfiguration = rs.getString(2);
+                } else if (rs.getString(1) != null) {
+                  extendConfiguration = rs.getString(2);
                 }
-              } catch (SQLException e) {
-                LOG.error("Problem with read extend config from table: " + getPath(), e);
-                ExceptionMessageFrmController.showException("Problem with read extend config from table: " + getPath(), e);
-              }
-              if (!StringUtils.isBlank(extendConfiguration)) {
-                loadExtendedConfiguration(new StringReader(extendConfiguration));
-              } else {
-                StringUtils.isBlank(null);
               }
             }
-        );
+          } catch (SQLException e) {
+            LOG.error("Problem with read extend config from table: " + exConf.getSrc(), e);
+            ExceptionMessageFrmController.showException("Problem with read extend config from table: "
+                + exConf.getSrc(), e);
+          }
+          if (!StringUtils.isBlank(extendConfiguration)) {
+            loadExConfType(new StringReader(extendConfiguration));
+          } else {
+            StringUtils.isBlank(null);
+          }
+        });
+      } else {
+        try {
+          FileSystemManager fsManager = VFS.getManager();
+          FileObject file = fsManager.resolveFile(exConf.getSrc());
+          if (!file.exists()) {
+            ExceptionMessageFrmController.showException("File not exist: "  + exConf.getSrc());
+          } else if (file.getChildren() == null || file.getChildren().length == 0) {
+            new Thread(() -> {
+              try {
+                FileContent content = file.getContent();
+                loadExConfType(new InputStreamReader(content.getInputStream()));
+                content.close();
+              } catch (FileSystemException e) {
+                LOG.error("Problem with read extend config from file: " + exConf.getSrc(), e);
+                ExceptionMessageFrmController.showException("Problem with read extend config from file: "
+                    + exConf.getSrc(), e);
+              }
+            }).start();
+          } else {
+            ExceptionMessageFrmController.showException("The file type isn't supported: "  + exConf.getSrc());
+          }
+        } catch (FileSystemException e) {
+          LOG.error("Problem with read extend config from file: " + exConf.getSrc(), e);
+          ExceptionMessageFrmController.showException("Problem with read extend config from file: "
+              + exConf.getSrc(), e);
+        }
+      }
     }
   }
 
@@ -133,21 +140,28 @@ public class ExtConfFactory {
     TableDescriptionExtension.XMLReaderWriterHelper.loadExtensions(dbConfig, exConf);
   }
 
-  public void loadExtendedConfiguration(Reader reader) {
-    if (reader == null) {
+  private void loadExConfType(ExConfType exConf) {
+    if (exConf == null) {
       loadSchemas(null);
       tableOfKeysSQLFromElement(null);
       readTableConf(null);
+    } else {
+      loadSchemas(exConf.getSchemas());
+      tableOfKeysSQLFromElement(exConf.getTableOfKeySQLs());
+      readTableConf(exConf);
+    }
+  }
+
+  private void loadExConfType(Reader reader) {
+    if (reader == null) {
+      loadExConfType((ExConfType) null);
     } else {
       try {
         JAXBContext jc = JAXBContext.newInstance(cz.lbenda.dataman.schema.exconf.ObjectFactory.class);
         Unmarshaller u = jc.createUnmarshaller();
         JAXBElement o = (JAXBElement) u.unmarshal(reader);
         if (o.getValue() instanceof ExConfType) {
-          ExConfType exConf = (ExConfType) o.getValue();
-          loadSchemas(exConf.getSchemas());
-          tableOfKeysSQLFromElement(exConf.getTableOfKeySQLs());
-          readTableConf(exConf);
+          loadExConfType((ExConfType) o.getValue());
         } else {
           LOG.error("The file didn't contains expected configuration: " + o.getClass().getName());
         }

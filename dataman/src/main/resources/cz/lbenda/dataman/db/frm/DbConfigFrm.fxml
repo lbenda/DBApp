@@ -112,7 +112,6 @@
       </padding>
       <Label text="Extend config type"/>
       <Label text="Path" GridPane.rowIndex="1"/>
-      <ComboBox fx:id="cbExtendConfigType" GridPane.columnIndex="1"/>
       <HBox GridPane.columnIndex="1" GridPane.rowIndex="1">
         <TextField fx:id="tfExtendConfigPath"/>
         <Button fx:id="btnExtendConfigFindPath" mnemonicParsing="false" text="..."/>

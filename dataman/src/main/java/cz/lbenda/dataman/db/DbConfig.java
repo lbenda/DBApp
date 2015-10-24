@@ -26,7 +26,6 @@ import cz.lbenda.dataman.UserImpl;
 import cz.lbenda.dataman.db.dialect.SQLDialect;
 import cz.lbenda.dataman.rc.DbConfigFactory;
 import cz.lbenda.dataman.schema.dataman.*;
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -86,7 +85,11 @@ public class DbConfig {
   private ExtConfFactory extConfFactory = new ExtConfFactory(this);
   public ExtConfFactory getExtConfFactory() { return extConfFactory; }
 
-  public final SessionType storeToSessionType() {
+  /** Store to session type
+   * @param srcExConfig path to ex configuration if is null then is insert directly to session configuration
+   * @param srcDbStructure path to db structure configuration if is null, then is insert to session configuration
+   * @return session type */
+  public final SessionType storeToSessionType(String srcExConfig, String srcDbStructure) {
     cz.lbenda.dataman.schema.dataman.ObjectFactory of = new cz.lbenda.dataman.schema.dataman.ObjectFactory();
     SessionType result = of.createSessionType();
     result.setId(getId());
@@ -96,8 +99,12 @@ public class DbConfig {
     }
     result.setLibraries(of.createLibrariesType());
     result.getLibraries().getLibrary().addAll(getLibrariesPaths());
-    result.setExtendedConfig(this.extConfFactory.getExtendedConfigType());
-    result.setStructure(DbStructureFactory.createXMLDatabaseStructure(getCatalogs()));
+    result.setExtendedConfig(this.extConfFactory.create());
+    if (srcDbStructure == null) {
+      result.setStructure(DbStructureFactory.createXMLDatabaseStructure(getCatalogs()));
+    } else {
+      result.setStructure(DbStructureFactory.createXMLDatabaseStructureImport(srcDbStructure));
+    }
     return result;
   }
 
@@ -117,11 +124,9 @@ public class DbConfig {
     if (session.getLibraries() != null) {
       session.getLibraries().getLibrary().forEach(this.librariesPaths::add);
     }
-    new Thread(() -> {
-      List<CatalogDesc> cds = DbStructureFactory.loadDatabaseStructureFromXML(session.getStructure(), this);
-      Platform.runLater(() -> catalogs.addAll(cds));
-    }).start();
-    extConfFactory.setExtendedConfigType(session.getExtendedConfig());
+    DbStructureFactory.loadDatabaseStructureFromXML(session.getStructure(), this);
+    extConfFactory.setExConf(session.getExtendedConfig());
+    if (connectionProvider.isConnected()) { extConfFactory.load(); }
   }
 
   public final void setId(final String id) {
@@ -137,8 +142,9 @@ public class DbConfig {
 
   public void reloadStructure() {
     reader.generateStructure();
-    this.extConfFactory.load();
+    // this.extConfFactory.load(); // FIXME
     DbConfigFactory.saveConfiguration();
+    if (connectionProvider.isConnected()) { extConfFactory.load(); }
   }
 
   /** Close connection to database */
@@ -153,9 +159,11 @@ public class DbConfig {
     }
   }
 
+  /** Save session conf into File
+   * @param writer writer to which is configuration saved */
   public void save(Writer writer) throws IOException {
     cz.lbenda.dataman.schema.dataman.ObjectFactory of = new cz.lbenda.dataman.schema.dataman.ObjectFactory();
-    SessionType st = storeToSessionType();
+    SessionType st = storeToSessionType(null, null);
     try {
       JAXBContext jc = JAXBContext.newInstance(cz.lbenda.dataman.schema.dataman.ObjectFactory.class);
       Marshaller m = jc.createMarshaller();
@@ -167,14 +175,15 @@ public class DbConfig {
     }
   }
 
-  /** Save session conf into File */
+  /** Save session conf into File
+   * @param file file to which is configuration saved */
   public void save(File file) {
     if (StringUtils.isBlank(FilenameUtils.getExtension(file.getAbsolutePath()))) { file = new File(file.getAbsoluteFile() + ".dtm"); } // Append .dtm extension to file which haven't any extension
     try (FileWriter fw = new FileWriter(file)) {
       save(fw);
     } catch (IOException e) {
-      LOG.error("The file is unwritable: " + e.toString(), e);
-      throw new RuntimeException("The file is unwritable: " + e.toString(), e);
+      LOG.error("The file is un-writable: " + e.toString(), e);
+      throw new RuntimeException("The file is un-writable: " + e.toString(), e);
     }
   }
 

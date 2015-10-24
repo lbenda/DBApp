@@ -17,25 +17,29 @@
 
 <xsd:schema version="1.0"
             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-            xmlns:ec="http://www.lbenda.cz/dataman/schema/ExConf"
+            xmlns:exc="http://www.lbenda.cz/dataman/schema/ExConf"
             targetNamespace="http://www.lbenda.cz/dataman/schema/ExConf"
             elementFormDefault="qualified">
 
-  <xsd:element name="exConf" type="ec:exConfType"/>
+  <xsd:element name="exConf" type="exc:exConfType"/>
 
   <xsd:complexType name="exConfType">
+    <xsd:annotation><xsd:documentation>Extended configuration</xsd:documentation></xsd:annotation>
     <xsd:sequence>
-      <xsd:element name="schemas" type="ec:schemasType" minOccurs="0" maxOccurs="1"/>
-      <xsd:element name="tableOfKeySQLs" type="ec:tableOfKeySQLsType" minOccurs="0" maxOccurs="1"/>
-      <xsd:element name="tables" type="ec:tablesType" minOccurs="0"
-                   maxOccurs="1"/>
-      <xsd:element name="exports" type="ec:exportsType" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="schemas" type="exc:schemasType" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="tableOfKeySQLs" type="exc:tableOfKeySQLsType" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="tables" type="exc:tablesType" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="exports" type="exc:exportsType" minOccurs="0" maxOccurs="1"/>
     </xsd:sequence>
+    <xsd:attribute name="src" type="xsd:anyURI">
+      <xsd:annotation><xsd:documentation>External source where is structure saved. The form can be
+        db://schema.table or Apache commons VFS 2.</xsd:documentation></xsd:annotation>
+    </xsd:attribute>
   </xsd:complexType>
 
   <xsd:complexType name="schemasType">
     <xsd:sequence>
-      <xsd:element name="schema" type="ec:schemaType" minOccurs="1" maxOccurs="unbounded">
+      <xsd:element name="schema" type="exc:schemaType" minOccurs="1" maxOccurs="unbounded">
         <xsd:annotation>
           <xsd:documentation>DB schema which will be show</xsd:documentation>
         </xsd:annotation>
@@ -45,7 +49,7 @@
 
   <xsd:complexType name="tableOfKeySQLsType">
     <xsd:sequence>
-      <xsd:element name="tableOfKeySQL" type="ec:tableOfKeySQLType" minOccurs="1" maxOccurs="unbounded">
+      <xsd:element name="tableOfKeySQL" type="exc:tableOfKeySQLType" minOccurs="1" maxOccurs="unbounded">
         <xsd:annotation>
           <xsd:documentation>Prepared SQL commands</xsd:documentation>
         </xsd:annotation>
@@ -55,7 +59,7 @@
 
   <xsd:complexType name="tablesType">
     <xsd:sequence>
-      <xsd:element name="table" type="ec:tableType" minOccurs="1" maxOccurs="unbounded">
+      <xsd:element name="table" type="exc:tableType" minOccurs="1" maxOccurs="unbounded">
         <xsd:annotation>
           <xsd:documentation>Extended configuration of table</xsd:documentation>
         </xsd:annotation>
@@ -66,7 +70,7 @@
   <xsd:complexType name="schemaType">
     <xsd:annotation><xsd:documentation>DB schema description</xsd:documentation></xsd:annotation>
     <xsd:sequence>
-      <xsd:element name="audit" type="ec:auditType" minOccurs="0" maxOccurs="1">
+      <xsd:element name="audit" type="exc:auditType" minOccurs="0" maxOccurs="1">
         <xsd:annotation><xsd:documentation>Configuration of schema/table audit</xsd:documentation></xsd:annotation>
       </xsd:element>
     </xsd:sequence>
@@ -81,11 +85,11 @@
   <xsd:complexType name="auditType">
     <xsd:annotation><xsd:documentation>Configuration of audit of schema/table</xsd:documentation></xsd:annotation>
     <xsd:sequence>
-      <xsd:element name="targetLogTable" type="ec:dbTableType" minOccurs="0" maxOccurs="1">
+      <xsd:element name="targetLogTable" type="exc:dbTableType" minOccurs="0" maxOccurs="1">
         <xsd:annotation><xsd:documentation>Table where is log writen.</xsd:documentation></xsd:annotation>
       </xsd:element>
     </xsd:sequence>
-    <xsd:attribute name="type" type="ec:auditTypeType" use="required">
+    <xsd:attribute name="type" type="exc:auditTypeType" use="required">
       <xsd:annotation><xsd:documentation>Type of auditing</xsd:documentation></xsd:annotation>
     </xsd:attribute>
   </xsd:complexType>
@@ -120,7 +124,7 @@
       <xsd:documentation>Database table type</xsd:documentation>
     </xsd:annotation>
     <xsd:complexContent>
-      <xsd:extension base="ec:schemaType">
+      <xsd:extension base="exc:schemaType">
         <xsd:attribute name="table" type="xsd:string" use="required">
           <xsd:annotation>
             <xsd:documentation>Name of extended table</xsd:documentation>
@@ -135,9 +139,9 @@
       <xsd:documentation>Extended configuration of table</xsd:documentation>
     </xsd:annotation>
     <xsd:complexContent>
-      <xsd:extension base="ec:dbTableType">
+      <xsd:extension base="exc:dbTableType">
         <xsd:sequence>
-          <xsd:element name="comboBox" type="ec:comboBoxType" minOccurs="0" maxOccurs="unbounded"/>
+          <xsd:element name="comboBox" type="exc:comboBoxType" minOccurs="0" maxOccurs="unbounded"/>
         </xsd:sequence>
       </xsd:extension>
     </xsd:complexContent>
@@ -148,7 +152,7 @@
       <xsd:documentation>Configuration of combo box inside table field.</xsd:documentation>
     </xsd:annotation>
     <xsd:sequence>
-      <xsd:element name="reloadOn" type="ec:dbTableType" minOccurs="0" maxOccurs="unbounded">
+      <xsd:element name="reloadOn" type="exc:dbTableType" minOccurs="0" maxOccurs="unbounded">
         <xsd:annotation>
           <xsd:documentation>When table identify by this element is changed, then combo box is reloaded.
           </xsd:documentation>
@@ -184,7 +188,7 @@
 
   <xsd:complexType name="exportsType">
     <xsd:sequence>
-      <xsd:element name="export" type="ec:exportType" minOccurs="1" maxOccurs="unbounded">
+      <xsd:element name="export" type="exc:exportType" minOccurs="1" maxOccurs="unbounded">
         <xsd:annotation>
           <xsd:documentation>Configuration of export</xsd:documentation>
         </xsd:annotation>
@@ -203,11 +207,11 @@
     <xsd:attribute name="id" type="xsd:ID" use="required">
       <xsd:annotation><xsd:documentation>Identification for export</xsd:documentation></xsd:annotation>
     </xsd:attribute>
-    <xsd:attribute name="type" type="ec:exportTypeType" use="required">
+    <xsd:attribute name="type" type="exc:exportTypeType" use="required">
       <xsd:annotation><xsd:documentation>Type of export</xsd:documentation></xsd:annotation>
     </xsd:attribute>
     <xsd:attribute name="file" type="xsd:string">
-      <xsd:annotation><xsd:documentation>File to which is write export - if isn't filed then is user asked to select file. System use apache common vfs2 so you can use prefix like ftp:// etc.</xsd:documentation></xsd:annotation>
+      <xsd:annotation><xsd:documentation>File to which is write export - if isn't filed then is user asked to selexct file. System use apache common vfs2 so you can use prefix like ftp:// etc.</xsd:documentation></xsd:annotation>
     </xsd:attribute>
     <xsd:attribute name="noReplace" type="xsd:boolean">
       <xsd:annotation><xsd:documentation>No replace file and crate new file with Index suffix. Or replace. If isn't set then it mean replace file.</xsd:documentation></xsd:annotation>

@@ -16,11 +16,14 @@
 package cz.lbenda.dataman.rc;
 
 import cz.lbenda.dataman.db.DbConfig;
+import cz.lbenda.dataman.db.DbStructureFactory;
 import cz.lbenda.dataman.schema.dataman.DatamanType;
 import cz.lbenda.dataman.schema.dataman.SessionType;
+import cz.lbenda.dataman.schema.dbstructure.DatabaseStructureType;
 import cz.lbenda.rcp.config.ConfigurationRW;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.util.Callback;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +41,7 @@ public class DbConfigFactory {
 
   private static final Logger LOG = LoggerFactory.getLogger(DbConfigFactory.class);
   private static final String CONFIG_FILE_NAME = "sessions.xml";
+  private static final String CONFIG_FILE_CACHE_STRUC_NAME = "dbStructure-%s.xml";
 
   /** All configuration over all system */
   private static final ObservableList<DbConfig> configurations = FXCollections.observableArrayList();
@@ -54,9 +58,23 @@ public class DbConfigFactory {
     }
   }
 
+  /** Db structure cache writer */
+  public static Callback<DbConfig, String> dbStructureCacheWriter() {
+    return dbConfig -> {
+      DbStructureFactory.createXMLDatabaseStructure(dbConfig.getCatalogs());
+      ConfigurationRW.getInstance().writeConfig(
+          String.format(CONFIG_FILE_CACHE_STRUC_NAME, dbConfig.getId()),
+          storeStructureCache(dbConfig)
+      );
+      return "config://" + String.format(CONFIG_FILE_CACHE_STRUC_NAME, dbConfig.getId());
+    };
+  }
+
   /** This method save configuration to file */
   public static void saveConfiguration() {
-    new Thread(() -> ConfigurationRW.getInstance().writeConfig(CONFIG_FILE_NAME, storeToString())).start();
+    new Thread(() -> ConfigurationRW.getInstance()
+        .writeConfig(CONFIG_FILE_NAME, storeToString(dbStructureCacheWriter())))
+        .start();
   }
 
   public static void removeConfiguration(DbConfig config) {
@@ -108,13 +126,30 @@ public class DbConfigFactory {
     }
   }
 
-  public static String storeToString() {
+  public static String storeStructureCache(DbConfig dbConfig) {
+    cz.lbenda.dataman.schema.dbstructure.ObjectFactory of = new cz.lbenda.dataman.schema.dbstructure.ObjectFactory();
+    try {
+      JAXBContext jc = JAXBContext.newInstance(cz.lbenda.dataman.schema.dbstructure.ObjectFactory.class);
+      Marshaller m = jc.createMarshaller();
+      StringWriter sw = new StringWriter();
+      m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+      DatabaseStructureType dst = DbStructureFactory.createXMLDatabaseStructure(dbConfig.getCatalogs());
+      JAXBElement<DatabaseStructureType> element = of.createDatabaseType(dst);
+      m.marshal(element, sw);
+      return sw.toString();
+    } catch (JAXBException e) {
+      LOG.error("Problem with write configuration: " + e.toString(), e);
+      throw new RuntimeException("Problem with write configuration: " + e.toString(), e);
+    }
+  }
+
+  public static String storeToString(Callback<DbConfig, String> cacheDbStructureWriteFactory) {
     cz.lbenda.dataman.schema.dataman.ObjectFactory of = new cz.lbenda.dataman.schema.dataman.ObjectFactory();
     DatamanType config = of.createDatamanType();
     config.setSessions(of.createSessionsType());
 
     for (DbConfig sc : getConfigurations()) {
-      config.getSessions().getSession().add(sc.storeToSessionType());
+      config.getSessions().getSession().add(sc.storeToSessionType(null, cacheDbStructureWriteFactory.call(sc)));
     }
 
     try {

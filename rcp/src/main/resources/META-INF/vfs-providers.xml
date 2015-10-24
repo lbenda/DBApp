@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<providers>
+  <provider class-name="cz.lbenda.rcp.config.ConfigurationFileProvider">
+    <scheme name="config"/>
+  </provider>
+</providers>

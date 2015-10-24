@@ -16,7 +16,6 @@
 package cz.lbenda.rcp.config;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,9 +48,13 @@ public class ConfigurationRW {
 
   /** Identifier of application which is used for create configuration directory. The best way is use
    *              prefix same as in java package. */
-  private String appId; public String getAppId() { return appId; }
+  private String appId;
+  @SuppressWarnings("unused")
+  public String getAppId() { return appId; }
   /** Version of application if user want have more version */
-  private String version; public String vetVersion() { return version; }
+  private String version;
+  @SuppressWarnings("unused")
+  public String vetVersion() { return version; }
 
   private ConfigurationRW(String appId, String version) {
     this.appId = appId;
@@ -78,6 +81,12 @@ public class ConfigurationRW {
     return new ByteArrayInputStream(new byte[0]);
   }
 
+  public String configPath(String configFile) {
+    File userDir = userConfigDirectoryPath();
+    File file = new File(userDir, configFile);
+    return file.getAbsolutePath();
+  }
+
   /** Return content of configuration which name is given. The any configuration is saved as file, so the config
    * name is file name
    * @param configFile name of file
@@ -100,7 +109,10 @@ public class ConfigurationRW {
    */
   public OutputStream writeConfig(String configFile) throws IOException {
     File userDir = userConfigDirectoryPath();
-    if (!userDir.exists()) { userDir.mkdirs(); }
+    if (!userDir.exists()) {
+      //noinspection ResultOfMethodCallIgnored
+      userDir.mkdirs();
+    }
     File file = new File(userDir, configFile);
     return new FileOutputStream(file);
   }
@@ -108,7 +120,6 @@ public class ConfigurationRW {
   /** Write stream with configuration to file
    * @param configFile name of configuration wile where is data write
    * @param content content which will be saved
-   * @return stream to which user can write file data
    * @throws RuntimeException hold the IOException
    */
   public void writeConfig(String configFile, String content) throws RuntimeException {

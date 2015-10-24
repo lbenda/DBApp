@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Copyright 2015 Lukas Benda <lbenda at lbenda.cz>.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<xsd:schema version="1.0"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:dbs="http://www.lbenda.cz/dataman/schema/DBStructure"
+            xmlns:dt="http://www.lbenda.cz/dataman/schema/DataTypes"
+            targetNamespace="http://www.lbenda.cz/dataman/schema/DBStructure"
+            elementFormDefault="qualified">
+  <xsd:import namespace="http://www.lbenda.cz/dataman/schema/DataTypes" schemaLocation="DataTypes.xsd" />
+
+  <xsd:element name="databaseType" type="dbs:databaseStructureType"/>
+
+  <xsd:complexType name="databaseStructureType">
+    <xsd:annotation><xsd:documentation>Stored structure of database or file where the data is stored</xsd:documentation></xsd:annotation>
+    <xsd:sequence>
+      <xsd:element name="catalog" type="dbs:catalogType" minOccurs="1" maxOccurs="unbounded">
+        <xsd:annotation><xsd:documentation>Catalogs in database</xsd:documentation></xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name="src" type="xsd:anyURI">
+      <xsd:annotation><xsd:documentation>External source where is structure saved. Form Apache commons VFS 2.</xsd:documentation></xsd:annotation>
+    </xsd:attribute>
+  </xsd:complexType>
+
+  <xsd:complexType name="catalogType">
+    <xsd:annotation><xsd:documentation>Stored structure of catalog</xsd:documentation></xsd:annotation>
+    <xsd:sequence>
+      <xsd:element name="schema" type="dbs:schemaType" minOccurs="1" maxOccurs="unbounded">
+        <xsd:annotation><xsd:documentation>Schemas in catalog</xsd:documentation></xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name="name" type="xsd:string"><xsd:annotation><xsd:documentation>Name of catalog</xsd:documentation></xsd:annotation></xsd:attribute>
+  </xsd:complexType>
+
+  <xsd:complexType name="schemaType">
+    <xsd:annotation><xsd:documentation>Stored structure of schema</xsd:documentation></xsd:annotation>
+    <xsd:sequence>
+      <xsd:element name="table" type="dbs:tableType" minOccurs="1" maxOccurs="unbounded">
+        <xsd:annotation><xsd:documentation>Schemas in catalog</xsd:documentation></xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name="name" type="xsd:string"><xsd:annotation><xsd:documentation>Name of schema</xsd:documentation></xsd:annotation></xsd:attribute>
+    <xsd:attribute name="label" type="xsd:string"/>
+  </xsd:complexType>
+
+  <xsd:complexType name="tableType">
+    <xsd:annotation><xsd:documentation>Stored structure of table</xsd:documentation></xsd:annotation>
+    <xsd:sequence>
+      <xsd:element name="column" type="dbs:columnType" minOccurs="1" maxOccurs="unbounded">
+        <xsd:annotation><xsd:documentation>Table in catalog</xsd:documentation></xsd:annotation>
+      </xsd:element>
+      <xsd:element name="foreignKey" type="dbs:foreignKeyType" minOccurs="0" maxOccurs="unbounded">
+        <xsd:annotation><xsd:documentation>List of all foreign keys which is constraint on this table</xsd:documentation></xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name="id" type="xsd:ID" />
+    <xsd:attribute name="name" type="xsd:string"><xsd:annotation><xsd:documentation>Name of table</xsd:documentation></xsd:annotation></xsd:attribute>
+    <xsd:attribute name="tableType" type="xsd:string"/>
+    <xsd:attribute name="label" type="xsd:string"/>
+  </xsd:complexType>
+
+  <xsd:complexType name="columnType">
+    <xsd:annotation><xsd:documentation>Stored structure of column</xsd:documentation></xsd:annotation>
+    <xsd:attribute name="id" type="xsd:ID" />
+    <xsd:attribute name="name" type="xsd:string"><xsd:annotation><xsd:documentation>Name of column</xsd:documentation></xsd:annotation></xsd:attribute>
+    <xsd:attribute name="dataType" type="dt:dataTypeType"/>
+    <xsd:attribute name="size" type="xsd:int"/>
+    <xsd:attribute name="scale" type="xsd:int"/>
+    <xsd:attribute name="nullable" type="xsd:boolean"/>
+    <xsd:attribute name="autoincrement" type="xsd:boolean"/>
+    <xsd:attribute name="generated" type="xsd:boolean"/>
+    <xsd:attribute name="label" type="xsd:string"/>
+    <xsd:attribute name="isPK" type="xsd:boolean"/>
+    <xsd:attribute name="defaultValue" type="xsd:string"/>
+  </xsd:complexType>
+
+  <xsd:complexType name="foreignKeyType">
+    <xsd:annotation><xsd:documentation>Stored structure of foreign key</xsd:documentation></xsd:annotation>
+    <xsd:sequence>
+      <xsd:element name="slaveColumn" type="dbs:foreignKeyColumnType" minOccurs="1" maxOccurs="unbounded">
+        <xsd:annotation><xsd:documentation>Slave columns in foreign key</xsd:documentation></xsd:annotation>
+      </xsd:element>
+      <xsd:element name="masterColumn" type="dbs:foreignKeyColumnType" minOccurs="1" maxOccurs="unbounded">
+        <xsd:annotation><xsd:documentation>Master columns in foreign key</xsd:documentation></xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name="name" type="xsd:string"><xsd:annotation><xsd:documentation>Name of constraint</xsd:documentation></xsd:annotation></xsd:attribute>
+    <xsd:attribute name="masterTable" type="xsd:IDREF"/>
+    <xsd:attribute name="updateRule" type="xsd:string"/>
+    <xsd:attribute name="deleteRule" type="xsd:string"/>
+  </xsd:complexType>
+
+  <xsd:complexType name="foreignKeyColumnType">
+    <xsd:attribute name="column" type="xsd:IDREF"/>
+  </xsd:complexType>
+</xsd:schema>
