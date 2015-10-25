@@ -24,6 +24,7 @@ import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.*;
+import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,6 +36,14 @@ import java.util.UUID;
  * Default string converters */
 @SuppressWarnings("unused")
 public class StringConverters {
+
+  private static String decimals;
+
+  static {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < Double.MAX_EXPONENT; i++) { sb.append("#"); }
+    decimals = sb.toString();
+  }
 
   @Message
   public static final String MSG_BIG_VALUE = "<BIG VALUE>";
@@ -62,6 +71,31 @@ public class StringConverters {
     @Override public Date fromString(String s) {
       try {
         return s == null ? null : new Date(Constants.DATE_FORMATTER.get().parse(s).getTime());
+      } catch (ParseException e) { throw new RuntimeException(e); }
+    }
+  };
+
+  public static StringConverter<Date> SQL_SQL_DATE_CONVERTER = new StringConverter<Date>() {
+    @Override public String toString(Date value) { return value == null ? null : Constants.SQL_DATE_FORMATTER.get().format(value); }
+    @Override public Date fromString(String s) {
+      try {
+        return s == null ? null : new Date(Constants.SQL_DATE_FORMATTER.get().parse(s).getTime());
+      } catch (ParseException e) { throw new RuntimeException(e); }
+    }
+  };
+  public static StringConverter<Time> SQL_SQL_TIME_CONVERTER = new StringConverter<Time>() {
+    @Override public String toString(Time value) { return value == null ? null : Constants.SQL_TIME_FORMATTER.get().format(value); }
+    @Override public Time fromString(String s) {
+      try {
+        return s == null ? null : new Time(Constants.SQL_TIME_FORMATTER.get().parse(s).getTime());
+      } catch (ParseException e) { throw new RuntimeException(e); }
+    }
+  };
+  public static StringConverter<Timestamp> SQL_SQL_TIMESTAMP_CONVERTER = new StringConverter<Timestamp>() {
+    @Override public String toString(Timestamp value) { return value == null ? null : Constants.SQL_TIMESTAMP_FORMATTER.get().format(value); }
+    @Override public Timestamp fromString(String s) {
+      try {
+        return s == null ? null : new Timestamp(Constants.SQL_TIMESTAMP_FORMATTER.get().parse(s).getTime());
       } catch (ParseException e) { throw new RuntimeException(e); }
     }
   };
@@ -111,7 +145,11 @@ public class StringConverters {
     @Override public Float fromString(String s) { return StringUtils.isBlank(s) ? null : Float.parseFloat(s); }
   };
   public static StringConverter<Double> DOUBLE_CONVERTER = new StringConverter<Double>() {
-    @Override public String toString(Double value) { return value == null ? null : value.toString(); }
+    @Override public String toString(Double value) {
+      if (value == null) { return null; }
+      DecimalFormat df = new DecimalFormat("#." + decimals);
+      return df.format(value);
+    }
     @Override public Double fromString(String s) { return StringUtils.isBlank(s) ? null : Double.parseDouble(s); }
   };
 

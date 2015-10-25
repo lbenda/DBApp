@@ -66,7 +66,7 @@ public interface SQLDialect {
   default String fkDeleteRule() { return "DELETE_RULE"; }
 
   default boolean isIdentityEditable() { return true; }
-
+  default boolean isBooleanBitRepresent() { return false; }
 
   /** Set of names which is used to describe identity column */
   default Set<String> nameOfGeneratedIdentityColumn() { return new HashSet<>(Arrays.asList(new String[] {

@@ -15,12 +15,15 @@
  */
 package cz.lbenda.dataman.db;
 
+import cz.lbenda.dataman.db.dialect.SQLDialect;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 /** Created by Lukas Benda <lbenda @ lbenda.cz> on 13.9.15.
  * Result from SQL query which return rows */
 public class SQLQueryRows {
+  /** Dialect which rows extract */
+  private SQLDialect dialect; public SQLDialect getDialect() { return dialect; } public void setDialect(SQLDialect dialect) { this.dialect = dialect; }
   /** SQL which was executed for getting this data */
   private String sql; public String getSQL() { return sql; } public void setSQL(String sql) { this.sql = sql; }
   /** Metadata for table and columns in rows */

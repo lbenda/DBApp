@@ -80,6 +80,19 @@ public class Constants {
       } else { return DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault()); }
     }
   };
+  public static ThreadLocal<DateFormat> SQL_DATE_FORMATTER = new ThreadLocal<DateFormat>() {
+    @Override
+    protected DateFormat initialValue() { return new SimpleDateFormat("yyyy-MM-dd"); }
+  };
+  public static ThreadLocal<DateFormat> SQL_TIME_FORMATTER = new ThreadLocal<DateFormat>() {
+    @Override
+    protected DateFormat initialValue() { return new SimpleDateFormat("hh:mm:ss.SSS"); }
+  };
+  public static ThreadLocal<DateFormat> SQL_TIMESTAMP_FORMATTER = new ThreadLocal<DateFormat>() {
+    @Override
+    protected DateFormat initialValue() { return new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS"); }
+  };
+
   public static DateTimeFormatter LOCAL_DATETIME_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
   public static ThreadLocal<DateFormat> DATETIME_FORMATTER = new ThreadLocal<DateFormat>() {
     @Override

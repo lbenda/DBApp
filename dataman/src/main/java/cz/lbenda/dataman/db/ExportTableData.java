@@ -15,7 +15,10 @@
  */
 package cz.lbenda.dataman.db;
 
+import cz.lbenda.common.BitArrayBinaryData;
+import cz.lbenda.common.StringConverters;
 import cz.lbenda.dataman.Constants;
+import cz.lbenda.dataman.db.dialect.SQLDialect;
 import cz.lbenda.dataman.schema.export.*;
 import cz.lbenda.dataman.schema.export.ColumnType;
 import cz.lbenda.rcp.DialogHelper;
@@ -115,6 +118,7 @@ public class ExportTableData {
       case CSV: writeSqlQueryRowsToCSV(sqlQueryRows, new OutputStreamWriter(outputStream)); break;
       case TXT: writeSqlQueryRowsToTXT(sqlQueryRows, outputStream); break;
       case ODS: writeSqlQueryRowsToODS(sqlQueryRows, sheetName, outputStream); break;
+      case SQL : writeSqlQueryRowsToSQL(sqlQueryRows, new OutputStreamWriter(outputStream)); break;
     }
   }
 
@@ -446,5 +450,73 @@ public class ExportTableData {
       LOG.error("Problem with transforming input stream.", e);
       ExceptionMessageFrmController.showException("Problem with transforming input stream.", e);
     }
+  }
+
+  /** Write SQL query as insert sql
+   * @param sqlQueryRows rows which will be store as INSERT sql
+   * @param writer writer to which is write inserts */
+  public static void writeSqlQueryRowsToSQL(SQLQueryRows sqlQueryRows, Writer writer) {
+    final Map<String, List<ColumnDesc>> columnsByTables = new HashMap<>();
+    sqlQueryRows.getMetaData().getColumns().forEach(columnDesc -> {
+      String table = String.format("\"%s\".\"%s\"", columnDesc.getSchema(), columnDesc.getTable());
+      List<ColumnDesc> columns = columnsByTables.get(table);
+      if (columns == null) {
+        columns = new ArrayList<>();
+        columnsByTables.put(table, columns);
+      }
+      columns.add(columnDesc);
+    });
+    final Map<String, String> columnsByTableNames = new HashMap<>();
+    columnsByTables.entrySet().forEach(entry -> {
+      StringBuilder sb = new StringBuilder();
+      entry.getValue().forEach(columnDesc -> {
+        if (sb.length() > 0) { sb.append(", "); }
+        sb.append('"').append(columnDesc.getName()).append('"');
+      });
+      columnsByTableNames.put(entry.getKey(), sb.toString());
+    });
+    sqlQueryRows.getRows().forEach(rowDesc -> columnsByTables.entrySet().forEach(entry -> {
+      StringBuilder row = new StringBuilder();
+      entry.getValue().forEach(columnDesc -> {
+        if (row.length() > 0) { row.append(", "); }
+        row.append(sqlValue(sqlQueryRows.getDialect(), columnDesc, rowDesc));
+      });
+      try {
+        writer.write(String.format("insert into %s (%s) values(%s);\n", entry.getKey(),
+            columnsByTableNames.get(entry.getKey()), row.toString()));
+      } catch (IOException e) {
+        LOG.error("Problem with write SQL insert", e);
+        throw new RuntimeException("Problem with write SQL insert", e);
+      }
+    }));
+  }
+
+  /** Create SQL representation of value in column. Format to SQL and add quote etc
+   * @param columnDesc column which is get
+   * @param rowDesc row from which is data get
+   * @return string representation of value in SQL */
+  public static String sqlValue(SQLDialect dialect, ColumnDesc columnDesc, RowDesc rowDesc) {
+    Object value = rowDesc.getColumnValue(columnDesc);
+    if (value == null) { return "NULL"; }
+    switch (columnDesc.getDataType()) {
+      case STRING:
+      case CLOB:
+      case BLOB:
+      case UUID:
+        return "'" + rowDesc.getColumnValueStr(columnDesc) + "'";
+      case DATE: return "'" + StringConverters.SQL_SQL_DATE_CONVERTER.toString((java.sql.Date) value) + "'";
+      case TIME: return "'" + StringConverters.SQL_SQL_TIME_CONVERTER.toString((java.sql.Time) value) + "'";
+      case TIMESTAMP: return "'" + StringConverters.SQL_SQL_TIMESTAMP_CONVERTER.toString((java.sql.Timestamp) value) + "'";
+      case BOOLEAN: if (dialect != null && dialect.isBooleanBitRepresent()) { return Boolean.TRUE.equals(value) ? "1" : "0"; }
+      case BIT_ARRAY:
+        try {
+          String res = IOUtils.toString(((BitArrayBinaryData) value).getReader());
+          return "0x'" + res.replaceAll(" ", "") + "'";
+        } catch (IOException e) {
+          LOG.error("Error convert bit array to string.", e);
+          throw new RuntimeException("Error convert bit array to string.", e);
+        }
+    }
+    return rowDesc.getColumnValueStr(columnDesc);
   }
 }
