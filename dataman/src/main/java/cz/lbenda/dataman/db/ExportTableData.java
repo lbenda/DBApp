@@ -15,8 +15,7 @@
  */
 package cz.lbenda.dataman.db;
 
-import cz.lbenda.common.BitArrayBinaryData;
-import cz.lbenda.common.StringConverters;
+import cz.lbenda.common.*;
 import cz.lbenda.dataman.Constants;
 import cz.lbenda.dataman.db.dialect.SQLDialect;
 import cz.lbenda.dataman.schema.export.*;
@@ -30,6 +29,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.output.WriterOutputStream;
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -116,9 +116,23 @@ public class ExportTableData {
       case XMLv1: writeSqlQueryRowsToXMLv1(sqlQueryRows, outputStream); break;
       case XMLv2: writeSqlQueryRowsToXMLv2(sqlQueryRows, outputStream); break;
       case CSV: writeSqlQueryRowsToCSV(sqlQueryRows, new OutputStreamWriter(outputStream)); break;
-      case TXT: writeSqlQueryRowsToTXT(sqlQueryRows, outputStream); break;
+      case TXT: writeSqlQueryRowsToTXT(sqlQueryRows, new OutputStreamWriter(outputStream)); break;
       case ODS: writeSqlQueryRowsToODS(sqlQueryRows, sheetName, outputStream); break;
       case SQL : writeSqlQueryRowsToSQL(sqlQueryRows, new OutputStreamWriter(outputStream)); break;
+    }
+  }
+
+  public static void writeSqlQueryRows(SpreadsheetFormat format, SQLQueryRows sqlQueryRows, String sheetName,
+                                       Writer writer) throws IOException {
+    switch (format) {
+      case XLSX: writeSqlQueryRowsToXLSX(sqlQueryRows, sheetName, new WriterOutputStream(writer)); break;
+      case XLS: writeSqlQueryRowsToXLS(sqlQueryRows, sheetName, new WriterOutputStream(writer)); break;
+      case XMLv1: writeSqlQueryRowsToXMLv1(sqlQueryRows, new WriterOutputStream(writer)); break;
+      case XMLv2: writeSqlQueryRowsToXMLv2(sqlQueryRows, new WriterOutputStream(writer)); break;
+      case CSV: writeSqlQueryRowsToCSV(sqlQueryRows, writer); break;
+      case TXT: writeSqlQueryRowsToTXT(sqlQueryRows, writer); break;
+      case ODS: writeSqlQueryRowsToODS(sqlQueryRows, sheetName, new WriterOutputStream(writer)); break;
+      case SQL : writeSqlQueryRowsToSQL(sqlQueryRows, writer); break;
     }
   }
 
@@ -226,16 +240,17 @@ public class ExportTableData {
   private static StringBuffer SPACES = new StringBuffer();
 
   private static String fixedString(String value, int length) {
+    if (length > Constants.maxTextColumnSize) { length = Constants.maxTextColumnSize; }
     if (SPACES.length() < length) { for (int i = SPACES.length(); i < length; i++) { SPACES.append(" "); }}
     if (value == null) { return SPACES.substring(0, length); }
+    if (length < value.length()) { return value.substring(0, length); }
     return value + SPACES.substring(0, length - value.length());
   }
 
   /** Write rows to CSV file
    * @param sqlQueryRows rows
-   * @param outputStream stream where are data write */
-  public static void writeSqlQueryRowsToTXT(SQLQueryRows sqlQueryRows, OutputStream outputStream) throws IOException {
-    Writer writer = new OutputStreamWriter(outputStream);
+   * @param writer writer where are data write */
+  public static void writeSqlQueryRowsToTXT(SQLQueryRows sqlQueryRows, Writer writer) throws IOException {
     String joined = sqlQueryRows.getMetaData().getColumns().stream()
         .map(cd -> fixedString(cd.getName(), cd.getSize()))
         .collect(Collectors.joining(""));
@@ -500,22 +515,43 @@ public class ExportTableData {
     if (value == null) { return "NULL"; }
     switch (columnDesc.getDataType()) {
       case STRING:
-      case CLOB:
-      case BLOB:
       case UUID:
         return "'" + rowDesc.getColumnValueStr(columnDesc) + "'";
       case DATE: return "'" + StringConverters.SQL_SQL_DATE_CONVERTER.toString((java.sql.Date) value) + "'";
       case TIME: return "'" + StringConverters.SQL_SQL_TIME_CONVERTER.toString((java.sql.Time) value) + "'";
       case TIMESTAMP: return "'" + StringConverters.SQL_SQL_TIMESTAMP_CONVERTER.toString((java.sql.Timestamp) value) + "'";
       case BOOLEAN: if (dialect != null && dialect.isBooleanBitRepresent()) { return Boolean.TRUE.equals(value) ? "1" : "0"; }
+        return rowDesc.getColumnValueStr(columnDesc);
+      case CLOB:
+        ClobBinaryData cbd = (ClobBinaryData) value;
+        if (cbd.isNull()) { return "NULL"; }
+        try {
+          return "'" + IOUtils.toString(cbd.getReader()) + "'";
+        } catch (IOException e) {
+          LOG.error("Error convert clob to string.", e);
+          throw new RuntimeException("Error convert clob to string.", e);
+        }
+      case BLOB:
+        BlobBinaryData bbd = (BlobBinaryData) value;
+        if (bbd.isNull()) { return "NULL"; }
+        try {
+          return "'" + IOUtils.toString(bbd.getReader()) + "'";
+        } catch (IOException e) {
+          LOG.error("Error convert blob to string.", e);
+          throw new RuntimeException("Error convert blob to string.", e);
+        }
       case BIT_ARRAY:
         try {
+          if (((BitArrayBinaryData) value).isNull()) { return "NULL"; }
           String res = IOUtils.toString(((BitArrayBinaryData) value).getReader());
           return "0x'" + res.replaceAll(" ", "") + "'";
         } catch (IOException e) {
           LOG.error("Error convert bit array to string.", e);
           throw new RuntimeException("Error convert bit array to string.", e);
         }
+      case BYTE_ARRAY:
+        if (((ByteArrayBinaryData) value).isNull()) { return "NULL"; }
+        return "'" + rowDesc.getColumnValueStr(columnDesc) + "'";
     }
     return rowDesc.getColumnValueStr(columnDesc);
   }

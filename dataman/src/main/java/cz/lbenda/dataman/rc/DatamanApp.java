@@ -63,11 +63,9 @@ public class DatamanApp extends Application {
 
   private static CommandLine commandLine(String[] args) {
     Options options = new Options();
-    options.addOption("mode", true, "Application mode: development, test");
-    options.addOption("i", "script", true, "Input script which is executes");
-    options.addOption("s", "scripts", true, "Input scripts which is executes separated by comma");
-    options.addOption("c", "config", true, "Name of configuration on which is executed script");
-    options.addOption("help", "h", false, "Show this help");
+    options.addOption("h", "help", false, "Show this help");
+    options.addOption(null, "mode", true, "Application mode: development, test");
+    DatamanHeadless.setCommandLineOptions(options);
     CommandLineParser parser = new DefaultParser();
     try {
       CommandLine cmd = parser.parse(options, args);
@@ -79,7 +77,7 @@ public class DatamanApp extends Application {
           Constants.IS_IN_DEVELOP_MODE = true;
         }
       }
-      cz.lbenda.dataman.Constants.HEADLESS = cmd.hasOption("i") || cmd.hasOption("s");
+      cz.lbenda.dataman.Constants.HEADLESS = cmd.hasOption("i") || cmd.hasOption("is");
       return cmd;
     } catch (ParseException e) {
       LOG.error("Problem with parse command line arguments", e);

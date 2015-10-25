@@ -3,4 +3,7 @@
   <provider class-name="cz.lbenda.rcp.config.ConfigurationFileProvider">
     <scheme name="config"/>
   </provider>
+  <provider class-name="cz.lbenda.rcp.config.TildaFileProvider">
+    <scheme name="home"/>
+  </provider>
 </providers>

@@ -80,7 +80,11 @@ public class DbConfig {
   DbStructureFactory getReader() { return reader; }
   final void setReader(@Nonnull DbStructureFactory reader) { this.reader = reader; }
   /** Timeout when unused connection will be closed */
-  private int connectionTimeout; public int getConnectionTimeout() { return connectionTimeout; } public void setConnectionTimeout(int connectionTimeout) { this.connectionTimeout = connectionTimeout; }
+  private int connectionTimeout;
+  /** Timeout when unused connection will be closed */
+  public int getConnectionTimeout() { return connectionTimeout; }
+  /** Timeout when unused connection will be closed */
+  public void setConnectionTimeout(int connectionTimeout) { this.connectionTimeout = connectionTimeout; }
 
   private ExtConfFactory extConfFactory = new ExtConfFactory(this);
   public ExtConfFactory getExtConfFactory() { return extConfFactory; }

@@ -20,6 +20,7 @@ import cz.lbenda.dataman.db.ExportTableData;
 import cz.lbenda.dataman.db.SQLQueryResult;
 import cz.lbenda.dataman.db.sql.SQLSExecutor;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Options;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
@@ -40,19 +41,47 @@ public class DatamanHeadless {
 
   private static final Logger LOG = LoggerFactory.getLogger(DatamanHeadless.class);
 
-  private List<FileObject> scripts(CommandLine cmd) throws FileSystemException {
-    String script = cmd.getOptionValue("i");
+  /** Append new option to Options object which is used for parse command line arguments
+   * @param options object to which is append options */
+  public static void setCommandLineOptions(Options options) {
+    options.addOption("i", "script", true, "Input script which is executes.");
+    options.addOption("is", "scripts", true, "Input scripts which is executes separated by comma");
+    options.addOption("c", "config", true, "Name of configuration on which is executed script");
+    options.addOption("o", "output", true, "Output file to which is data written");
+    options.addOption("os", "outputs", true, "Output files to which is data written separated by comma. In order as input file.");
+    options.addOption("f", "format", true, "Format which is used for formatting the returned data. CSV, SQL, TXT, XMLv1, XMLv2. Default is TXT.");
+    options.addOption(null, "nos", false, "Flag which switch of write SQL header to output.");
+  }
+
+  private @Nonnull List<FileObject> scripts(CommandLine cmd) throws FileSystemException {
+    return files(cmd, "i", "is");
+  }
+
+  private @Nonnull List<FileObject> outputs(CommandLine cmd) throws FileSystemException {
+    return files(cmd, "o", "os");
+  }
+
+  private @Nonnull List<FileObject> files(CommandLine cmd, String singleFileOption, String multipleFileOption) throws FileSystemException {
+    if (!cmd.hasOption(singleFileOption) && !cmd.hasOption(multipleFileOption)) { return Collections.emptyList(); }
+    String script = cmd.getOptionValue(singleFileOption);
     FileSystemManager fsm = VFS.getManager();
     if (script != null) {
       return Collections.singletonList(fsm.resolveFile((FileObject) null, script));
     }
-    String scripts = cmd.getOptionValue("s");
+    String scripts = cmd.getOptionValue(multipleFileOption);
     String[] scrs = scripts.split(",");
     List<FileObject> result = new ArrayList<>();
     for (String scr : scrs) {
       result.add(fsm.resolveFile((FileObject) null, scr));
     }
     return result;
+  }
+
+  private @Nonnull ExportTableData.SpreadsheetFormat format(@Nonnull CommandLine cmd) {
+    if (cmd.hasOption("f")) {
+      return ExportTableData.SpreadsheetFormat.valueOf(cmd.getOptionValue("f").toUpperCase());
+    }
+    return ExportTableData.SpreadsheetFormat.TXT;
   }
 
   public void launch(@Nonnull CommandLine cmd) {
@@ -64,20 +93,25 @@ public class DatamanHeadless {
 
     try {
       List<FileObject> scripts = scripts(cmd);
+      List<FileObject> outputs = outputs(cmd);
       if (scripts.size() == 0) {
         LOG.error("The scripts isn't defined");
         System.exit(3);
       } else {
-        SQLSExecutorConsumerClass sqlEditorController = new SQLSExecutorConsumerClass();
+        SQLSExecutorConsumerClass sqlEditorController = new SQLSExecutorConsumerClass(!cmd.hasOption("nos"), format(cmd));
         SQLSExecutor executor = new SQLSExecutor(dbConfig, sqlEditorController, null);
         dbConfig.getConnectionProvider().getConnection();
-        scripts.forEach(file -> {
+        int i = 0;
+        for (FileObject file : scripts) {
+          if (outputs.size() > i) { sqlEditorController.setOutputFile(outputs.get(i)); }
+          else { sqlEditorController.setOutputFile(null); }
+          i++;
           try {
             System.out.println("Script file: " + file.getName().getFriendlyURI());
             InputStream is = file.getContent().getInputStream();
             Reader reader = new InputStreamReader(is);
             char[] buff = new char[262144];
-            int l = 0;
+            int l;
             String rest = "";
             while ((l = reader.read(buff)) != -1) {
               String str = rest + new String(buff, 0, l);
@@ -100,7 +134,7 @@ public class DatamanHeadless {
             LOG.error("Problem with read script file", e);
             System.exit(4);
           }
-        });
+        }
       }
     } catch (FileSystemException e) {
       LOG.error("Problem with read script data", e);
@@ -109,23 +143,51 @@ public class DatamanHeadless {
   }
 
   public static class SQLSExecutorConsumerClass implements SQLSExecutor.SQLSExecutorConsumer {
+    private ExportTableData.SpreadsheetFormat format;
+    private PrintStream printStream;
+    private boolean writeSQLHeaders;
+
+    public void setOutputFile(FileObject outputFile) {
+      printStream = currentWriter(outputFile);
+    }
+
+    SQLSExecutorConsumerClass(boolean writeSQLHeaders, ExportTableData.SpreadsheetFormat format) {
+      this.format = format;
+      this.writeSQLHeaders = writeSQLHeaders;
+    }
+    private PrintStream currentWriter(FileObject outputFile) {
+      if (outputFile == null) { return System.out; }
+      try {
+        if (!outputFile.isWriteable()) {
+          LOG.error("The output file isn't writable", outputFile.getName());
+          System.exit(10);
+        }
+         return new PrintStream(outputFile.getContent().getOutputStream(), true);
+      } catch (IOException e) {
+        LOG.error("The error when output file is open", e);
+        System.exit(11);
+        throw new RuntimeException("The error when output file is open", e);
+      }
+    }
     @Override
     public void addQueryResult(SQLQueryResult result) {
-      System.out.println("------");
-      System.out.println(result.getSql());
-      System.out.println("------");
+      if (writeSQLHeaders) {
+        printStream.println("------");
+        printStream.println(result.getSql());
+        printStream.println("------");
+      }
       if (!StringUtils.isBlank(result.getErrorMsg())) { LOG.error(result.getErrorMsg()); }
       else {
         if (result.getSqlQueryRows() != null) {
           try {
             StringWriter sw = new StringWriter();
-            ExportTableData.writeSqlQueryRowsToCSV(result.getSqlQueryRows(), sw);
-            System.out.println(sw.toString());
+            ExportTableData.writeSqlQueryRows(format, result.getSqlQueryRows(), null, sw);
+            printStream.println(sw.toString());
           } catch (IOException e) {
            LOG.error("Error when result of table is write as CSV", e);
           }
         } else if (result.getAffectedRow() != null) {
-          System.out.println("Affected rows <" + result.getAffectedRow() + ">");
+          printStream.println("Affected rows <" + result.getAffectedRow() + ">");
         }
       }
     }

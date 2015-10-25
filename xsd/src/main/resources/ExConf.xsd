@@ -211,7 +211,7 @@
       <xsd:annotation><xsd:documentation>Type of export</xsd:documentation></xsd:annotation>
     </xsd:attribute>
     <xsd:attribute name="file" type="xsd:string">
-      <xsd:annotation><xsd:documentation>File to which is write export - if isn't filed then is user asked to selexct file. System use apache common vfs2 so you can use prefix like ftp:// etc.</xsd:documentation></xsd:annotation>
+      <xsd:annotation><xsd:documentation>File to which is write export - if isn't filed then is user asked to select file. System use apache common vfs2 so you can use prefix like ftp:// etc.</xsd:documentation></xsd:annotation>
     </xsd:attribute>
     <xsd:attribute name="noReplace" type="xsd:boolean">
       <xsd:annotation><xsd:documentation>No replace file and crate new file with Index suffix. Or replace. If isn't set then it mean replace file.</xsd:documentation></xsd:annotation>

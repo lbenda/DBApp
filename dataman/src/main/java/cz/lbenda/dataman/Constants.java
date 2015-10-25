@@ -27,6 +27,8 @@ import java.util.List;
 @SuppressWarnings("unused")
 public class Constants {
 
+  /** Maximal size of column in text export when */
+  public static int maxTextColumnSize = 256;
   public static String CONFIG_EXTENSION = "dtm";
   public static String SQL_EXTENSION = "sql";
   public static String XLSX_EXTENSION = "xlsx";
