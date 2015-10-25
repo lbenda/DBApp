@@ -260,6 +260,7 @@ public class ExportTableData {
           .map(cd -> fixedString(row.getColumnValueStr(cd), cd.getSize()))
           .collect(Collectors.joining(""));
       writer.append(joined).append(Constants.CSV_NEW_LINE_SEPARATOR);
+      writer.flush();
     }
   }
 
@@ -473,7 +474,7 @@ public class ExportTableData {
   public static void writeSqlQueryRowsToSQL(SQLQueryRows sqlQueryRows, Writer writer) {
     final Map<String, List<ColumnDesc>> columnsByTables = new HashMap<>();
     sqlQueryRows.getMetaData().getColumns().forEach(columnDesc -> {
-      String table = String.format("\"%s\".\"%s\"", columnDesc.getSchema(), columnDesc.getTable());
+      String table = String.format("\"%s\".\"%s\"", columnDesc.getSchema().trim(), columnDesc.getTable().trim());
       List<ColumnDesc> columns = columnsByTables.get(table);
       if (columns == null) {
         columns = new ArrayList<>();
@@ -499,6 +500,7 @@ public class ExportTableData {
       try {
         writer.write(String.format("insert into %s (%s) values(%s);\n", entry.getKey(),
             columnsByTableNames.get(entry.getKey()), row.toString()));
+        writer.flush();
       } catch (IOException e) {
         LOG.error("Problem with write SQL insert", e);
         throw new RuntimeException("Problem with write SQL insert", e);

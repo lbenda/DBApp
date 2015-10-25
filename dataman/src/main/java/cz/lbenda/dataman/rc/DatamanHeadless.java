@@ -107,7 +107,6 @@ public class DatamanHeadless {
           else { sqlEditorController.setOutputFile(null); }
           i++;
           try {
-            System.out.println("Script file: " + file.getName().getFriendlyURI());
             InputStream is = file.getContent().getInputStream();
             Reader reader = new InputStreamReader(is);
             char[] buff = new char[262144];
@@ -180,9 +179,11 @@ public class DatamanHeadless {
       else {
         if (result.getSqlQueryRows() != null) {
           try {
-            StringWriter sw = new StringWriter();
-            ExportTableData.writeSqlQueryRows(format, result.getSqlQueryRows(), null, sw);
-            printStream.println(sw.toString());
+            /* Writer writer = new StringWriter(); */
+            PrintWriter writer = new PrintWriter(printStream);
+            ExportTableData.writeSqlQueryRows(format, result.getSqlQueryRows(), null, writer);
+            writer.flush();
+            // printStream.println(writer.toString());
           } catch (IOException e) {
            LOG.error("Error when result of table is write as CSV", e);
           }
