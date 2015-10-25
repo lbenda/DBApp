@@ -43,7 +43,7 @@ public class TextEditor {
   @SuppressWarnings("unused")
   private static final Logger LOG = LoggerFactory.getLogger(TextEditor.class);
 
-  private CodeArea codeArea;
+  private CodeArea codeArea; public CodeArea getCodeArea() { return codeArea; }
   private ExecutorService executor;
   private Highlighter highlighter; public Highlighter getHighlighter() {
     if (highlighter == null) { changeHighlighter(new HighlighterPlain()); }

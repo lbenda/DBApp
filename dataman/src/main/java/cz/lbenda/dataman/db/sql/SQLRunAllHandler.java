@@ -30,15 +30,15 @@ import java.util.function.Consumer;
  * Action which run SQL command */
 @ActionConfig(
     category = "/SQL/sql",
-    id = "cz.lbenda.dataman.db.sql.SQLRunHandler",
-    priority = 100,
+    id = "cz.lbenda.dataman.db.sql.SQLRunAllHandler",
+    priority = 150,
     gui = @ActionGUIConfig(
-      displayName = @Message(id="Run", msg="Run"),
-      displayTooltip = @Message(id="Run_tooltip", msg="Run sql commands which is selected or command where is caret and is separated by blank lines."),
-      iconBase = "sqlRun.png"
+      displayName = @Message(id="Run_all", msg="Run all"),
+      displayTooltip = @Message(id="Run_all_tooltip", msg="Run sql commands which is selected or whole content of editor."),
+      iconBase = "sqlRunAll.png"
     )
 )
-public class SQLRunHandler extends AbstractAction {
+public class SQLRunAllHandler extends AbstractAction {
 
   private SQLEditorController sqlEditorController;
   private ObjectProperty<DbConfig> dbConfigProperty;
@@ -46,8 +46,8 @@ public class SQLRunHandler extends AbstractAction {
   private Consumer<SQLSExecutor> consoleShower;
   private ChangeListener<Boolean> connectionListener = (observableValue, oldValue, newValue) -> setEnable(newValue);
 
-  public SQLRunHandler(ObjectProperty<DbConfig> dbConfigProperty, SQLEditorController sqlEditorController,
-                       Consumer<SQLSExecutor> consoleShower) {
+  public SQLRunAllHandler(ObjectProperty<DbConfig> dbConfigProperty, SQLEditorController sqlEditorController,
+                          Consumer<SQLSExecutor> consoleShower) {
     this.sqlEditorController = sqlEditorController;
     this.dbConfigProperty = dbConfigProperty;
     this.consoleShower = consoleShower;
@@ -67,6 +67,6 @@ public class SQLRunHandler extends AbstractAction {
   @Override
   public void handle(ActionEvent e) {
     new SQLSExecutor(dbConfigProperty.getValue(), sqlEditorController, consoleShower)
-        .execute(sqlEditorController.getExecutedText(true));
+        .execute(sqlEditorController.getExecutedText(false));
   }
 }

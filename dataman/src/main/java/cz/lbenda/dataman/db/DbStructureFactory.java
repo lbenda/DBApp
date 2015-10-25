@@ -226,11 +226,9 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
       } catch (SQLException e) {
         StatusHelper.getInstance().progressNextStep(this, STEP_READ_COLUMNS, 1000);
       }
-      int i = 0;
       try (ResultSet rsColumn = dmd.getColumns(entry.getKey(), null, null, null)) {
         writeColumnNames("generateStructureColumns", rsColumn.getMetaData());
         while (rsColumn.next()) {
-          i++;
           StatusHelper.getInstance().progress(this);
           String schema = rsColumn.getString(dialect.columnTableSchema());
           String table = rsColumn.getString(dialect.columnTableName());
@@ -517,10 +515,5 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
       this.updateRule = updateRule;
       this.deleteRule = deleteRule;
     }
-  }
-
-  @FunctionalInterface
-  private interface CatalogHolder {
-    CatalogDesc getCatalog(String name);
   }
 }

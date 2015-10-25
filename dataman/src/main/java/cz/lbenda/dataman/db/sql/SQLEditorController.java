@@ -88,10 +88,49 @@ public class SQLEditorController implements SQLSExecutor.SQLSExecutorConsumer {
   /** File which was read or saved */
   private File lastFile; public File lastFile() { return lastFile; }
 
-  /** Return text which will be executed. */
-  public String[] getExecutedText() {
+  /** Return text which will be executed.
+   * @param onCaretPosition return executed text on caret position */
+  public String[] getExecutedText(boolean onCaretPosition) {
+    CodeArea codeArea = textEditor.getCodeArea();
     String text = textEditor.getSelectedText();
-    if (text == null || "".equals(text)) { text = textEditor.getText(); }
+    if (text == null || "".equals(text)) {
+      text = textEditor.getText();
+      if (onCaretPosition) {
+        int caretPosition = codeArea.caretPositionProperty().getValue();
+        String bf = "", af = "";
+        if (caretPosition > 0) {
+          bf = text.substring(0, caretPosition);
+        }
+        if (caretPosition < text.length()) {
+          af = text.substring(caretPosition, text.length());
+        }
+        String[] bfs = bf.split("\n");
+        String[] afs = af.split("\n");
+        StringBuilder sb = new StringBuilder();
+        boolean rowStart = caretPosition == 0 || bf.charAt(bf.length() - 1) == '\n';
+
+        boolean skipBf = caretPosition == 0;
+        if (!skipBf && rowStart) {
+          int prevRecord = bf.substring(0, bf.length() - 1).lastIndexOf("\n");
+          if (prevRecord >= 0) {
+            skipBf = StringUtils.isBlank(bf.substring(prevRecord, bf.length() - 1));
+          }
+        }
+        if (!skipBf) {
+          for (int i = bfs.length - 1; i >= 0 && StringUtils.isNoneBlank(bfs[i]); i--) {
+            if (i == bfs.length - 1 && !rowStart) {
+              sb.insert(0, bfs[i]);
+            } else {
+              sb.insert(0, bfs[i] + "\n");
+            }
+          }
+        }
+        for (int i = 0; i < afs.length && StringUtils.isNoneBlank(afs[i]); i++) {
+          sb.append(afs[i]).append("\n");
+        }
+        text = sb.toString();
+      }
+    }
     return SQLSExecutor.splitSQLS(text);
   }
 
@@ -126,6 +165,7 @@ public class SQLEditorController implements SQLSExecutor.SQLSExecutorConsumer {
     node.getChildren().add(ca);
 
     menuItemConsumer.accept(new SQLRunHandler(dbConfigProperty, this, handler -> nodeShower.focusNode(webView)));
+    menuItemConsumer.accept(new SQLRunAllHandler(dbConfigProperty, this, handler -> nodeShower.focusNode(webView)));
     menuItemConsumer.accept(new OpenFileHandler(this));
     menuItemConsumer.accept(new SaveFileHandler(this));
     menuItemConsumer.accept(new SaveAsFileHandler(this));
