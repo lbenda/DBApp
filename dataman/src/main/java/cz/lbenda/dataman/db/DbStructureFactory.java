@@ -188,16 +188,19 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
           tableDesc.setSavableRegister(connectionProvider.getSavableRegistry());
           tableDesc.setComment(dialect.tableRemarks());
         }
-        generateStructureColumns(catalogs::get, dmd);
+        generateStructureColumns(catalogs, dmd);
         generatePKColumns(catalogs.values(), dmd);
         generateStructureForeignKeys(catalogs, dmd);
         dbConfig.getCatalogs().clear();
         if (Platform.isAccessibilityActive()) {
           Platform.runLater(() -> dbConfig.getCatalogs().addAll(catalogs.values()));
-        } else { dbConfig.getCatalogs().addAll(catalogs.values()); }
+        } else {
+          dbConfig.getCatalogs().addAll(catalogs.values());
+        }
         StatusHelper.getInstance().progressFinish(this, STEP_FINISH);
       }
-    } catch (SQLException e) {
+    } catch (Exception e) {
+      LOG.error("Problem with read database structure", e);
       throw new RuntimeException(e);
     }
   }
@@ -214,25 +217,29 @@ public class DbStructureFactory implements DatamanDataSource.DBAppDataSourceExce
     }
   }
 
-  private void generateStructureColumns(CatalogHolder catalogHolder, DatabaseMetaData dmd) throws SQLException {
+  private void generateStructureColumns(Map<String, CatalogDesc> catalogs, DatabaseMetaData dmd) throws SQLException {
     SQLDialect dialect = dbConfig.getJdbcConfiguration().getDialect();
-    try (ResultSet rsColumn  = dmd.getColumns(null, null, null, null)) {
-      rsColumn.last();
-      StatusHelper.getInstance().progressNextStep(this, STEP_READ_COLUMNS, rsColumn.getRow());
-    } catch (SQLException e) {
-      StatusHelper.getInstance().progressNextStep(this, STEP_READ_COLUMNS, 500);
-    }
-    try (ResultSet rsColumn  = dmd.getColumns(null, null, null, null)) {
-
-      writeColumnNames("generateStructureColumns", rsColumn.getMetaData());
-      while (rsColumn.next()) {
-        StatusHelper.getInstance().progress(this);
-        String catalog = rsColumn.getString(dialect.columnTableCatalog());
-        String schema = rsColumn.getString(dialect.columnTableSchema());
-        String table = rsColumn.getString(dialect.columnTableName());
-        TableDesc td = catalogHolder.getCatalog(catalog).getSchema(schema).getTable(table);
-        ColumnDesc column = new ColumnDesc(td, rsColumn, dialect);
-        td.addColumn(column);
+    for (Map.Entry<String, CatalogDesc> entry : catalogs.entrySet()) {
+      try (ResultSet rsColumn = dmd.getColumns(entry.getKey(), null, null, null)) {
+        rsColumn.last();
+        StatusHelper.getInstance().progressNextStep(this, STEP_READ_COLUMNS, rsColumn.getRow());
+      } catch (SQLException e) {
+        StatusHelper.getInstance().progressNextStep(this, STEP_READ_COLUMNS, 1000);
+      }
+      int i = 0;
+      try (ResultSet rsColumn = dmd.getColumns(entry.getKey(), null, null, null)) {
+        writeColumnNames("generateStructureColumns", rsColumn.getMetaData());
+        while (rsColumn.next()) {
+          i++;
+          StatusHelper.getInstance().progress(this);
+          String schema = rsColumn.getString(dialect.columnTableSchema());
+          String table = rsColumn.getString(dialect.columnTableName());
+          TableDesc td = entry.getValue().getSchema(schema).getTable(table);
+          if (td != null) {
+            ColumnDesc column = new ColumnDesc(td, rsColumn, dialect);
+            td.addColumn(column);
+          }
+        }
       }
     }
   }

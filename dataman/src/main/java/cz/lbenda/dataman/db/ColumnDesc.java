@@ -101,13 +101,18 @@ public class ColumnDesc {
     if (size == null) { this.scale = 0; }
     else { this.scale = size instanceof Long
         ? ((Long) confValue(dialect.columnDecimalDigits(), rs)).intValue()
+        : size instanceof Short
+        ? ((Short) confValue(dialect.columnDecimalDigits(), rs)).intValue()
         : (Integer) confValue(dialect.columnDecimalDigits(), rs);
     }
     this.columnTypeName = confValue(dialect.columnTypeName(), rs);
     this.nullable = confBool(dialect.columnNullable(), rs);
     this.autoincrement = confBool(dialect.columnAutoIncrement(), rs);
     this.generated = confBool(dialect.columnGenerated(), rs) || this.autoincrement && !dialect.isIdentityEditable();
-    this.dataType = dialect.columnTypeFromSQL(confValue(dialect.columnDateType(), rs), columnTypeName, this.size);
+    int sqlDateType = confValue(dialect.columnDateType(), rs) instanceof Short
+        ? ((Short) confValue(dialect.columnDateType(), rs)).intValue()
+        : ((Integer) confValue(dialect.columnDateType(), rs));
+    this.dataType = dialect.columnTypeFromSQL(sqlDateType, columnTypeName, this.size);
   }
 
   public ColumnDesc(final TableDesc td, final String name, final String label, final ColumnType dataType,

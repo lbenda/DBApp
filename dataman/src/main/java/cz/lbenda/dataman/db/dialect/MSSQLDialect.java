@@ -26,4 +26,6 @@ public class MSSQLDialect implements SQLDialect {
 
   @Override
   public boolean isBooleanBitRepresent() { return true; }
+  @Override
+  public String columnGenerated() { return "SS_IS_COMPUTED"; }
 }
